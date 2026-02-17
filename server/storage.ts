@@ -105,10 +105,30 @@ export async function getChildrenForUser(userId: string): Promise<Child[]> {
   );
 }
 
-export async function addChild(userId: string, name: string, birthDate: string, photoUri?: string): Promise<Child> {
+export async function addChild(
+  userId: string,
+  name: string,
+  birthDate: string,
+  gender?: string,
+  photoUri?: string,
+  coParentName?: string,
+  cardColor?: string
+): Promise<Child> {
   const result = await db
     .insert(children)
-    .values({ userId, name, birthDate, photoUri })
+    .values({ userId, name, birthDate, gender, photoUri, coParentName, cardColor })
+    .returning();
+  return result[0];
+}
+
+export async function updateChild(
+  id: string,
+  data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string }
+): Promise<Child> {
+  const result = await db
+    .update(children)
+    .set(data)
+    .where(eq(children.id, id))
     .returning();
   return result[0];
 }
@@ -140,11 +160,24 @@ export async function addNote(
   text: string,
   color: string,
   rotation: string,
-  author: string
+  author: string,
+  tags?: string
 ): Promise<Note> {
   const result = await db
     .insert(notes)
-    .values({ userId, text, color, rotation, author })
+    .values({ userId, text, color, rotation, author, tags })
+    .returning();
+  return result[0];
+}
+
+export async function updateNote(
+  id: string,
+  data: { text?: string; color?: string; tags?: string }
+): Promise<Note> {
+  const result = await db
+    .update(notes)
+    .set(data)
+    .where(eq(notes.id, id))
     .returning();
   return result[0];
 }

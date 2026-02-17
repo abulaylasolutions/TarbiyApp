@@ -15,9 +15,11 @@ import {
   unpairCogenitore,
   getChildrenForUser,
   addChild,
+  updateChild,
   removeChild,
   getNotesForUser,
   addNote,
+  updateNote,
   removeNote,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
@@ -228,7 +230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/children", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { name, birthDate, photoUri } = req.body;
+      const { name, birthDate, gender, photoUri, coParentName, cardColor } = req.body;
       if (!name || !birthDate) {
         return res.status(400).json({ message: "Nome e data di nascita richiesti" });
       }
@@ -242,8 +244,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const child = await addChild(req.session.userId!, name, birthDate, photoUri);
+      const child = await addChild(req.session.userId!, name, birthDate, gender, photoUri, coParentName, cardColor);
       return res.status(201).json(child);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/children/:id", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { name, birthDate, gender, photoUri, coParentName, cardColor } = req.body;
+      const child = await updateChild(req.params.id, { name, birthDate, gender, photoUri, coParentName, cardColor });
+      return res.json(child);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }
@@ -269,12 +281,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/notes", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { text, color, rotation, author } = req.body;
+      const { text, color, rotation, author, tags } = req.body;
       if (!text) {
         return res.status(400).json({ message: "Testo richiesto" });
       }
-      const note = await addNote(req.session.userId!, text, color || "#FFD3B6", rotation || "0", author || "Genitore");
+      const note = await addNote(req.session.userId!, text, color || "#FFD3B6", rotation || "0", author || "Genitore", tags);
       return res.status(201).json(note);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/notes/:id", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { text, color, tags } = req.body;
+      const note = await updateNote(req.params.id, { text, color, tags });
+      return res.json(note);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }

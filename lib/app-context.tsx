@@ -5,7 +5,10 @@ export interface Child {
   id: string;
   name: string;
   birthDate: string;
-  photoUri?: string;
+  gender?: string | null;
+  photoUri?: string | null;
+  coParentName?: string | null;
+  cardColor?: string | null;
   userId: string;
   createdAt: string;
 }
@@ -18,16 +21,19 @@ export interface Note {
   createdAt: string;
   author: string;
   userId: string;
+  tags?: string | null;
 }
 
 interface AppContextValue {
   children: Child[];
   selectedChildId: string | null;
   notes: Note[];
-  addChild: (child: { name: string; birthDate: string; photoUri?: string }) => Promise<{ success: boolean; message?: string }>;
+  addChild: (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string }) => Promise<{ success: boolean; message?: string }>;
+  updateChild: (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string }) => Promise<{ success: boolean; message?: string }>;
   removeChild: (id: string) => Promise<void>;
   selectChild: (id: string) => void;
-  addNote: (text: string, author: string) => Promise<void>;
+  addNote: (text: string, author: string, tags?: string) => Promise<void>;
+  updateNote: (id: string, data: { text?: string; color?: string; tags?: string }) => Promise<{ success: boolean; message?: string }>;
   removeNote: (id: string) => Promise<void>;
   refreshChildren: () => Promise<void>;
   refreshNotes: () => Promise<void>;
@@ -77,12 +83,25 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     } catch {}
   };
 
-  const addChild = async (child: { name: string; birthDate: string; photoUri?: string }) => {
+  const addChild = async (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string }) => {
     try {
       const res = await apiRequest('POST', '/api/children', child);
       const newChild = await res.json();
       setChildrenList(prev => [...prev, newChild]);
       if (!selectedChildId) setSelectedChildId(newChild.id);
+      return { success: true };
+    } catch (error: any) {
+      const msg = error?.message || 'Errore';
+      const cleanMsg = msg.replace(/^\d+:\s*/, '');
+      return { success: false, message: cleanMsg };
+    }
+  };
+
+  const updateChildFn = async (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string }) => {
+    try {
+      const res = await apiRequest('PUT', `/api/children/${id}`, data);
+      const updated = await res.json();
+      setChildrenList(prev => prev.map(c => c.id === id ? updated : c));
       return { success: true };
     } catch (error: any) {
       const msg = error?.message || 'Errore';
@@ -108,14 +127,27 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     setSelectedChildId(id);
   };
 
-  const addNote = async (text: string, author: string) => {
+  const addNote = async (text: string, author: string, tags?: string) => {
     const color = NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
     const rotation = String((Math.random() - 0.5) * 6);
     try {
-      const res = await apiRequest('POST', '/api/notes', { text, color, rotation, author });
+      const res = await apiRequest('POST', '/api/notes', { text, color, rotation, author, tags });
       const newNote = await res.json();
       setNotes(prev => [newNote, ...prev]);
     } catch {}
+  };
+
+  const updateNoteFn = async (id: string, data: { text?: string; color?: string; tags?: string }) => {
+    try {
+      const res = await apiRequest('PUT', `/api/notes/${id}`, data);
+      const updated = await res.json();
+      setNotes(prev => prev.map(n => n.id === id ? updated : n));
+      return { success: true };
+    } catch (error: any) {
+      const msg = error?.message || 'Errore';
+      const cleanMsg = msg.replace(/^\d+:\s*/, '');
+      return { success: false, message: cleanMsg };
+    }
   };
 
   const removeNote = async (id: string) => {
@@ -130,9 +162,11 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     selectedChildId,
     notes,
     addChild,
+    updateChild: updateChildFn,
     removeChild,
     selectChild,
     addNote,
+    updateNote: updateNoteFn,
     removeNote,
     refreshChildren: refreshChildrenInternal,
     refreshNotes: refreshNotesInternal,
