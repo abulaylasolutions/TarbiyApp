@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,20 +10,32 @@ import {
   Modal,
   Alert,
   Dimensions,
+  ActivityIndicator,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, ZoomIn, FadeInDown } from 'react-native-reanimated';
 import { useApp, Note, Child } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
+import { apiRequest } from '@/lib/query-client';
 import Colors from '@/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2;
 
 const NOTE_COLORS = ['#FFD3B6', '#C7CEEA', '#A8E6CF', '#FFF5E1', '#FFE8D9', '#D4F5E5', '#E3E7F5', '#E0BBE4'];
+
+interface CommentData {
+  id: string;
+  noteId: string;
+  userId: string;
+  authorName: string;
+  text: string;
+  createdAt: string;
+}
 
 interface NoteCardProps {
   note: Note;
@@ -107,6 +119,38 @@ function ChildTag({ child, isSelected, onToggle }: ChildTagProps) {
   );
 }
 
+interface CommentBubbleProps {
+  comment: CommentData;
+  isMine: boolean;
+  index: number;
+}
+
+function CommentBubble({ comment, isMine, index }: CommentBubbleProps) {
+  const formattedTime = new Date(comment.createdAt).toLocaleDateString('it-IT', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+
+  return (
+    <Animated.View entering={FadeInDown.delay(index * 40).duration(200)}>
+      <View style={[styles.bubbleRow, isMine && styles.bubbleRowMine]}>
+        <View style={[
+          styles.bubble,
+          isMine ? styles.bubbleMine : styles.bubbleOther,
+        ]}>
+          {!isMine && (
+            <Text style={styles.bubbleAuthor}>{comment.authorName}</Text>
+          )}
+          <Text style={styles.bubbleText}>{comment.text}</Text>
+          <Text style={[styles.bubbleTime, isMine && styles.bubbleTimeMine]}>{formattedTime}</Text>
+        </View>
+      </View>
+    </Animated.View>
+  );
+}
+
 export default function BachecaScreen() {
   const insets = useSafeAreaInsets();
   const { notes, children, addNote, updateNote, removeNote } = useApp();
@@ -118,8 +162,38 @@ export default function BachecaScreen() {
   const [editText, setEditText] = useState('');
   const [editTags, setEditTags] = useState<string[]>([]);
   const [addTags, setAddTags] = useState<string[]>([]);
+  const [commentsList, setCommentsList] = useState<CommentData[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [sendingComment, setSendingComment] = useState(false);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+
+  const loadComments = useCallback(async (noteId: string) => {
+    setLoadingComments(true);
+    try {
+      const res = await apiRequest('GET', `/api/notes/${noteId}/comments`);
+      const data = await res.json();
+      setCommentsList(data);
+    } catch {
+      setCommentsList([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  }, []);
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !selectedNote) return;
+    setSendingComment(true);
+    try {
+      const res = await apiRequest('POST', `/api/notes/${selectedNote.id}/comments`, { text: newComment.trim() });
+      const comment = await res.json();
+      setCommentsList(prev => [...prev, comment]);
+      setNewComment('');
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {}
+    setSendingComment(false);
+  };
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
@@ -134,12 +208,15 @@ export default function BachecaScreen() {
   const openDetail = (note: Note) => {
     setSelectedNote(note);
     setEditText(note.text);
+    setNewComment('');
+    setCommentsList([]);
     try {
       setEditTags(note.tags ? JSON.parse(note.tags) : []);
     } catch {
       setEditTags([]);
     }
     setShowDetailModal(true);
+    loadComments(note.id);
   };
 
   const handleSaveEdit = async () => {
@@ -286,83 +363,137 @@ export default function BachecaScreen() {
       </Modal>
 
       <Modal visible={showDetailModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalDismiss} onPress={() => setShowDetailModal(false)} />
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(150)}
-            style={[styles.detailContent, { paddingBottom: insets.bottom + 16 }]}
-          >
-            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
-              <View style={styles.modalHandle} />
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalDismiss} onPress={() => setShowDetailModal(false)} />
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              style={[styles.detailContent, { paddingBottom: insets.bottom + 8 }]}
+            >
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
+                <View style={styles.modalHandle} />
 
-              {selectedNote && (
-                <View
-                  style={[
-                    styles.detailNotePreview,
-                    { backgroundColor: selectedNote.color },
-                  ]}
-                >
-                  <Text style={styles.detailAuthor}>{selectedNote.author}</Text>
-                  <Text style={styles.detailDate}>
-                    {new Date(selectedNote.createdAt).toLocaleDateString('it-IT', {
-                      day: 'numeric',
-                      month: 'long',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                  {getTaggedChildNames(selectedNote).length > 0 && (
-                    <View style={styles.detailTagsPreview}>
-                      {getTaggedChildNames(selectedNote).map((name, i) => (
-                        <View key={i} style={styles.detailTagBadge}>
-                          <Text style={styles.detailTagBadgeText}>{name}</Text>
-                        </View>
+                {selectedNote && (
+                  <View
+                    style={[
+                      styles.detailNotePreview,
+                      { backgroundColor: selectedNote.color },
+                    ]}
+                  >
+                    <Text style={styles.detailAuthor}>{selectedNote.author}</Text>
+                    <Text style={styles.detailDate}>
+                      {new Date(selectedNote.createdAt).toLocaleDateString('it-IT', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                      })}
+                    </Text>
+                    {getTaggedChildNames(selectedNote).length > 0 && (
+                      <View style={styles.detailTagsPreview}>
+                        {getTaggedChildNames(selectedNote).map((name, i) => (
+                          <View key={i} style={styles.detailTagBadge}>
+                            <Text style={styles.detailTagBadgeText}>{name}</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+
+                <Text style={styles.detailEditLabel}>Testo della nota</Text>
+                <TextInput
+                  style={styles.detailTextInput}
+                  value={editText}
+                  onChangeText={setEditText}
+                  multiline
+                  maxLength={500}
+                />
+
+                {children.length > 0 && (
+                  <>
+                    <Text style={styles.tagSectionTitle}>Tag figli</Text>
+                    <View style={styles.tagContainer}>
+                      {children.map(child => (
+                        <ChildTag
+                          key={child.id}
+                          child={child}
+                          isSelected={editTags.includes(child.id)}
+                          onToggle={(id) => toggleTag(id, false)}
+                        />
                       ))}
                     </View>
-                  )}
+                  </>
+                )}
+
+                <Pressable
+                  onPress={handleSaveEdit}
+                  style={[styles.saveEditBtn, !editText.trim() && { opacity: 0.5 }]}
+                  disabled={!editText.trim()}
+                >
+                  <Ionicons name="save" size={20} color={Colors.white} />
+                  <Text style={styles.saveEditText}>Salva modifiche</Text>
+                </Pressable>
+
+                <View style={styles.commentsSeparator}>
+                  <View style={styles.separatorLine} />
+                  <Text style={styles.separatorText}>Commenti</Text>
+                  <View style={styles.separatorLine} />
                 </View>
-              )}
 
-              <Text style={styles.detailEditLabel}>Testo della nota</Text>
-              <TextInput
-                style={styles.detailTextInput}
-                value={editText}
-                onChangeText={setEditText}
-                multiline
-                maxLength={500}
-              />
-
-              {children.length > 0 && (
-                <>
-                  <Text style={styles.tagSectionTitle}>Tag figli</Text>
-                  <View style={styles.tagContainer}>
-                    {children.map(child => (
-                      <ChildTag
-                        key={child.id}
-                        child={child}
-                        isSelected={editTags.includes(child.id)}
-                        onToggle={(id) => toggleTag(id, false)}
+                {loadingComments ? (
+                  <ActivityIndicator size="small" color={Colors.mintGreen} style={{ marginVertical: 16 }} />
+                ) : commentsList.length === 0 ? (
+                  <View style={styles.noCommentsWrap}>
+                    <Ionicons name="chatbubble-outline" size={24} color={Colors.textMuted} />
+                    <Text style={styles.noCommentsText}>Nessun commento ancora</Text>
+                  </View>
+                ) : (
+                  <View style={styles.commentsListWrap}>
+                    {commentsList.map((comment, index) => (
+                      <CommentBubble
+                        key={comment.id}
+                        comment={comment}
+                        isMine={comment.userId === user?.id}
+                        index={index}
                       />
                     ))}
                   </View>
-                </>
-              )}
+                )}
+              </ScrollView>
 
-              <Pressable
-                onPress={handleSaveEdit}
-                style={[styles.saveEditBtn, !editText.trim() && { opacity: 0.5 }]}
-                disabled={!editText.trim()}
-              >
-                <Ionicons name="save" size={20} color={Colors.white} />
-                <Text style={styles.saveEditText}>Salva modifiche</Text>
-              </Pressable>
-
-              <Pressable onPress={() => setShowDetailModal(false)} style={styles.closeDetailBtn}>
-                <Text style={styles.closeDetailText}>Chiudi</Text>
-              </Pressable>
-            </ScrollView>
-          </Animated.View>
-        </View>
+              <View style={styles.commentInputRow}>
+                <TextInput
+                  style={styles.commentInput}
+                  value={newComment}
+                  onChangeText={setNewComment}
+                  placeholder="Scrivi un commento..."
+                  placeholderTextColor={Colors.textMuted}
+                  maxLength={300}
+                  multiline
+                />
+                <Pressable
+                  onPress={handleAddComment}
+                  disabled={!newComment.trim() || sendingComment}
+                  style={[
+                    styles.commentSendBtn,
+                    (!newComment.trim() || sendingComment) && { opacity: 0.4 },
+                  ]}
+                >
+                  {sendingComment ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <Ionicons name="send" size={18} color={Colors.white} />
+                  )}
+                </Pressable>
+              </View>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
@@ -450,7 +581,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
-    maxHeight: '85%',
+    maxHeight: '90%',
   },
   detailNotePreview: {
     borderRadius: 20, padding: 20, marginBottom: 20,
@@ -471,14 +602,63 @@ const styles = StyleSheet.create({
   detailTextInput: {
     fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary,
     backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 16,
-    minHeight: 120, textAlignVertical: 'top',
+    minHeight: 100, textAlignVertical: 'top',
   },
   saveEditBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
-    backgroundColor: Colors.mintGreen, paddingVertical: 16, borderRadius: 20,
-    marginTop: 20,
+    backgroundColor: Colors.mintGreen, paddingVertical: 14, borderRadius: 20,
+    marginTop: 16,
   },
   saveEditText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
-  closeDetailBtn: { alignItems: 'center', paddingVertical: 14 },
-  closeDetailText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textMuted },
+  commentsSeparator: {
+    flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 20, marginBottom: 12,
+  },
+  separatorLine: { flex: 1, height: 1, backgroundColor: Colors.creamBeige },
+  separatorText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: Colors.textSecondary },
+  noCommentsWrap: { alignItems: 'center', paddingVertical: 16, gap: 6 },
+  noCommentsText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textMuted },
+  commentsListWrap: { gap: 6, marginBottom: 8 },
+  bubbleRow: { flexDirection: 'row', justifyContent: 'flex-start' },
+  bubbleRowMine: { justifyContent: 'flex-end' },
+  bubble: {
+    maxWidth: '80%',
+    borderRadius: 18,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  bubbleMine: {
+    backgroundColor: Colors.mintGreenLight,
+    borderBottomRightRadius: 4,
+  },
+  bubbleOther: {
+    backgroundColor: Colors.skyBlueLight,
+    borderBottomLeftRadius: 4,
+  },
+  bubbleAuthor: {
+    fontFamily: 'Nunito_700Bold', fontSize: 11, color: Colors.skyBlueDark, marginBottom: 2,
+  },
+  bubbleText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textPrimary, lineHeight: 20 },
+  bubbleTime: { fontFamily: 'Nunito_400Regular', fontSize: 10, color: Colors.textMuted, marginTop: 4 },
+  bubbleTimeMine: { textAlign: 'right' as const },
+  commentInputRow: {
+    flexDirection: 'row', alignItems: 'flex-end', gap: 8,
+    paddingTop: 10,
+    borderTopWidth: 1, borderTopColor: Colors.creamBeige,
+  },
+  commentInput: {
+    flex: 1,
+    fontFamily: 'Nunito_400Regular',
+    fontSize: 15,
+    color: Colors.textPrimary,
+    backgroundColor: Colors.creamBeige,
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    maxHeight: 80,
+  },
+  commentSendBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: Colors.mintGreen,
+    alignItems: 'center', justifyContent: 'center',
+  },
 });
