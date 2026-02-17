@@ -27,7 +27,10 @@ export const children = pgTable("children", {
   userId: text("user_id").notNull(),
   name: text("name").notNull(),
   birthDate: text("birth_date").notNull(),
+  gender: text("gender"),
   photoUri: text("photo_uri"),
+  coParentName: text("co_parent_name"),
+  cardColor: text("card_color"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -40,6 +43,7 @@ export const notes = pgTable("notes", {
   color: text("color").notNull(),
   rotation: text("rotation").notNull(),
   author: text("author").notNull(),
+  tags: text("tags"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

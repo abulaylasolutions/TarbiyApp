@@ -1,0 +1,45 @@
+ORA AGGIUNGI/MODIFICA SOLO QUESTE COSE NUOVE, senza riscrivere l'intera app:
+
+1. Splash screen / Schermata iniziale all'apertura app:
+   - Mostra per 3-4 secondi (o fino a caricamento auth completato) un logo centrato (usa l'immagine allegata come asset: aggiungi nel pubspec.yaml sotto assets: - assets/logo.png)
+   - Sotto il logo: testo grande "TarbiyApp" (font bold rounded, verde menta)
+   - Sotto ancora: testo più piccolo "Educazione islamica dei tuoi figli" (grigio scuro, font regolare)
+   - Sfondo gradiente leggero crema → bianco crema, animazione fade-in soft per logo e testi
+
+2. Completamento profilo figlio (modifica la schermata aggiunta/modifica figlio):
+   - Aggiungi campi obbligatori:
+     - Nome/soprannome (text)
+     - Data di nascita (date picker)
+     - Sesso del bambino (radio: Maschio / Femmina)
+   - Aggiungi campo opzionale: Foto profilo (image_picker: galleria o camera, ritaglio circolare)
+   - Aggiungi campo: Nome del cogenitore (text field semplice, obbligatorio se c'è pairing attivo)
+
+3. Home screen – modifica card figlio:
+   - Ogni card (pastello personalizzabile – vedi punto 4) mostra:
+     - Foto rotonda
+     - Nome bambino in grassetto
+     - Età in nero normale
+     - Sotto: riga testo "figlia tua e di [NomeCogenitore]" (se femmina) o "figlio tuo e di [NomeCogenitore]" (se maschio)
+       - "figlia tua e di" / "figlio tuo e di" in nero
+       - [NomeCogenitore] in rosso (#FF6B6B) se femmina, in blu (#4A90E2) se maschio
+   - Cliccando sulla card: push diretto alla Dashboard dedicata a quel figlio (non passare per selector)
+
+4. Colore card personalizzabile:
+   - Nella schermata aggiungi/modifica figlio, aggiungi selettore colore pastello (palette fissa: 6-8 colori come rosa pesca #FFD3B6, azzurro #C7CEEA, verde menta #A8E6CF, lavanda #E0BBE4, giallo tenue #FFF5BA, corallo #FFDAC1, salvia #B2D8B2)
+   - Salva il colore scelto nel documento Firestore del figlio (campo "cardColor")
+   - Applica come backgroundColor della card nella Home (con opacità 0.8-1.0)
+
+5. Bacheca – modifica note:
+   - Cliccando su una nota (card/post-it): apri una schermata di dettaglio/full-view
+   - Nella vista dettaglio:
+     - Mostra testo completo della nota (editable con TextField)
+     - Pulsante "Salva modifiche" (aggiorna Firestore)
+     - Selettore tag figlio: dropdown o chips tappabili multi-selezione (lista figli della famiglia, con colori associati)
+     - Salva anche i tag aggiornati nel documento nota (campo "tags": array di childId)
+   - Mantieni stile pastello, card leggermente ruotata, ombra morbida
+
+Mantieni responsive, animazioni soft (fade, scale su tap), Material 3 con borderRadius generosi (24-32). Usa Provider/Riverpod per stato se già presente.
+
+Aggiungi l'immagine logo come asset (assumi caricata come assets/logo.png) e usala nello splash e nel login se appropriato.
+
+Modifica i file esistenti (home_screen.dart, child_card.dart, bacheca_screen.dart, add_child_screen.dart, splash_screen.dart o onboarding) e crea nuovi widget necessari. Inizia subito con queste integrazioni!
