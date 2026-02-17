@@ -1,0 +1,37 @@
+ORA MODIFICA E AGGIUNGI SOLO QUESTE FUNZIONALITÀ NUOVE, senza riscrivere l'intera app:
+
+1. Splash screen iniziale (se non c'è già):
+   - All'apertura app, mostra per 3-4 secondi (o fino a auth load) il logo (da assets/logo.png), sotto "TarbiyApp" (verde menta bold), sotto "Educazione islamica dei tuoi figli" (grigio scuro regolare)
+   - Sfondo gradiente crema → bianco, animazione fade-in
+
+2. Modifica schermata aggiunta/modifica figlio (add_child_screen o simile):
+   - Campi obbligatori: Nome, Data nascita, Sesso bambino (Maschio / Femmina)
+   - Campo opzionale: Foto profilo (image_picker + Storage)
+   - Campo cogenitore: NON testo libero, ma selector da lista pairedCogenitori (array uid dell'utente corrente)
+     - Se non pairati: opzionale, ma avvisa "Collega prima un cogenitore nelle impostazioni"
+     - Al salvataggio: aggiungi selected cogenitore uid in children/cogenitori array (sempre includi uid creatore)
+
+3. Modifica card figlio nella Home:
+   - Oltre a foto, nome (grassetto, rosa #FF6B6B se femmina, celeste #4A90E2 se maschio), età (nero)
+   - Sotto: testo "figlia tua e di [NomeCogenitore]" (se femmina) o "figlio tuo e di [NomeCogenitore]" (se maschio)
+     - "figlia tua e di" / "figlio tuo e di" in nero
+     - [NomeCogenitore] in rosso #FF6B6B se femmina, blu #4A90E2 se maschio (prendi sesso da profilo cogenitore in Firestore)
+   - Clic su card: push diretto a Dashboard di quel figlio
+
+4. Pairing multiplo cogenitori (modifica users e logica pairing):
+   - In users/{uid}: cambia pairedCogenitore da single uid a pairedCogenitori (array di uid, no limite – multipli pairing possibili)
+   - Nella sezione "Cogenitori" delle Impostazioni: mostra lista di tutti paired (nome/foto/sesso), pulsante "Aggiungi altro cogenitore" (inserisci codice 6 char), "Rimuovi" per singolo
+   - Pairing bidirezionale: aggiorna array pairedCogenitori in entrambi gli users
+
+5. Visibilità e pending changes per figli:
+   - In children/{childId}: cogenitori (array uid: sempre creatore + selected cogenitore/i)
+   - Query Home: mostra solo figli dove mio uid in cogenitori array
+   - Alla creazione/modifica figlio: crea pending change in users/{cogenitore uid}/pendingChanges = {childId, action: "add/edit_child", status: "pending", details: json del figlio}
+   - Cogenitore vede pending in "Notifiche" o sezione dedicata nelle Impostazioni: approva/rifiuta
+     - Approva: aggiorna children/cogenitori aggiungendo suo uid, rimuovi pending
+     - Rifiuta: rimuovi o notifica creatore
+   - Sync realtime: usa StreamBuilder su query filtrata
+
+Mantieni responsive, colori/animazioni soft. Usa Provider/Riverpod per stato (aggiorna pairedCogenitori, pending). Aggiungi dipendenze se manca (es. per notifiche se serve).
+
+Modifica file esistenti (home_screen.dart, child_card.dart, add_child_screen.dart, settings_screen.dart, models/user.dart, models/child.dart) e crea nuovi (es. pending_approvals_widget.dart). Inizia con queste integrazioni!

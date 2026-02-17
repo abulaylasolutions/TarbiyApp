@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { eq, or, inArray, sql } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes } from "@shared/schema";
-import type { User, Child, Note } from "@shared/schema";
+import { users, children, notes, pendingChanges } from "@shared/schema";
+import type { User, Child, Note, PendingChange } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -26,11 +26,26 @@ export async function generateUniqueInviteCode(): Promise<string> {
   return generateInviteCode() + Math.floor(Math.random() * 10);
 }
 
+function getPairedArray(user: User): string[] {
+  if (user.pairedCogenitori) {
+    try { return JSON.parse(user.pairedCogenitori); } catch {}
+  }
+  if (user.pairedCogenitore) return [user.pairedCogenitore];
+  return [];
+}
+
+function getCogenitoriArray(child: Child): string[] {
+  if (child.cogenitori) {
+    try { return JSON.parse(child.cogenitori); } catch {}
+  }
+  return [child.userId];
+}
+
 export async function createUser(email: string, hashedPassword: string): Promise<User> {
   const inviteCode = await generateUniqueInviteCode();
   const result = await db
     .insert(users)
-    .values({ email, password: hashedPassword, personalInviteCode: inviteCode })
+    .values({ email, password: hashedPassword, personalInviteCode: inviteCode, pairedCogenitori: "[]" })
     .returning();
   return result[0];
 }
@@ -51,6 +66,12 @@ export async function getUserByInviteCode(code: string): Promise<User | undefine
     .from(users)
     .where(eq(users.personalInviteCode, code));
   return result[0];
+}
+
+export async function getUsersByIds(ids: string[]): Promise<User[]> {
+  if (ids.length === 0) return [];
+  const result = await db.select().from(users).where(inArray(users.id, ids));
+  return result;
 }
 
 export async function updateUserProfile(
@@ -74,32 +95,63 @@ export async function updateUserPremium(id: string, isPremium: boolean): Promise
   return result[0];
 }
 
-export async function pairCogenitori(uid1: string, uid2: string): Promise<void> {
-  await db.update(users).set({ pairedCogenitore: uid2 }).where(eq(users.id, uid1));
-  await db.update(users).set({ pairedCogenitore: uid1 }).where(eq(users.id, uid2));
+export async function addCogenitore(uid: string, targetUid: string): Promise<void> {
+  const user = await getUserById(uid);
+  const target = await getUserById(targetUid);
+  if (!user || !target) return;
+
+  const userPaired = getPairedArray(user);
+  const targetPaired = getPairedArray(target);
+
+  if (!userPaired.includes(targetUid)) userPaired.push(targetUid);
+  if (!targetPaired.includes(uid)) targetPaired.push(uid);
+
+  await db.update(users).set({
+    pairedCogenitori: JSON.stringify(userPaired),
+    pairedCogenitore: userPaired[0] || null,
+  }).where(eq(users.id, uid));
+
+  await db.update(users).set({
+    pairedCogenitori: JSON.stringify(targetPaired),
+    pairedCogenitore: targetPaired[0] || null,
+  }).where(eq(users.id, targetUid));
 }
 
-export async function unpairCogenitore(uid: string): Promise<void> {
+export async function removeCogenitore(uid: string, targetUid: string): Promise<void> {
   const user = await getUserById(uid);
-  if (!user || !user.pairedCogenitore) return;
-  const partnerId = user.pairedCogenitore;
-  await db.update(users).set({ pairedCogenitore: null }).where(eq(users.id, uid));
-  await db.update(users).set({ pairedCogenitore: null }).where(eq(users.id, partnerId));
+  const target = await getUserById(targetUid);
+  if (!user || !target) return;
+
+  const userPaired = getPairedArray(user).filter(id => id !== targetUid);
+  const targetPaired = getPairedArray(target).filter(id => id !== uid);
+
+  await db.update(users).set({
+    pairedCogenitori: JSON.stringify(userPaired),
+    pairedCogenitore: userPaired[0] || null,
+  }).where(eq(users.id, uid));
+
+  await db.update(users).set({
+    pairedCogenitori: JSON.stringify(targetPaired),
+    pairedCogenitore: targetPaired[0] || null,
+  }).where(eq(users.id, targetUid));
+}
+
+export async function getPairedCogenitori(uid: string): Promise<User[]> {
+  const user = await getUserById(uid);
+  if (!user) return [];
+  const pairedIds = getPairedArray(user);
+  if (pairedIds.length === 0) return [];
+  return getUsersByIds(pairedIds);
 }
 
 export async function getChildrenForUser(userId: string): Promise<Child[]> {
-  const user = await getUserById(userId);
-  if (!user) return [];
-  const userIds = [userId];
-  if (user.pairedCogenitore) userIds.push(user.pairedCogenitore);
-
-  const allChildren: Child[] = [];
-  for (const uid of userIds) {
-    const result = await db.select().from(children).where(eq(children.userId, uid));
-    allChildren.push(...result);
-  }
+  const allChildren = await db.select().from(children);
+  const filtered = allChildren.filter(child => {
+    const cogs = getCogenitoriArray(child);
+    return cogs.includes(userId) || child.userId === userId;
+  });
   const uniqueMap = new Map<string, Child>();
-  for (const c of allChildren) uniqueMap.set(c.id, c);
+  for (const c of filtered) uniqueMap.set(c.id, c);
   return Array.from(uniqueMap.values()).sort(
     (a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
   );
@@ -112,18 +164,42 @@ export async function addChild(
   gender?: string,
   photoUri?: string,
   coParentName?: string,
-  cardColor?: string
+  cardColor?: string,
+  selectedCogenitori?: string[]
 ): Promise<Child> {
+  const cogenitoriArray = [userId];
+  if (selectedCogenitori) {
+    for (const cid of selectedCogenitori) {
+      if (!cogenitoriArray.includes(cid)) cogenitoriArray.push(cid);
+    }
+  }
   const result = await db
     .insert(children)
-    .values({ userId, name, birthDate, gender, photoUri, coParentName, cardColor })
+    .values({
+      userId,
+      name,
+      birthDate,
+      gender,
+      photoUri,
+      coParentName,
+      cardColor,
+      cogenitori: JSON.stringify(cogenitoriArray),
+    })
     .returning();
   return result[0];
 }
 
 export async function updateChild(
   id: string,
-  data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string }
+  data: {
+    name?: string;
+    birthDate?: string;
+    gender?: string;
+    photoUri?: string;
+    coParentName?: string;
+    cardColor?: string;
+    cogenitori?: string;
+  }
 ): Promise<Child> {
   const result = await db
     .update(children)
@@ -140,11 +216,11 @@ export async function removeChild(id: string): Promise<void> {
 export async function getNotesForUser(userId: string): Promise<Note[]> {
   const user = await getUserById(userId);
   if (!user) return [];
-  const userIds = [userId];
-  if (user.pairedCogenitore) userIds.push(user.pairedCogenitore);
+  const pairedIds = getPairedArray(user);
+  const allUserIds = [userId, ...pairedIds];
 
   const allNotes: Note[] = [];
-  for (const uid of userIds) {
+  for (const uid of allUserIds) {
     const result = await db.select().from(notes).where(eq(notes.userId, uid));
     allNotes.push(...result);
   }
@@ -184,4 +260,61 @@ export async function updateNote(
 
 export async function removeNote(id: string): Promise<void> {
   await db.delete(notes).where(eq(notes.id, id));
+}
+
+export async function createPendingChange(
+  userId: string,
+  targetUserId: string,
+  childId: string | null,
+  action: string,
+  details: string
+): Promise<PendingChange> {
+  const result = await db
+    .insert(pendingChanges)
+    .values({ userId, targetUserId, childId, action, status: "pending", details })
+    .returning();
+  return result[0];
+}
+
+export async function getPendingChangesForUser(userId: string): Promise<PendingChange[]> {
+  const result = await db
+    .select()
+    .from(pendingChanges)
+    .where(eq(pendingChanges.targetUserId, userId));
+  return result.filter(p => p.status === "pending").sort(
+    (a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+  );
+}
+
+export async function approvePendingChange(id: string): Promise<PendingChange> {
+  const pending = await db.select().from(pendingChanges).where(eq(pendingChanges.id, id));
+  if (!pending[0]) throw new Error("Pending change not found");
+  const change = pending[0];
+
+  if (change.action === "add_child" && change.childId) {
+    const child = await db.select().from(children).where(eq(children.id, change.childId));
+    if (child[0]) {
+      const cogs = getCogenitoriArray(child[0]);
+      if (!cogs.includes(change.targetUserId)) {
+        cogs.push(change.targetUserId);
+        await db.update(children).set({ cogenitori: JSON.stringify(cogs) }).where(eq(children.id, change.childId));
+      }
+    }
+  }
+
+  const result = await db
+    .update(pendingChanges)
+    .set({ status: "approved" })
+    .where(eq(pendingChanges.id, id))
+    .returning();
+  return result[0];
+}
+
+export async function rejectPendingChange(id: string): Promise<PendingChange> {
+  const result = await db
+    .update(pendingChanges)
+    .set({ status: "rejected" })
+    .where(eq(pendingChanges.id, id))
+    .returning();
+  return result[0];
 }

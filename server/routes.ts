@@ -9,10 +9,12 @@ import {
   getUserByEmail,
   getUserById,
   getUserByInviteCode,
+  getUsersByIds,
   updateUserProfile,
   updateUserPremium,
-  pairCogenitori,
-  unpairCogenitore,
+  addCogenitore,
+  removeCogenitore,
+  getPairedCogenitori,
   getChildrenForUser,
   addChild,
   updateChild,
@@ -21,6 +23,10 @@ import {
   addNote,
   updateNote,
   removeNote,
+  createPendingChange,
+  getPendingChangesForUser,
+  approvePendingChange,
+  rejectPendingChange,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -64,15 +70,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsed.success) {
         return res.status(400).json({ message: "Email e password richiesti (password min 6 caratteri)" });
       }
-
       const existing = await getUserByEmail(parsed.data.email);
       if (existing) {
         return res.status(409).json({ message: "Un account con questa email esiste già" });
       }
-
       const hashed = await bcrypt.hash(parsed.data.password, 10);
       const user = await createUser(parsed.data.email, hashed);
-
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
       return res.status(201).json(safeUser);
@@ -88,17 +91,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsed.success) {
         return res.status(400).json({ message: "Email e password richiesti" });
       }
-
       const user = await getUserByEmail(parsed.data.email);
       if (!user) {
         return res.status(401).json({ message: "Email o password non validi" });
       }
-
       const valid = await bcrypt.compare(parsed.data.password, user.password);
       if (!valid) {
         return res.status(401).json({ message: "Email o password non validi" });
       }
-
       req.session.userId = user.id;
       const { password: _, ...safeUser } = user;
       return res.json(safeUser);
@@ -158,6 +158,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/cogenitore", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const paired = await getPairedCogenitori(req.session.userId!);
+      const safePaired = paired.map(p => {
+        const { password: _, ...safe } = p;
+        return safe;
+      });
+      return res.json({ cogenitori: safePaired });
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
   app.post("/api/cogenitore/pair", requireAuth as any, async (req: Request, res: Response) => {
     try {
       const { inviteCode } = req.body;
@@ -174,16 +187,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Non puoi collegarti con te stesso" });
       }
 
-      const currentUser = await getUserById(req.session.userId!);
-      if (currentUser?.pairedCogenitore) {
-        return res.status(400).json({ message: "Sei già collegato con un cogenitore. Rimuovi prima il collegamento attuale." });
+      const currentPaired = await getPairedCogenitori(req.session.userId!);
+      if (currentPaired.some(p => p.id === targetUser.id)) {
+        return res.status(400).json({ message: "Sei già collegato con questo cogenitore" });
       }
 
-      if (targetUser.pairedCogenitore) {
-        return res.status(400).json({ message: "Questo utente è già collegato con un altro cogenitore" });
-      }
-
-      await pairCogenitori(req.session.userId!, targetUser.id);
+      await addCogenitore(req.session.userId!, targetUser.id);
 
       const { password: _, ...safeTarget } = targetUser;
       return res.json({ message: "Cogenitore collegato con successo!", cogenitore: safeTarget });
@@ -195,25 +204,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/cogenitore/unpair", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      await unpairCogenitore(req.session.userId!);
+      const { targetUserId } = req.body;
+      if (!targetUserId) {
+        return res.status(400).json({ message: "ID cogenitore richiesto" });
+      }
+      await removeCogenitore(req.session.userId!, targetUserId);
       return res.json({ message: "Collegamento rimosso" });
-    } catch (error) {
-      return res.status(500).json({ message: "Errore del server" });
-    }
-  });
-
-  app.get("/api/cogenitore", requireAuth as any, async (req: Request, res: Response) => {
-    try {
-      const user = await getUserById(req.session.userId!);
-      if (!user?.pairedCogenitore) {
-        return res.json({ paired: false, cogenitore: null });
-      }
-      const partner = await getUserById(user.pairedCogenitore);
-      if (!partner) {
-        return res.json({ paired: false, cogenitore: null });
-      }
-      const { password: _, ...safePartner } = partner;
-      return res.json({ paired: true, cogenitore: safePartner });
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }
@@ -230,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/children", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { name, birthDate, gender, photoUri, coParentName, cardColor } = req.body;
+      const { name, birthDate, gender, photoUri, coParentName, cardColor, selectedCogenitori } = req.body;
       if (!name || !birthDate) {
         return res.status(400).json({ message: "Nome e data di nascita richiesti" });
       }
@@ -244,7 +240,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const child = await addChild(req.session.userId!, name, birthDate, gender, photoUri, coParentName, cardColor);
+      const child = await addChild(
+        req.session.userId!, name, birthDate, gender, photoUri, coParentName, cardColor, selectedCogenitori
+      );
+
+      if (selectedCogenitori && Array.isArray(selectedCogenitori)) {
+        for (const cogId of selectedCogenitori) {
+          if (cogId !== req.session.userId) {
+            await createPendingChange(
+              req.session.userId!, cogId, child.id, "add_child",
+              JSON.stringify({ childName: name, childGender: gender })
+            );
+          }
+        }
+      }
+
       return res.status(201).json(child);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -253,8 +263,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/children/:id", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { name, birthDate, gender, photoUri, coParentName, cardColor } = req.body;
-      const child = await updateChild(req.params.id, { name, birthDate, gender, photoUri, coParentName, cardColor });
+      const { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori } = req.body;
+      const child = await updateChild(req.params.id, { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori });
       return res.json(child);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -306,6 +316,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await removeNote(req.params.id);
       return res.json({ message: "Nota rimossa" });
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.get("/api/pending", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getPendingChangesForUser(req.session.userId!);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/pending/:id/approve", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await approvePendingChange(req.params.id);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/pending/:id/reject", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await rejectPendingChange(req.params.id);
+      return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }

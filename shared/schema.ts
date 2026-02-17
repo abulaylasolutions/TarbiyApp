@@ -15,6 +15,7 @@ export const users = pgTable("users", {
   photoUrl: text("photo_url"),
   personalInviteCode: text("personal_invite_code").unique(),
   pairedCogenitore: text("paired_cogenitore"),
+  pairedCogenitori: text("paired_cogenitori"),
   isProfileComplete: boolean("is_profile_complete").default(false),
   isPremium: boolean("is_premium").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -30,6 +31,7 @@ export const children = pgTable("children", {
   gender: text("gender"),
   photoUri: text("photo_uri"),
   coParentName: text("co_parent_name"),
+  cogenitori: text("cogenitori"),
   cardColor: text("card_color"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -44,6 +46,19 @@ export const notes = pgTable("notes", {
   rotation: text("rotation").notNull(),
   author: text("author").notNull(),
   tags: text("tags"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const pendingChanges = pgTable("pending_changes", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  targetUserId: text("target_user_id").notNull(),
+  childId: text("child_id"),
+  action: text("action").notNull(),
+  status: text("status").notNull().default("pending"),
+  details: text("details"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -73,3 +88,4 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Child = typeof children.$inferSelect;
 export type Note = typeof notes.$inferSelect;
+export type PendingChange = typeof pendingChanges.$inferSelect;
