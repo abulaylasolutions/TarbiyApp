@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, ZoomIn, FadeInDown } from 'react-native-reanimated';
 import { useApp, Note, Child } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 import { apiRequest } from '@/lib/query-client';
 import Colors from '@/constants/colors';
 
@@ -44,16 +45,17 @@ interface NoteCardProps {
 }
 
 function NoteCard({ note, onPress, onDelete }: NoteCardProps) {
+  const { t } = useI18n();
   const rotation = parseFloat(note.rotation) || 0;
 
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
-      'Elimina nota',
-      'Vuoi eliminare questa nota?',
+      t('deleteNote'),
+      t('deleteNoteConfirm'),
       [
-        { text: 'Annulla', style: 'cancel' },
-        { text: 'Elimina', style: 'destructive', onPress: () => onDelete(note.id) },
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('delete'), style: 'destructive', onPress: () => onDelete(note.id) },
       ]
     );
   };
@@ -153,6 +155,7 @@ function CommentBubble({ comment, isMine, index }: CommentBubbleProps) {
 
 export default function BachecaScreen() {
   const insets = useSafeAreaInsets();
+  const { t, isRTL } = useI18n();
   const { notes, children, addNote, updateNote, removeNote } = useApp();
   const { user } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -249,7 +252,7 @@ export default function BachecaScreen() {
   const rightColumn = notes.filter((_, i) => i % 2 === 1);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <LinearGradient
         colors={[Colors.creamBeige, Colors.background]}
         style={StyleSheet.absoluteFill}
@@ -262,7 +265,7 @@ export default function BachecaScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>Bacheca</Text>
+            <Text style={styles.headerTitle}>{t('bacheca_title')}</Text>
             <Text style={styles.headerSubtitle}>Note condivise tra genitori</Text>
           </View>
         </View>
@@ -318,10 +321,10 @@ export default function BachecaScreen() {
             style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
           >
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Nuova nota</Text>
+            <Text style={styles.modalTitle}>{t('writeNote')}</Text>
             <TextInput
               style={styles.noteInput}
-              placeholder="Scrivi una nota..."
+              placeholder={t('writeNote')}
               placeholderTextColor={Colors.textMuted}
               multiline
               value={noteText}
@@ -332,7 +335,7 @@ export default function BachecaScreen() {
 
             {children.length > 0 && (
               <>
-                <Text style={styles.tagSectionTitle}>Collega ai figli</Text>
+                <Text style={styles.tagSectionTitle}>{t('tags')}</Text>
                 <View style={styles.tagContainer}>
                   {children.map(child => (
                     <ChildTag
@@ -348,7 +351,7 @@ export default function BachecaScreen() {
 
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAddModal(false)} style={styles.modalCancelBtn}>
-                <Text style={styles.modalCancelText}>Annulla</Text>
+                <Text style={styles.modalCancelText}>{t('cancel')}</Text>
               </Pressable>
               <Pressable
                 onPress={handleAddNote}
@@ -405,7 +408,7 @@ export default function BachecaScreen() {
                   </View>
                 )}
 
-                <Text style={styles.detailEditLabel}>Testo della nota</Text>
+                <Text style={styles.detailEditLabel}>{t('noteDetail')}</Text>
                 <TextInput
                   style={styles.detailTextInput}
                   value={editText}
@@ -416,7 +419,7 @@ export default function BachecaScreen() {
 
                 {children.length > 0 && (
                   <>
-                    <Text style={styles.tagSectionTitle}>Tag figli</Text>
+                    <Text style={styles.tagSectionTitle}>{t('tags')}</Text>
                     <View style={styles.tagContainer}>
                       {children.map(child => (
                         <ChildTag
@@ -436,12 +439,12 @@ export default function BachecaScreen() {
                   disabled={!editText.trim()}
                 >
                   <Ionicons name="save" size={20} color={Colors.white} />
-                  <Text style={styles.saveEditText}>Salva modifiche</Text>
+                  <Text style={styles.saveEditText}>{t('save')}</Text>
                 </Pressable>
 
                 <View style={styles.commentsSeparator}>
                   <View style={styles.separatorLine} />
-                  <Text style={styles.separatorText}>Commenti</Text>
+                  <Text style={styles.separatorText}>{t('comments')}</Text>
                   <View style={styles.separatorLine} />
                 </View>
 
@@ -450,7 +453,7 @@ export default function BachecaScreen() {
                 ) : commentsList.length === 0 ? (
                   <View style={styles.noCommentsWrap}>
                     <Ionicons name="chatbubble-outline" size={24} color={Colors.textMuted} />
-                    <Text style={styles.noCommentsText}>Nessun commento ancora</Text>
+                    <Text style={styles.noCommentsText}>{t('noComments')}</Text>
                   </View>
                 ) : (
                   <View style={styles.commentsListWrap}>
@@ -471,7 +474,7 @@ export default function BachecaScreen() {
                   style={styles.commentInput}
                   value={newComment}
                   onChangeText={setNewComment}
-                  placeholder="Scrivi un commento..."
+                  placeholder={t('writeComment')}
                   placeholderTextColor={Colors.textMuted}
                   maxLength={300}
                   multiline

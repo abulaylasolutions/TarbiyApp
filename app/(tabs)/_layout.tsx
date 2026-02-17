@@ -8,25 +8,27 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
 import Colors from "@/constants/colors";
 import { AppProvider } from "@/lib/app-context";
+import { useI18n } from "@/lib/i18n";
 
 function NativeTabLayout() {
+  const { t } = useI18n();
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
+        <Label>{t('home')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="dashboard">
         <Icon sf={{ default: "heart", selected: "heart.fill" }} />
-        <Label>Dashboard</Label>
+        <Label>{t('dashboard')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="bacheca">
         <Icon sf={{ default: "pin", selected: "pin.fill" }} />
-        <Label>Bacheca</Label>
+        <Label>{t('bacheca')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-        <Label>Impostazioni</Label>
+        <Label>{t('settings')}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -36,6 +38,7 @@ function ClassicTabLayout() {
   const isWeb = Platform.OS === "web";
   const isIOS = Platform.OS === "ios";
   const safeAreaInsets = useSafeAreaInsets();
+  const { t } = useI18n();
 
   return (
     <Tabs
@@ -80,7 +83,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: t('home'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "home" : "home-outline"}
@@ -93,7 +96,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="dashboard"
         options={{
-          title: "Dashboard",
+          title: t('dashboard'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "heart" : "heart-outline"}
@@ -106,7 +109,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="bacheca"
         options={{
-          title: "Bacheca",
+          title: t('bacheca'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "document-text" : "document-text-outline"}
@@ -119,7 +122,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Impostazioni",
+          title: t('settings'),
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "settings" : "settings-outline"}
