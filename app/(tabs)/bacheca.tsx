@@ -16,26 +16,24 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
-import { useApp } from '@/lib/app-context';
+import { useApp, Note, Child } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2;
 
+const NOTE_COLORS = ['#FFD3B6', '#C7CEEA', '#A8E6CF', '#FFF5E1', '#FFE8D9', '#D4F5E5', '#E3E7F5', '#E0BBE4'];
+
 interface NoteCardProps {
-  note: {
-    id: string;
-    text: string;
-    color: string;
-    rotation: number;
-    createdAt: string;
-    author: string;
-  };
+  note: Note;
+  onPress: (note: Note) => void;
   onDelete: (id: string) => void;
 }
 
-function NoteCard({ note, onDelete }: NoteCardProps) {
+function NoteCard({ note, onPress, onDelete }: NoteCardProps) {
+  const rotation = parseFloat(note.rotation) || 0;
+
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
@@ -56,13 +54,17 @@ function NoteCard({ note, onDelete }: NoteCardProps) {
   return (
     <Animated.View entering={ZoomIn.duration(300)} style={{ width: CARD_WIDTH }}>
       <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress(note);
+        }}
         onLongPress={handleLongPress}
         style={({ pressed }) => [
           styles.noteCard,
           {
             backgroundColor: note.color,
             transform: [
-              { rotate: `${note.rotation}deg` },
+              { rotate: `${rotation}deg` },
               { scale: pressed ? 0.96 : 1 },
             ],
           },
@@ -80,21 +82,90 @@ function NoteCard({ note, onDelete }: NoteCardProps) {
   );
 }
 
+interface ChildTagProps {
+  child: Child;
+  isSelected: boolean;
+  onToggle: (id: string) => void;
+}
+
+function ChildTag({ child, isSelected, onToggle }: ChildTagProps) {
+  const tagColor = child.cardColor || '#A8E6CF';
+  return (
+    <Pressable
+      onPress={() => onToggle(child.id)}
+      style={[
+        styles.childTag,
+        { backgroundColor: isSelected ? tagColor : Colors.creamBeige },
+        isSelected && { borderColor: tagColor, borderWidth: 2 },
+      ]}
+    >
+      <Text style={[styles.childTagText, isSelected && { color: Colors.textPrimary, fontFamily: 'Nunito_700Bold' }]}>
+        {child.name}
+      </Text>
+      {isSelected && <Ionicons name="checkmark-circle" size={16} color={Colors.textPrimary} />}
+    </Pressable>
+  );
+}
+
 export default function BachecaScreen() {
   const insets = useSafeAreaInsets();
-  const { notes, addNote, removeNote } = useApp();
+  const { notes, children, addNote, updateNote, removeNote } = useApp();
   const { user } = useAuth();
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [noteText, setNoteText] = useState('');
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [editText, setEditText] = useState('');
+  const [editTags, setEditTags] = useState<string[]>([]);
+  const [addTags, setAddTags] = useState<string[]>([]);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
-    await addNote(noteText.trim(), user?.name || 'Genitore');
+    const tagsStr = addTags.length > 0 ? JSON.stringify(addTags) : undefined;
+    await addNote(noteText.trim(), user?.name || 'Genitore', tagsStr);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNoteText('');
-    setShowModal(false);
+    setAddTags([]);
+    setShowAddModal(false);
+  };
+
+  const openDetail = (note: Note) => {
+    setSelectedNote(note);
+    setEditText(note.text);
+    try {
+      setEditTags(note.tags ? JSON.parse(note.tags) : []);
+    } catch {
+      setEditTags([]);
+    }
+    setShowDetailModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedNote || !editText.trim()) return;
+    const tagsStr = editTags.length > 0 ? JSON.stringify(editTags) : undefined;
+    await updateNote(selectedNote.id, { text: editText.trim(), tags: tagsStr });
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setShowDetailModal(false);
+  };
+
+  const toggleTag = (id: string, isAdd: boolean) => {
+    if (isAdd) {
+      setAddTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+    } else {
+      setEditTags(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+    }
+  };
+
+  const getTaggedChildNames = (note: Note): string[] => {
+    if (!note.tags) return [];
+    try {
+      const tagIds: string[] = JSON.parse(note.tags);
+      return tagIds
+        .map(id => children.find(c => c.id === id)?.name)
+        .filter(Boolean) as string[];
+    } catch { return []; }
   };
 
   const leftColumn = notes.filter((_, i) => i % 2 === 0);
@@ -103,7 +174,7 @@ export default function BachecaScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={[Colors.creamBeige, Colors.background] as const}
+        colors={[Colors.creamBeige, Colors.background]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -129,12 +200,12 @@ export default function BachecaScreen() {
           <View style={styles.masonryContainer}>
             <View style={styles.column}>
               {leftColumn.map(note => (
-                <NoteCard key={note.id} note={note} onDelete={removeNote} />
+                <NoteCard key={note.id} note={note} onPress={openDetail} onDelete={removeNote} />
               ))}
             </View>
             <View style={styles.column}>
               {rightColumn.map(note => (
-                <NoteCard key={note.id} note={note} onDelete={removeNote} />
+                <NoteCard key={note.id} note={note} onPress={openDetail} onDelete={removeNote} />
               ))}
             </View>
           </View>
@@ -146,7 +217,9 @@ export default function BachecaScreen() {
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setShowModal(true);
+          setNoteText('');
+          setAddTags([]);
+          setShowAddModal(true);
         }}
         style={({ pressed }) => [
           styles.fab,
@@ -159,9 +232,9 @@ export default function BachecaScreen() {
         <Ionicons name="add" size={28} color={Colors.white} />
       </Pressable>
 
-      <Modal visible={showModal} animationType="slide" transparent>
+      <Modal visible={showAddModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalDismiss} onPress={() => setShowModal(false)} />
+          <Pressable style={styles.modalDismiss} onPress={() => setShowAddModal(false)} />
           <Animated.View
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(150)}
@@ -177,21 +250,32 @@ export default function BachecaScreen() {
               value={noteText}
               onChangeText={setNoteText}
               autoFocus
-              maxLength={300}
+              maxLength={500}
             />
+
+            {children.length > 0 && (
+              <>
+                <Text style={styles.tagSectionTitle}>Collega ai figli</Text>
+                <View style={styles.tagContainer}>
+                  {children.map(child => (
+                    <ChildTag
+                      key={child.id}
+                      child={child}
+                      isSelected={addTags.includes(child.id)}
+                      onToggle={(id) => toggleTag(id, true)}
+                    />
+                  ))}
+                </View>
+              </>
+            )}
+
             <View style={styles.modalActions}>
-              <Pressable
-                onPress={() => setShowModal(false)}
-                style={styles.modalCancelBtn}
-              >
+              <Pressable onPress={() => setShowAddModal(false)} style={styles.modalCancelBtn}>
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </Pressable>
               <Pressable
                 onPress={handleAddNote}
-                style={[
-                  styles.modalSaveBtn,
-                  !noteText.trim() && styles.modalSaveBtnDisabled,
-                ]}
+                style={[styles.modalSaveBtn, !noteText.trim() && styles.modalSaveBtnDisabled]}
                 disabled={!noteText.trim()}
               >
                 <Ionicons name="checkmark" size={22} color={Colors.white} />
@@ -200,21 +284,94 @@ export default function BachecaScreen() {
           </Animated.View>
         </View>
       </Modal>
+
+      <Modal visible={showDetailModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalDismiss} onPress={() => setShowDetailModal(false)} />
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(150)}
+            style={[styles.detailContent, { paddingBottom: insets.bottom + 16 }]}
+          >
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              <View style={styles.modalHandle} />
+
+              {selectedNote && (
+                <View
+                  style={[
+                    styles.detailNotePreview,
+                    { backgroundColor: selectedNote.color },
+                  ]}
+                >
+                  <Text style={styles.detailAuthor}>{selectedNote.author}</Text>
+                  <Text style={styles.detailDate}>
+                    {new Date(selectedNote.createdAt).toLocaleDateString('it-IT', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric',
+                    })}
+                  </Text>
+                  {getTaggedChildNames(selectedNote).length > 0 && (
+                    <View style={styles.detailTagsPreview}>
+                      {getTaggedChildNames(selectedNote).map((name, i) => (
+                        <View key={i} style={styles.detailTagBadge}>
+                          <Text style={styles.detailTagBadgeText}>{name}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+
+              <Text style={styles.detailEditLabel}>Testo della nota</Text>
+              <TextInput
+                style={styles.detailTextInput}
+                value={editText}
+                onChangeText={setEditText}
+                multiline
+                maxLength={500}
+              />
+
+              {children.length > 0 && (
+                <>
+                  <Text style={styles.tagSectionTitle}>Tag figli</Text>
+                  <View style={styles.tagContainer}>
+                    {children.map(child => (
+                      <ChildTag
+                        key={child.id}
+                        child={child}
+                        isSelected={editTags.includes(child.id)}
+                        onToggle={(id) => toggleTag(id, false)}
+                      />
+                    ))}
+                  </View>
+                </>
+              )}
+
+              <Pressable
+                onPress={handleSaveEdit}
+                style={[styles.saveEditBtn, !editText.trim() && { opacity: 0.5 }]}
+                disabled={!editText.trim()}
+              >
+                <Ionicons name="save" size={20} color={Colors.white} />
+                <Text style={styles.saveEditText}>Salva modifiche</Text>
+              </Pressable>
+
+              <Pressable onPress={() => setShowDetailModal(false)} style={styles.closeDetailBtn}>
+                <Text style={styles.closeDetailText}>Chiudi</Text>
+              </Pressable>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 16,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollView: { flex: 1 },
+  content: { paddingHorizontal: 16 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -222,25 +379,10 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     paddingHorizontal: 4,
   },
-  headerTitle: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 28,
-    color: Colors.textPrimary,
-  },
-  headerSubtitle: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  masonryContainer: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  column: {
-    flex: 1,
-    gap: 12,
-  },
+  headerTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 28, color: Colors.textPrimary },
+  headerSubtitle: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textSecondary, marginTop: 2 },
+  masonryContainer: { flexDirection: 'row', gap: 12 },
+  column: { flex: 1, gap: 12 },
   noteCard: {
     borderRadius: 16,
     padding: 16,
@@ -252,68 +394,21 @@ const styles = StyleSheet.create({
     minHeight: 100,
     justifyContent: 'space-between',
   },
-  noteText: {
-    fontFamily: 'Nunito_500Medium',
-    fontSize: 14,
-    color: Colors.textPrimary,
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  noteFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  noteAuthor: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  noteDate: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 11,
-    color: Colors.textMuted,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-    gap: 8,
-  },
-  emptyText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 18,
-    color: Colors.textSecondary,
-    marginTop: 12,
-  },
-  emptySubtext: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
+  noteText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textPrimary, lineHeight: 20, marginBottom: 12 },
+  noteFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  noteAuthor: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: Colors.textSecondary },
+  noteDate: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 8 },
+  emptyText: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textSecondary, marginTop: 12 },
+  emptySubtext: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textMuted },
   fab: {
-    position: 'absolute',
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.peachPink,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.peachPinkDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
+    position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28,
+    backgroundColor: Colors.peachPink, alignItems: 'center', justifyContent: 'center',
+    shadowColor: Colors.peachPinkDark, shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 8, elevation: 6,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalDismiss: {
-    flex: 1,
-  },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalDismiss: { flex: 1 },
   modalContent: {
     backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
@@ -321,53 +416,69 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.textMuted,
-    alignSelf: 'center',
-    marginBottom: 20,
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: 20,
   },
-  modalTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
-    color: Colors.textPrimary,
-    marginBottom: 16,
-  },
+  modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 16 },
   noteInput: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 16,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.creamBeige,
-    borderRadius: 16,
-    padding: 16,
-    minHeight: 120,
-    textAlignVertical: 'top',
+    fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary,
+    backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 16,
+    minHeight: 120, textAlignVertical: 'top',
   },
+  tagSectionTitle: {
+    fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary,
+    marginTop: 16, marginBottom: 8,
+  },
+  tagContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  childTag: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+  },
+  childTagText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.textSecondary },
   modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 16,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 16,
   },
-  modalCancelBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  modalCancelText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
+  modalCancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
+  modalCancelText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textSecondary },
   modalSaveBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.mintGreen,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: Colors.mintGreen, alignItems: 'center', justifyContent: 'center',
   },
-  modalSaveBtnDisabled: {
-    opacity: 0.5,
+  modalSaveBtnDisabled: { opacity: 0.5 },
+  detailContent: {
+    backgroundColor: Colors.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '85%',
   },
+  detailNotePreview: {
+    borderRadius: 20, padding: 20, marginBottom: 20,
+    transform: [{ rotate: '-1deg' }],
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1, shadowRadius: 8, elevation: 3,
+  },
+  detailAuthor: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary },
+  detailDate: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  detailTagsPreview: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 },
+  detailTagBadge: {
+    backgroundColor: 'rgba(255,255,255,0.6)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12,
+  },
+  detailTagBadgeText: { fontFamily: 'Nunito_600SemiBold', fontSize: 11, color: Colors.textPrimary },
+  detailEditLabel: {
+    fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8,
+  },
+  detailTextInput: {
+    fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary,
+    backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 16,
+    minHeight: 120, textAlignVertical: 'top',
+  },
+  saveEditBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: Colors.mintGreen, paddingVertical: 16, borderRadius: 20,
+    marginTop: 20,
+  },
+  saveEditText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
+  closeDetailBtn: { alignItems: 'center', paddingVertical: 14 },
+  closeDetailText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textMuted },
 });
