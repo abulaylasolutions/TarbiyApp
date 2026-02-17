@@ -422,7 +422,7 @@ export default function HomeScreen() {
       <Modal visible={showModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowModal(false)} />
-          <Animated.View
+          <ReAnimated.View
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(150)}
             style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
@@ -575,7 +575,7 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
             </ScrollView>
-          </Animated.View>
+          </ReAnimated.View>
         </View>
       </Modal>
     </View>
