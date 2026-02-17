@@ -23,6 +23,9 @@ import {
   addNote,
   updateNote,
   removeNote,
+  getCommentsForNote,
+  addComment,
+  removeComment,
   createPendingChange,
   getPendingChangesForUser,
   approvePendingChange,
@@ -316,6 +319,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       await removeNote(req.params.id as string);
       return res.json({ message: "Nota rimossa" });
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.get("/api/notes/:noteId/comments", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getCommentsForNote(req.params.noteId as string);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/notes/:noteId/comments", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { text } = req.body;
+      if (!text || !text.trim()) {
+        return res.status(400).json({ message: "Testo richiesto" });
+      }
+      const user = await getUserById(req.session.userId!);
+      const authorName = user?.name || "Genitore";
+      const comment = await addComment(req.params.noteId as string, req.session.userId!, authorName, text.trim());
+      return res.status(201).json(comment);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.delete("/api/comments/:id", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      await removeComment(req.params.id as string);
+      return res.json({ message: "Commento rimosso" });
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }

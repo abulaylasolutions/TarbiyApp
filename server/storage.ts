@@ -1,7 +1,7 @@
 import { eq, or, inArray, sql } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes, pendingChanges } from "@shared/schema";
-import type { User, Child, Note, PendingChange } from "@shared/schema";
+import { users, children, notes, comments, pendingChanges } from "@shared/schema";
+import type { User, Child, Note, Comment, PendingChange } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -317,4 +317,31 @@ export async function rejectPendingChange(id: string): Promise<PendingChange> {
     .where(eq(pendingChanges.id, id))
     .returning();
   return result[0];
+}
+
+export async function getCommentsForNote(noteId: string): Promise<Comment[]> {
+  const result = await db
+    .select()
+    .from(comments)
+    .where(eq(comments.noteId, noteId));
+  return result.sort(
+    (a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime()
+  );
+}
+
+export async function addComment(
+  noteId: string,
+  userId: string,
+  authorName: string,
+  text: string
+): Promise<Comment> {
+  const result = await db
+    .insert(comments)
+    .values({ noteId, userId, authorName, text })
+    .returning();
+  return result[0];
+}
+
+export async function removeComment(id: string): Promise<void> {
+  await db.delete(comments).where(eq(comments.id, id));
 }

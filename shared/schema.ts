@@ -49,6 +49,17 @@ export const notes = pgTable("notes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const comments = pgTable("comments", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  noteId: text("note_id").notNull(),
+  userId: text("user_id").notNull(),
+  authorName: text("author_name").notNull(),
+  text: text("text").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const pendingChanges = pgTable("pending_changes", {
   id: varchar("id")
     .primaryKey()
@@ -88,4 +99,5 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 export type Child = typeof children.$inferSelect;
 export type Note = typeof notes.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
 export type PendingChange = typeof pendingChanges.$inferSelect;

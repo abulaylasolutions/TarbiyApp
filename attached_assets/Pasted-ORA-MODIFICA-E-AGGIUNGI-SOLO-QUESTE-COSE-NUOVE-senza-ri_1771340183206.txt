@@ -1,0 +1,33 @@
+ORA MODIFICA E AGGIUNGI SOLO QUESTE COSE NUOVE, senza riscrivere l'intera app:
+
+1. Bacheca – aggiungi commenti alle note:
+   - Per ogni nota (card/post-it): aggiungi sezione commenti (lista scrollabile sotto il testo nota)
+   - Nella vista dettaglio nota: TextField per nuovo commento + pulsante "Aggiungi commento" (salva in subcollection Firestore notes/{noteId}/comments con uid autore, testo, timestamp)
+   - Mostra commenti in ordine cronologico (StreamBuilder realtime)
+   - Ogni commento: nome autore, testo, data – stile bubble chat pastello, allineato left/right se mio/altrui
+
+2. Home – modifica/elimina figli con swipe:
+   - Nelle card figli: implementa Dismissible widget (swipe left/right)
+     - Swipe sinistra: opzione "Modifica" (apri schermata modifica figlio)
+     - Swipe destra: opzione "Elimina" (dialog conferma, poi rimuovi da Firestore con check se approvato da cogenitori)
+   - Background swipe: icona matita per modifica (oro tenue), icona cestino per elimina (rosso soft)
+
+3. Sincronia foto profilo figlio:
+   - Fixa sync: quando carichi foto (image_picker + Storage), salva URL in children/photoUrl e usa StreamBuilder in Home/Dashboard per refresh realtime
+   - Se foto non si vede per cogenitori: assicurati query children includa photoUrl e usa CachedNetworkImage per loading
+
+4. Impostazioni – modifica sezione Account:
+   - Aggiungi o espandi "Account" (cliccabile): apri schermata con:
+     - Nome (TextField modificabile, salva in users/displayName)
+     - Foto profilo (image_picker + Storage, salva URL in users/photoUrl)
+     - Data di nascita (date picker, salva in users/birthDate)
+   - Salva cambiamenti con pulsante "Aggiorna profilo" – aggiorna Firestore realtime
+
+5. Fix login Google/Facebook:
+   - Aggiungi configurazione OAuth mancante: guida utente su console.firebase.google.com per abilitare Google/Facebook providers
+   - Nel codice: aggiungi error handling per OAuth (es. if error "auth/invalid-credential" mostra Alert "Configura chiavi OAuth in Firebase console")
+   - Assumi dipendenze già aggiunte (google_sign_in, flutter_facebook_auth); se errore, aggiungi try-catch in signInWithGoogle/Facebook e mostra SnackBar con messaggio errore
+
+Mantieni responsive, colori/animazioni soft. Usa Provider/Riverpod per stato. Aggiungi dipendenze se manca (es. cached_network_image per foto).
+
+Modifica file esistenti (bacheca_screen.dart, note_detail.dart, home_screen.dart, child_card.dart, settings_screen.dart, auth_service.dart) e crea nuovi (es. account_edit_screen.dart, comment_widget.dart). Inizia con queste integrazioni!
