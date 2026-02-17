@@ -1,0 +1,26 @@
+ORA MODIFICA E AGGIUNGI SOLO QUESTE COSE NUOVE, senza riscrivere l'intera app:
+
+1. Home – modifica swipe per card figli:
+   - Cambia Dismissible: swipe verso destra (invece di sinistra) per mostrare opzioni "Modifica" e "Elimina"
+     - Modifica: apri schermata modifica figlio
+     - Elimina: dialog conferma, rimuovi da Firestore (con check pending per cogenitori se applicabile)
+   - Background swipe destra: icona matita (oro tenue) per Modifica, cestino (rosso soft) per Elimina
+
+2. Fix sincronia foto:
+   - Assicura che foto figlio (photoUrl in children) sia visibile per tutti cogenitori: aggiorna query Home/Dashboard con realtime sync (StreamBuilder)
+   - Aggiungi visibilità foto cogenitore: in card figlio e Dashboard, mostra foto del cogenitore accanto a nome (CachedNetworkImage, prendi da users/photoUrl del paired uid)
+
+3. Dashboard – modifiche visive:
+   - Applica lo stesso colore card (da children/cardColor) come sfondo o accento principale nella Dashboard del figlio
+   - Mostra foto profilo figlio (grande rotonda in header, da children/photoUrl) – sync realtime
+
+4. Lingue – supporto multilingua:
+   - Aggiungi opzione lingua nelle Impostazioni: Italiano (default), English, Arabic
+     - Usa flutter_localizations e intl per traduzioni (crea file arb per EN e AR)
+     - Per Arabic: supporto RTL completo (textDirection: TextDirection.rtl per tutta l'app quando selezionato)
+     - Cambia lingua: salva in users/preferredLanguage, riavvia app o hot reload UI (usa Localizations.delegate)
+   - Traduci testi base (es. "Home" → "الرئيسية" in AR, "Home" in EN; "Dashboard" → "لوحة التحكم" / "Dashboard")
+
+Mantieni responsive, colori/animazioni soft. Usa Provider/Riverpod per stato lingua e refresh UI. Aggiungi dipendenze se manca (flutter_localizations, intl, cached_network_image).
+
+Modifica file esistenti (home_screen.dart, child_card.dart, dashboard_screen.dart, settings_screen.dart, main.dart per localizations) e crea nuovi (es. language_provider.dart, arb files placeholder con traduzioni base). Inizia con queste integrazioni!

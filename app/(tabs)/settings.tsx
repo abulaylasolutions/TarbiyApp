@@ -24,6 +24,7 @@ import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useApp, CogenitoreInfo } from '@/lib/app-context';
 import { apiRequest } from '@/lib/query-client';
+import { useI18n, getLanguageLabel, Language } from '@/lib/i18n';
 import Colors from '@/constants/colors';
 
 interface SettingsRowProps {
@@ -61,6 +62,7 @@ function SettingsRow({ icon, iconColor, iconBg, label, value, onPress, isLast }:
 function CogenitoriSection() {
   const { user, refreshUser } = useAuth();
   const { cogenitori, refreshCogenitori } = useApp();
+  const { t } = useI18n();
   const [inviteCodeInput, setInviteCodeInput] = useState('');
   const [pairing, setPairing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -68,7 +70,7 @@ function CogenitoriSection() {
   const handlePair = async () => {
     const code = inviteCodeInput.trim().toUpperCase();
     if (code.length !== 6) {
-      setErrorMsg('Il codice deve essere di 6 caratteri');
+      setErrorMsg(t('codeMustBe6'));
       return;
     }
     setErrorMsg('');
@@ -78,7 +80,7 @@ function CogenitoriSection() {
       const res = await apiRequest('POST', '/api/cogenitore/pair', { inviteCode: code });
       const data = await res.json();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Collegato!', data.message || 'Cogenitore collegato con successo!');
+      Alert.alert(t('connected'), data.message || t('coParentConnected'));
       setInviteCodeInput('');
       await refreshCogenitori();
       await refreshUser();
@@ -93,12 +95,12 @@ function CogenitoriSection() {
 
   const handleUnpair = (cog: CogenitoreInfo) => {
     Alert.alert(
-      'Rimuovi collegamento',
-      `Rimuovere il collegamento con ${cog.name || cog.email}?`,
+      t('removeConnection'),
+      `${t('removeConnectionWith')} ${cog.name || cog.email}?`,
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Rimuovi',
+          text: t('remove'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -117,7 +119,7 @@ function CogenitoriSection() {
     if (user?.personalInviteCode) {
       await Clipboard.setStringAsync(user.personalInviteCode);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert('Copiato!', 'Codice invito copiato negli appunti');
+      Alert.alert(t('copied'), t('inviteCodeCopied'));
     }
   };
 
@@ -125,12 +127,12 @@ function CogenitoriSection() {
     <View style={styles.cogenitoreCard}>
       <View style={styles.cogenitoreHeader}>
         <Ionicons name="people" size={20} color={Colors.skyBlueDark} />
-        <Text style={styles.cogenitoreTitle}>Cogenitori</Text>
+        <Text style={styles.cogenitoreTitle}>{t('coParents')}</Text>
       </View>
 
       <Pressable onPress={copyInviteCode} style={styles.inviteCodeBox}>
         <View>
-          <Text style={styles.inviteCodeLabel}>Il tuo codice invito</Text>
+          <Text style={styles.inviteCodeLabel}>{t('yourInviteCode')}</Text>
           <Text style={styles.inviteCodeValue}>{user?.personalInviteCode || '------'}</Text>
         </View>
         <Ionicons name="copy-outline" size={20} color={Colors.mintGreenDark} />
@@ -155,8 +157,8 @@ function CogenitoriSection() {
                   <View style={styles.pairedInfo}>
                     <Text style={styles.pairedName}>{cog.name || cog.email}</Text>
                     <Text style={styles.pairedGender}>
-                      {cog.gender === 'maschio' ? 'Papa' :
-                       cog.gender === 'femmina' ? 'Mamma' : 'Cogenitore'}
+                      {cog.gender === 'maschio' ? t('dad') :
+                       cog.gender === 'femmina' ? t('mom') : t('coParentLabel')}
                     </Text>
                   </View>
                   <Pressable
@@ -175,8 +177,8 @@ function CogenitoriSection() {
       <View style={styles.addCogenitoreSection}>
         <Text style={styles.addCogLabel}>
           {cogenitori.length === 0
-            ? 'Collega il primo cogenitore'
-            : 'Aggiungi altro cogenitore'}
+            ? t('connectFirstCoParent')
+            : t('addAnotherCoParent')}
         </Text>
 
         {errorMsg ? (
@@ -191,7 +193,7 @@ function CogenitoriSection() {
             style={styles.pairInput}
             value={inviteCodeInput}
             onChangeText={(t) => setInviteCodeInput(t.toUpperCase().slice(0, 6))}
-            placeholder="Codice 6 caratteri"
+            placeholder={t('code6chars')}
             placeholderTextColor={Colors.textMuted}
             autoCapitalize="characters"
             maxLength={6}
@@ -215,6 +217,7 @@ function CogenitoriSection() {
 
 function PendingApprovalsSection() {
   const { pendingChanges, approvePending, rejectPending, refreshPending } = useApp();
+  const { t } = useI18n();
 
   useEffect(() => {
     refreshPending();
@@ -226,7 +229,7 @@ function PendingApprovalsSection() {
     <View style={styles.pendingCard}>
       <View style={styles.pendingHeader}>
         <Ionicons name="notifications" size={20} color="#F4C430" />
-        <Text style={styles.pendingTitle}>Approvazioni in attesa</Text>
+        <Text style={styles.pendingTitle}>{t('pendingApprovals')}</Text>
         <View style={styles.pendingBadge}>
           <Text style={styles.pendingBadgeText}>{pendingChanges.length}</Text>
         </View>
@@ -236,7 +239,7 @@ function PendingApprovalsSection() {
         let details: any = {};
         try { details = JSON.parse(change.details || '{}'); } catch {}
         const actionText = change.action === 'add_child'
-          ? `Vuole aggiungere ${details.childName || 'un figlio'}`
+          ? `${t('wantsToAdd')} ${details.childName || t('aChild')}`
           : change.action;
 
         return (
@@ -278,8 +281,10 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout, updatePremium, refreshUser, updateProfile } = useAuth();
   const { children } = useApp();
+  const { lang, setLang, t, isRTL } = useI18n();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showLangModal, setShowLangModal] = useState(false);
   const [editName, setEditName] = useState('');
   const [editBirthDay, setEditBirthDay] = useState('');
   const [editBirthMonth, setEditBirthMonth] = useState('');
@@ -323,18 +328,18 @@ export default function SettingsScreen() {
 
   const handleSaveProfile = async () => {
     if (!editName.trim()) {
-      setEditError('Inserisci il tuo nome.');
+      setEditError(t('enterYourName'));
       return;
     }
     const day = parseInt(editBirthDay, 10);
     const month = parseInt(editBirthMonth, 10);
     const year = parseInt(editBirthYear, 10);
     if (!day || !month || !year || day < 1 || day > 31 || month < 1 || month > 12 || year < 1940 || year > 2010) {
-      setEditError('Data di nascita non valida.');
+      setEditError(t('invalidBirthDate'));
       return;
     }
     if (!editGender) {
-      setEditError('Seleziona il genere.');
+      setEditError(t('selectYourGender'));
       return;
     }
     setEditSaving(true);
@@ -358,12 +363,12 @@ export default function SettingsScreen() {
 
   const handleLogout = () => {
     Alert.alert(
-      'Logout',
-      'Vuoi uscire dal tuo account?',
+      t('logout'),
+      t('logoutConfirm'),
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('cancel'), style: 'cancel' },
         {
-          text: 'Logout',
+          text: t('logout'),
           style: 'destructive',
           onPress: async () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -375,14 +380,28 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleSelectLanguage = async (selectedLang: Language) => {
+    setLang(selectedLang);
+    try {
+      await apiRequest('PUT', '/api/auth/language', { language: selectedLang });
+    } catch {}
+    setShowLangModal(false);
+  };
+
+  const langOptions: { code: Language; label: string; circleText: string; circleColor: string }[] = [
+    { code: 'it', label: 'Italiano', circleText: 'IT', circleColor: '#4A90E2' },
+    { code: 'en', label: 'English', circleText: 'EN', circleColor: '#7BC8A4' },
+    { code: 'ar', label: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629', circleText: 'AR', circleColor: '#F4C430' },
+  ];
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingTop: topPadding + 16 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.headerTitle}>Impostazioni</Text>
+        <Text style={styles.headerTitle}>{t('settings')}</Text>
 
         <Pressable onPress={openEditModal} style={({ pressed }) => [styles.profileCard, pressed && { opacity: 0.9 }]}>
           <LinearGradient
@@ -421,8 +440,8 @@ export default function SettingsScreen() {
             >
               <MaterialCommunityIcons name="crown" size={24} color="#FFFFFF" />
               <View style={styles.premiumTextWrap}>
-                <Text style={styles.premiumTitle}>Passa a Premium</Text>
-                <Text style={styles.premiumSubtitle}>Figli illimitati + funzioni extra</Text>
+                <Text style={styles.premiumTitle}>{t('upgradeTitle')}</Text>
+                <Text style={styles.premiumSubtitle}>{t('upgradeSub')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
             </LinearGradient>
@@ -432,13 +451,13 @@ export default function SettingsScreen() {
         <PendingApprovalsSection />
         <CogenitoriSection />
 
-        <Text style={styles.sectionTitle}>Generale</Text>
+        <Text style={styles.sectionTitle}>{t('general')}</Text>
         <View style={styles.settingsCardWrap}>
           <SettingsRow
             icon="person"
             iconColor={Colors.mintGreenDark}
             iconBg={Colors.mintGreenLight}
-            label="Account"
+            label={t('account')}
             value={user?.name || user?.email || ''}
             onPress={openEditModal}
           />
@@ -446,35 +465,35 @@ export default function SettingsScreen() {
             icon="language"
             iconColor={Colors.skyBlueDark}
             iconBg={Colors.skyBlueLight}
-            label="Lingua"
-            value="Italiano"
-            onPress={() => Alert.alert('Lingua', 'Attualmente disponibile solo in italiano.')}
+            label={t('language')}
+            value={getLanguageLabel(lang)}
+            onPress={() => setShowLangModal(true)}
           />
           <SettingsRow
             icon="star"
             iconColor="#F4C430"
             iconBg={Colors.creamBeige}
-            label="Piano"
-            value={user?.isPremium ? 'Premium' : 'Gratuito'}
+            label={t('plan')}
+            value={user?.isPremium ? t('premium') : t('free')}
             onPress={() => setShowPremiumModal(true)}
             isLast
           />
         </View>
 
-        <Text style={styles.sectionTitle}>Info</Text>
+        <Text style={styles.sectionTitle}>{t('info')}</Text>
         <View style={styles.settingsCardWrap}>
           <SettingsRow
             icon="shield-checkmark"
             iconColor={Colors.mintGreenDark}
             iconBg={Colors.mintGreenLight}
-            label="Privacy"
-            onPress={() => Alert.alert('Privacy', 'I tuoi dati sono sincronizzati in modo sicuro.')}
+            label={t('privacy')}
+            onPress={() => Alert.alert(t('privacy'), t('privacyMsg'))}
           />
           <SettingsRow
             icon="information-circle"
             iconColor={Colors.skyBlueDark}
             iconBg={Colors.skyBlueLight}
-            label="Versione"
+            label={t('version')}
             value="1.0.0"
             isLast
           />
@@ -485,11 +504,11 @@ export default function SettingsScreen() {
           style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.8 }]}
         >
           <Ionicons name="log-out" size={20} color={Colors.danger} />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>{t('logout')}</Text>
         </Pressable>
 
         <Text style={styles.footerText}>TarbiyApp v1.0.0</Text>
-        <Text style={styles.footerSubtext}>Educazione islamica per i tuoi figli</Text>
+        <Text style={styles.footerSubtext}>{t('islamicEducation')}</Text>
 
         <View style={{ height: Platform.OS === 'web' ? 34 : 100 }} />
       </ScrollView>
@@ -505,7 +524,7 @@ export default function SettingsScreen() {
             >
               <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
                 <View style={styles.modalHandle} />
-                <Text style={styles.editModalTitle}>Modifica profilo</Text>
+                <Text style={styles.editModalTitle}>{t('editProfile')}</Text>
 
                 {editError ? (
                   <View style={styles.errorBox}>
@@ -522,15 +541,15 @@ export default function SettingsScreen() {
                       <Ionicons name="camera" size={28} color={Colors.textMuted} />
                     </View>
                   )}
-                  <Text style={styles.editPhotoLabel}>Cambia foto</Text>
+                  <Text style={styles.editPhotoLabel}>{t('changPhoto')}</Text>
                 </Pressable>
 
-                <Text style={styles.editInputLabel}>Nome</Text>
+                <Text style={styles.editInputLabel}>{t('name')}</Text>
                 <TextInput
                   style={styles.editInput}
                   value={editName}
                   onChangeText={setEditName}
-                  placeholder="Il tuo nome"
+                  placeholder={t('yourName')}
                   placeholderTextColor={Colors.textMuted}
                 />
 
@@ -572,14 +591,14 @@ export default function SettingsScreen() {
                     style={[styles.editGenderBtn, editGender === 'maschio' && styles.editGenderBtnActive]}
                   >
                     <Ionicons name="man" size={20} color={editGender === 'maschio' ? '#4A90E2' : Colors.textMuted} />
-                    <Text style={[styles.editGenderText, editGender === 'maschio' && { color: '#4A90E2' }]}>Maschio</Text>
+                    <Text style={[styles.editGenderText, editGender === 'maschio' && { color: '#4A90E2' }]}>{t('male')}</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => setEditGender('femmina')}
                     style={[styles.editGenderBtn, editGender === 'femmina' && styles.editGenderBtnFemActive]}
                   >
                     <Ionicons name="woman" size={20} color={editGender === 'femmina' ? '#FF6B6B' : Colors.textMuted} />
-                    <Text style={[styles.editGenderText, editGender === 'femmina' && { color: '#FF6B6B' }]}>Femmina</Text>
+                    <Text style={[styles.editGenderText, editGender === 'femmina' && { color: '#FF6B6B' }]}>{t('female')}</Text>
                   </Pressable>
                 </View>
 
@@ -593,7 +612,7 @@ export default function SettingsScreen() {
                   ) : (
                     <>
                       <Ionicons name="checkmark" size={20} color={Colors.white} />
-                      <Text style={styles.editSaveText}>Salva</Text>
+                      <Text style={styles.editSaveText}>{t('save')}</Text>
                     </>
                   )}
                 </Pressable>
@@ -661,6 +680,37 @@ export default function SettingsScreen() {
             <Pressable onPress={() => setShowPremiumModal(false)} style={styles.premiumCloseBtn}>
               <Text style={styles.premiumCloseText}>Magari dopo</Text>
             </Pressable>
+          </Animated.View>
+        </View>
+      </Modal>
+
+      <Modal visible={showLangModal} animationType="slide" transparent>
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalDismiss} onPress={() => setShowLangModal(false)} />
+          <Animated.View
+            entering={FadeIn.duration(200)}
+            exiting={FadeOut.duration(150)}
+            style={[styles.langModalContent, { paddingBottom: insets.bottom + 16 }]}
+          >
+            <View style={styles.modalHandle} />
+            <Text style={styles.editModalTitle}>{t('selectLanguage')}</Text>
+            {langOptions.map((option, index) => (
+              <Pressable
+                key={option.code}
+                onPress={() => handleSelectLanguage(option.code)}
+                style={[
+                  styles.langOption,
+                  lang === option.code && styles.langOptionActive,
+                  index === langOptions.length - 1 && { borderBottomWidth: 0 },
+                ]}
+              >
+                <View style={[styles.langCircle, { backgroundColor: option.circleColor }]}>
+                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.white }}>{option.circleText}</Text>
+                </View>
+                <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textPrimary, flex: 1 }}>{option.label}</Text>
+                <View style={[styles.langRadio, lang === option.code && styles.langRadioActive]} />
+              </Pressable>
+            ))}
           </Animated.View>
         </View>
       </Modal>
@@ -838,4 +888,41 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.mintGreen, paddingVertical: 16, borderRadius: 20, marginTop: 8,
   },
   editSaveText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
+  langModalContent: {
+    backgroundColor: Colors.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+  },
+  langOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 4,
+    gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.creamBeige,
+  },
+  langOptionActive: {
+    backgroundColor: Colors.mintGreenLight,
+    borderRadius: 14,
+  },
+  langCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  langRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: Colors.textMuted,
+  },
+  langRadioActive: {
+    borderColor: Colors.mintGreenDark,
+    backgroundColor: Colors.mintGreenDark,
+  },
 });

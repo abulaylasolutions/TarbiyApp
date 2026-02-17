@@ -7,6 +7,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth-context";
+import { I18nProvider } from "@/lib/i18n";
 import { StatusBar } from "expo-status-bar";
 import {
   useFonts,
@@ -53,8 +54,10 @@ export default function RootLayout() {
         <GestureHandlerRootView>
           <KeyboardProvider>
             <AuthProvider>
-              <StatusBar style="dark" />
-              <RootLayoutNav />
+              <I18nProvider>
+                <StatusBar style="dark" />
+                <RootLayoutNav />
+              </I18nProvider>
             </AuthProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>

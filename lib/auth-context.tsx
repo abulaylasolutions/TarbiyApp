@@ -13,6 +13,7 @@ export interface AuthUser {
   pairedCogenitori: string | null;
   isProfileComplete: boolean | null;
   isPremium: boolean | null;
+  preferredLanguage: string | null;
   createdAt: string | null;
 }
 

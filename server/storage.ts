@@ -86,6 +86,15 @@ export async function updateUserProfile(
   return result[0];
 }
 
+export async function updateUserLanguage(id: string, language: string): Promise<User> {
+  const result = await db
+    .update(users)
+    .set({ preferredLanguage: language })
+    .where(eq(users.id, id))
+    .returning();
+  return result[0];
+}
+
 export async function updateUserPremium(id: string, isPremium: boolean): Promise<User> {
   const result = await db
     .update(users)

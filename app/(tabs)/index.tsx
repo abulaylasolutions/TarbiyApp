@@ -23,6 +23,7 @@ import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
+import { useI18n } from '@/lib/i18n';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
@@ -43,7 +44,8 @@ const SWIPE_THRESHOLD = 70;
 const ACTION_WIDTH = 140;
 
 function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, onPress }: ChildCardProps) {
-  const age = getAge(child.birthDate);
+  const { t } = useI18n();
+  const age = getAge(child.birthDate, t);
   const cardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
   const cardBgLight = cardBg + '40';
   const isFemale = child.gender === 'femmina';
@@ -58,15 +60,15 @@ function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, 
         return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
       },
       onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dx < 0) {
-          translateX.setValue(Math.max(gestureState.dx, -ACTION_WIDTH));
+        if (gestureState.dx > 0) {
+          translateX.setValue(Math.min(gestureState.dx, ACTION_WIDTH));
         } else if (isSwipedOpen.current) {
-          translateX.setValue(Math.min(gestureState.dx - ACTION_WIDTH, 0));
+          translateX.setValue(Math.max(gestureState.dx + ACTION_WIDTH, 0));
         }
       },
       onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx < -SWIPE_THRESHOLD) {
-          RNAnimated.spring(translateX, { toValue: -ACTION_WIDTH, useNativeDriver: true, friction: 8 }).start();
+        if (gestureState.dx > SWIPE_THRESHOLD) {
+          RNAnimated.spring(translateX, { toValue: ACTION_WIDTH, useNativeDriver: true, friction: 8 }).start();
           isSwipedOpen.current = true;
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         } else {
@@ -99,7 +101,18 @@ function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, 
     coParentNames = [child.coParentName];
   }
 
-  const genderPrefix = isFemale ? 'figlia tua e di' : 'figlio tuo e di';
+  const genderPrefix = isFemale ? t('daughterOf') : t('sonOf');
+
+  let coParentInfos: CogenitoreInfo[] = [];
+  if (child.cogenitori) {
+    try {
+      const cogIds: string[] = JSON.parse(child.cogenitori);
+      coParentInfos = cogIds
+        .filter(id => id !== currentUserId)
+        .map(id => cogenitori.find(c => c.id === id))
+        .filter(Boolean) as CogenitoreInfo[];
+    } catch {}
+  }
 
   return (
     <ReAnimated.View entering={FadeInDown.delay(index * 80).duration(400)}>
@@ -120,11 +133,11 @@ function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, 
               closeSwipe();
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
               Alert.alert(
-                'Elimina',
-                `Vuoi eliminare ${child.name}?`,
+                t('delete'),
+                `${t('deleteConfirm')} ${child.name}?`,
                 [
-                  { text: 'Annulla', style: 'cancel' },
-                  { text: 'Elimina', style: 'destructive', onPress: () => onDelete(child.id) },
+                  { text: t('cancel'), style: 'cancel' },
+                  { text: t('delete'), style: 'destructive', onPress: () => onDelete(child.id) },
                 ]
               );
             }}
@@ -172,6 +185,21 @@ function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, 
                     </Text>
                   </Text>
                 ) : null}
+                {coParentInfos.length > 0 ? (
+                  <View style={styles.coParentAvatarRow}>
+                    {coParentInfos.map(cog => (
+                      cog.photoUrl ? (
+                        <Image key={cog.id} source={{ uri: cog.photoUrl }} style={styles.coParentAvatar} />
+                      ) : (
+                        <View key={cog.id} style={styles.coParentAvatarFallback}>
+                          <Text style={styles.coParentAvatarInitial}>
+                            {(cog.name || cog.email).charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                      )
+                    ))}
+                  </View>
+                ) : null}
               </View>
               <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.25)" />
             </View>
@@ -208,6 +236,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById } = useApp();
   const { user } = useAuth();
+  const { t, isRTL } = useI18n();
   const [showModal, setShowModal] = useState(false);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [form, setForm] = useState<ChildFormData>(EMPTY_FORM);
@@ -220,7 +249,7 @@ export default function HomeScreen() {
 
   const openAddModal = () => {
     if (!canAddChild) {
-      Alert.alert('Limite raggiunto', 'Con il piano gratuito puoi aggiungere massimo 1 figlio. Passa a Premium per figli illimitati!');
+      Alert.alert(t('limitReachedTitle'), t('limitReachedMsg'));
       return;
     }
     setEditingChild(null);
@@ -280,18 +309,18 @@ export default function HomeScreen() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      setErrorMsg('Inserisci il nome del bambino.');
+      setErrorMsg(t('enterName'));
       return;
     }
     const day = parseInt(form.birthDay, 10);
     const month = parseInt(form.birthMonth, 10);
     const year = parseInt(form.birthYear, 10);
     if (!day || !month || !year || day < 1 || day > 31 || month < 1 || month > 12 || year < 2000 || year > 2026) {
-      setErrorMsg('Inserisci una data di nascita valida.');
+      setErrorMsg(t('invalidDate'));
       return;
     }
     if (!form.gender) {
-      setErrorMsg('Seleziona il sesso del bambino.');
+      setErrorMsg(t('selectGender'));
       return;
     }
 
@@ -338,7 +367,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <LinearGradient
         colors={[Colors.mintGreenLight, Colors.background]}
         start={{ x: 0, y: 0 }}
@@ -357,18 +386,18 @@ export default function HomeScreen() {
               <Text style={styles.brandTarbiy}>Tarbiy</Text>
               <Text style={styles.brandApp}>App</Text>
             </Text>
-            <Text style={styles.headerSubtitle}>Ciao, {user?.name || 'Genitore'}</Text>
+            <Text style={styles.headerSubtitle}>{t('hello')}, {user?.name || t('parent')}</Text>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>
-            I tuoi figli ({children.length})
+            {t('yourChildren')} ({children.length})
           </Text>
           {!canAddChild && (
             <View style={styles.limitBadge}>
               <Ionicons name="lock-closed" size={12} color={Colors.goldAccent} />
-              <Text style={styles.limitText}>Limite</Text>
+              <Text style={styles.limitText}>{t('limit')}</Text>
             </View>
           )}
         </View>
@@ -378,9 +407,9 @@ export default function HomeScreen() {
             <View style={styles.emptyIconWrap}>
               <Ionicons name="people" size={48} color={Colors.mintGreen} />
             </View>
-            <Text style={styles.emptyTitle}>Nessun figlio aggiunto</Text>
+            <Text style={styles.emptyTitle}>{t('noChildrenTitle')}</Text>
             <Text style={styles.emptySubtext}>
-              Tocca il pulsante + per aggiungere il tuo primo figlio
+              {t('noChildrenSub')}
             </Text>
           </View>
         ) : (
@@ -430,7 +459,7 @@ export default function HomeScreen() {
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>
-                {editingChild ? 'Modifica figlio' : 'Aggiungi figlio'}
+                {editingChild ? t('editChild') : t('addChild')}
               </Text>
 
               {errorMsg ? (
@@ -448,19 +477,19 @@ export default function HomeScreen() {
                     <Ionicons name="camera" size={28} color={Colors.textMuted} />
                   </View>
                 )}
-                <Text style={styles.photoLabel}>Foto profilo (opzionale)</Text>
+                <Text style={styles.photoLabel}>{t('photoOptional')}</Text>
               </Pressable>
 
-              <Text style={styles.inputLabel}>Nome / Soprannome *</Text>
+              <Text style={styles.inputLabel}>{t('childName')}</Text>
               <TextInput
                 style={styles.modalInput}
                 value={form.name}
-                onChangeText={(t) => setForm(p => ({ ...p, name: t }))}
-                placeholder="Nome del bambino"
+                onChangeText={(v) => setForm(p => ({ ...p, name: v }))}
+                placeholder={t('childNamePlaceholder')}
                 placeholderTextColor={Colors.textMuted}
               />
 
-              <Text style={styles.inputLabel}>Data di nascita *</Text>
+              <Text style={styles.inputLabel}>{t('birthDate')}</Text>
               <View style={styles.dateRow}>
                 <TextInput
                   style={[styles.modalInput, styles.dateInput]}
@@ -491,25 +520,25 @@ export default function HomeScreen() {
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Sesso *</Text>
+              <Text style={styles.inputLabel}>{t('gender')}</Text>
               <View style={styles.genderRow}>
                 <Pressable
                   onPress={() => setForm(p => ({ ...p, gender: 'maschio' }))}
                   style={[styles.genderBtn, form.gender === 'maschio' && styles.genderBtnActive]}
                 >
                   <Ionicons name="man" size={20} color={form.gender === 'maschio' ? '#4A90E2' : Colors.textMuted} />
-                  <Text style={[styles.genderText, form.gender === 'maschio' && { color: '#4A90E2' }]}>Maschio</Text>
+                  <Text style={[styles.genderText, form.gender === 'maschio' && { color: '#4A90E2' }]}>{t('male')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setForm(p => ({ ...p, gender: 'femmina' }))}
                   style={[styles.genderBtn, form.gender === 'femmina' && styles.genderBtnFemActive]}
                 >
                   <Ionicons name="woman" size={20} color={form.gender === 'femmina' ? '#FF6B6B' : Colors.textMuted} />
-                  <Text style={[styles.genderText, form.gender === 'femmina' && { color: '#FF6B6B' }]}>Femmina</Text>
+                  <Text style={[styles.genderText, form.gender === 'femmina' && { color: '#FF6B6B' }]}>{t('female')}</Text>
                 </Pressable>
               </View>
 
-              <Text style={styles.inputLabel}>Cogenitore</Text>
+              <Text style={styles.inputLabel}>{t('coParent')}</Text>
               {cogenitori.length > 0 ? (
                 <View style={styles.cogSelectorWrap}>
                   {cogenitori.map(cog => {
@@ -539,12 +568,12 @@ export default function HomeScreen() {
                 <View style={styles.noCogWarn}>
                   <Ionicons name="information-circle" size={16} color={Colors.skyBlue} />
                   <Text style={styles.noCogWarnText}>
-                    Collega prima un cogenitore nelle Impostazioni
+                    {t('connectCoParent')}
                   </Text>
                 </View>
               )}
 
-              <Text style={styles.inputLabel}>Colore card</Text>
+              <Text style={styles.inputLabel}>{t('cardColor')}</Text>
               <View style={styles.colorRow}>
                 {PASTEL_COLORS.map(color => (
                   <Pressable
@@ -565,7 +594,7 @@ export default function HomeScreen() {
 
               <View style={styles.modalActions}>
                 <Pressable onPress={() => setShowModal(false)} style={styles.modalCancelBtn}>
-                  <Text style={styles.modalCancelText}>Annulla</Text>
+                  <Text style={styles.modalCancelText}>{t('cancel')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleSave}
@@ -582,7 +611,7 @@ export default function HomeScreen() {
   );
 }
 
-function getAge(birthDate: string): string {
+function getAge(birthDate: string, t?: (key: string) => string): string {
   const birth = new Date(birthDate);
   const now = new Date();
   let years = now.getFullYear() - birth.getFullYear();
@@ -592,9 +621,9 @@ function getAge(birthDate: string): string {
   }
   if (years < 1) {
     const months = (now.getFullYear() - birth.getFullYear()) * 12 + now.getMonth() - birth.getMonth();
-    return `${Math.max(0, months)} mesi`;
+    return `${Math.max(0, months)} ${t ? t('months') : 'mesi'}`;
   }
-  return `${years} ${years === 1 ? 'anno' : 'anni'}`;
+  return `${years} ${years === 1 ? (t ? t('year') : 'anno') : (t ? t('years') : 'anni')}`;
 }
 
 const styles = StyleSheet.create({
@@ -618,24 +647,24 @@ const styles = StyleSheet.create({
   },
   swipeActions: {
     position: 'absolute' as const,
-    right: 0,
+    left: 0,
     top: 0,
     bottom: 0,
     width: ACTION_WIDTH,
     flexDirection: 'row' as const,
-    borderTopRightRadius: 24,
-    borderBottomRightRadius: 24,
+    borderTopLeftRadius: 24,
+    borderBottomLeftRadius: 24,
     overflow: 'hidden' as const,
   },
   swipeEditBtn: {
     flex: 1,
-    backgroundColor: Colors.skyBlue,
+    backgroundColor: '#E8D5A0',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
   swipeDeleteBtn: {
     flex: 1,
-    backgroundColor: Colors.danger,
+    backgroundColor: '#E88B8B',
     alignItems: 'center' as const,
     justifyContent: 'center' as const,
   },
@@ -677,6 +706,10 @@ const styles = StyleSheet.create({
   coParentLine: { marginTop: 4, fontSize: 12 },
   coParentPrefix: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textPrimary },
   coParentNameText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
+  coParentAvatarRow: { flexDirection: 'row', gap: 4, marginTop: 4 },
+  coParentAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)' },
+  coParentAvatarFallback: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.1)', alignItems: 'center', justifyContent: 'center' },
+  coParentAvatarInitial: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: Colors.textPrimary },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 8 },
   emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   emptyTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textSecondary },

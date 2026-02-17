@@ -18,6 +18,7 @@ export const users = pgTable("users", {
   pairedCogenitori: text("paired_cogenitori"),
   isProfileComplete: boolean("is_profile_complete").default(false),
   isPremium: boolean("is_premium").default(false),
+  preferredLanguage: text("preferred_language").default("it"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

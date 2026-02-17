@@ -1,10 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Platform, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Platform, Pressable, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useApp } from '@/lib/app-context';
+import { useAuth } from '@/lib/auth-context';
+import { useI18n } from '@/lib/i18n';
 import Colors from '@/constants/colors';
+
+const PASTEL_COLORS = [
+  '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
+  '#FFF5BA', '#FFDAC1', '#B2D8B2', '#F5C6D0',
+];
 
 function ChildSelector() {
   const { children, selectedChildId, selectChild } = useApp();
@@ -17,8 +24,9 @@ function ChildSelector() {
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.selectorContainer}
     >
-      {children.map((child) => {
+      {children.map((child, index) => {
         const isSelected = child.id === selectedChildId;
+        const cardColor = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
         return (
           <Pressable
             key={child.id}
@@ -28,10 +36,17 @@ function ChildSelector() {
               isSelected && styles.selectorItemActive,
             ]}
           >
-            <View style={[styles.selectorAvatar, isSelected && styles.selectorAvatarActive]}>
-              <Text style={styles.selectorAvatarText}>
-                {child.name.charAt(0).toUpperCase()}
-              </Text>
+            <View style={[
+              styles.selectorAvatar,
+              isSelected && [styles.selectorAvatarActive, { borderColor: cardColor }],
+            ]}>
+              {child.photoUri ? (
+                <Image source={{ uri: child.photoUri }} style={styles.selectorAvatarImg} />
+              ) : (
+                <Text style={styles.selectorAvatarText}>
+                  {child.name.charAt(0).toUpperCase()}
+                </Text>
+              )}
             </View>
             <Text
               style={[styles.selectorName, isSelected && styles.selectorNameActive]}
@@ -77,55 +92,94 @@ function StatCard({ icon, iconFamily, title, value, color, gradientColors }: Sta
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId } = useApp();
+  const { children, selectedChildId, cogenitori } = useApp();
+  const { user } = useAuth();
+  const { t, isRTL } = useI18n();
   const selectedChild = children.find(c => c.id === selectedChildId);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const selectedIndex = children.findIndex(c => c.id === selectedChildId);
+  const childCardColor = selectedChild?.cardColor || PASTEL_COLORS[Math.max(0, selectedIndex) % PASTEL_COLORS.length];
+  const childCardColorLight = childCardColor + '40';
+
+  let coParentInfos: { name: string; photoUrl: string | null }[] = [];
+  if (selectedChild?.cogenitori) {
+    try {
+      const cogIds: string[] = JSON.parse(selectedChild.cogenitori);
+      coParentInfos = cogIds
+        .filter(id => id !== user?.id)
+        .map(id => {
+          const cog = cogenitori.find(c => c.id === id);
+          return cog ? { name: cog.name || cog.email, photoUrl: cog.photoUrl } : null;
+        })
+        .filter(Boolean) as { name: string; photoUrl: string | null }[];
+    } catch {}
+  }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingTop: topPadding + 16 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.headerTitle}>Dashboard</Text>
+        <Text style={styles.headerTitle}>{t('dashboard')}</Text>
 
         <ChildSelector />
 
         {selectedChild ? (
           <>
-            <View style={styles.selectedChildCard}>
+            <View style={[styles.selectedChildCard, { borderColor: childCardColor + '60', borderWidth: 2 }]}>
               <LinearGradient
-                colors={['#A8E6CF', '#D4F5E5'] as const}
+                colors={[childCardColor, childCardColorLight] as const}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 1 }}
                 style={styles.selectedChildGradient}
               >
-                <View style={styles.selectedChildAvatar}>
-                  <Text style={styles.selectedChildAvatarText}>
-                    {selectedChild.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
+                {selectedChild.photoUri ? (
+                  <Image source={{ uri: selectedChild.photoUri }} style={styles.selectedChildPhoto} />
+                ) : (
+                  <View style={[styles.selectedChildAvatar, { backgroundColor: 'rgba(255,255,255,0.7)' }]}>
+                    <Text style={[styles.selectedChildAvatarText, { color: childCardColor }]}>
+                      {selectedChild.name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
                 <View style={styles.selectedChildInfo}>
                   <Text style={styles.selectedChildName}>{selectedChild.name}</Text>
                   <Text style={styles.selectedChildAge}>
-                    {getAge(selectedChild.birthDate)}
+                    {getAge(selectedChild.birthDate, t)}
                   </Text>
+                  {coParentInfos.length > 0 && (
+                    <View style={styles.coParentRow}>
+                      {coParentInfos.map((cp, i) => (
+                        <View key={i} style={styles.coParentChip}>
+                          {cp.photoUrl ? (
+                            <Image source={{ uri: cp.photoUrl }} style={styles.coParentMiniPhoto} />
+                          ) : (
+                            <View style={styles.coParentMiniFallback}>
+                              <Text style={styles.coParentMiniInitial}>{cp.name.charAt(0).toUpperCase()}</Text>
+                            </View>
+                          )}
+                          <Text style={styles.coParentMiniName} numberOfLines={1}>{cp.name}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
                 <Ionicons name="heart" size={20} color={Colors.peachPink} />
               </LinearGradient>
             </View>
 
-            <Text style={styles.sectionTitle}>Progressi</Text>
+            <Text style={styles.sectionTitle}>{t('progress')}</Text>
             <View style={styles.statsGrid}>
               <StatCard
                 icon="book"
                 iconFamily="ionicons"
                 title="Suwar"
                 value="3"
-                color="#A8E6CF"
-                gradientColors={['#D4F5E5', '#FFFFFF'] as const}
+                color={childCardColor}
+                gradientColors={[childCardColorLight, '#FFFFFF'] as const}
               />
               <StatCard
                 icon="star"
@@ -140,8 +194,8 @@ export default function DashboardScreen() {
                 iconFamily="material"
                 title="Salat"
                 value="2"
-                color="#C7CEEA"
-                gradientColors={['#E3E7F5', '#FFFFFF'] as const}
+                color={childCardColor}
+                gradientColors={[childCardColorLight, '#FFFFFF'] as const}
               />
               <StatCard
                 icon="hand-heart"
@@ -153,29 +207,29 @@ export default function DashboardScreen() {
               />
             </View>
 
-            <Text style={styles.sectionTitle}>Attività Recenti</Text>
+            <Text style={styles.sectionTitle}>{t('recentActivity')}</Text>
             <View style={styles.activityCard}>
               <View style={styles.activityRow}>
-                <View style={[styles.activityDot, { backgroundColor: Colors.mintGreen }]} />
+                <View style={[styles.activityDot, { backgroundColor: childCardColor }]} />
                 <View style={styles.activityTextWrap}>
-                  <Text style={styles.activityText}>Ha memorizzato Surat Al-Fatiha</Text>
-                  <Text style={styles.activityDate}>Esempio</Text>
+                  <Text style={styles.activityText}>{t('memorizedSurah')}</Text>
+                  <Text style={styles.activityDate}>{t('example')}</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
               <View style={styles.activityRow}>
                 <View style={[styles.activityDot, { backgroundColor: Colors.peachPink }]} />
                 <View style={styles.activityTextWrap}>
-                  <Text style={styles.activityText}>Completata lezione sulle Du'a</Text>
-                  <Text style={styles.activityDate}>Esempio</Text>
+                  <Text style={styles.activityText}>{t('completedDua')}</Text>
+                  <Text style={styles.activityDate}>{t('example')}</Text>
                 </View>
               </View>
               <View style={styles.activityDivider} />
               <View style={styles.activityRow}>
                 <View style={[styles.activityDot, { backgroundColor: Colors.skyBlue }]} />
                 <View style={styles.activityTextWrap}>
-                  <Text style={styles.activityText}>Praticato Adab a tavola</Text>
-                  <Text style={styles.activityDate}>Esempio</Text>
+                  <Text style={styles.activityText}>{t('practicedAdab')}</Text>
+                  <Text style={styles.activityDate}>{t('example')}</Text>
                 </View>
               </View>
             </View>
@@ -183,8 +237,8 @@ export default function DashboardScreen() {
         ) : (
           <View style={styles.emptyState}>
             <Ionicons name="people" size={64} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>Aggiungi un figlio dalla Home</Text>
-            <Text style={styles.emptySubtext}>per visualizzare la dashboard</Text>
+            <Text style={styles.emptyText}>{t('addChildFromHome')}</Text>
+            <Text style={styles.emptySubtext}>{t('toViewDashboard')}</Text>
           </View>
         )}
 
@@ -194,7 +248,7 @@ export default function DashboardScreen() {
   );
 }
 
-function getAge(birthDate: string): string {
+function getAge(birthDate: string, t?: (key: string) => string): string {
   const birth = new Date(birthDate);
   const now = new Date();
   let years = now.getFullYear() - birth.getFullYear();
@@ -204,9 +258,11 @@ function getAge(birthDate: string): string {
   }
   if (years < 1) {
     const months = (now.getFullYear() - birth.getFullYear()) * 12 + now.getMonth() - birth.getMonth();
-    return `${Math.max(0, months)} mesi`;
+    const label = t ? t('months') : 'mesi';
+    return `${Math.max(0, months)} ${label}`;
   }
-  return `${years} ${years === 1 ? 'anno' : 'anni'}`;
+  const label = t ? (years === 1 ? t('year') : t('years')) : (years === 1 ? 'anno' : 'anni');
+  return `${years} ${label}`;
 }
 
 const styles = StyleSheet.create({
@@ -245,10 +301,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: 'transparent',
+    overflow: 'hidden',
   },
   selectorAvatarActive: {
-    borderColor: Colors.mintGreen,
     backgroundColor: Colors.mintGreenLight,
+  },
+  selectorAvatarImg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   selectorAvatarText: {
     fontFamily: 'Nunito_700Bold',
@@ -277,18 +338,23 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 16,
   },
+  selectedChildPhoto: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.8)',
+  },
   selectedChildAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
   selectedChildAvatarText: {
     fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
-    color: Colors.mintGreenDark,
+    fontSize: 28,
   },
   selectedChildInfo: {
     flex: 1,
@@ -302,6 +368,45 @@ const styles = StyleSheet.create({
     fontFamily: 'Nunito_500Medium',
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  coParentRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 6,
+  },
+  coParentChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  coParentMiniPhoto: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+  },
+  coParentMiniFallback: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  coParentMiniInitial: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 10,
+    color: Colors.textPrimary,
+  },
+  coParentMiniName: {
+    fontFamily: 'Nunito_500Medium',
+    fontSize: 11,
+    color: Colors.textSecondary,
+    maxWidth: 80,
   },
   sectionTitle: {
     fontFamily: 'Nunito_700Bold',

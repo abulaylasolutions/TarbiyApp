@@ -30,6 +30,7 @@ import {
   getPendingChangesForUser,
   approvePendingChange,
   rejectPendingChange,
+  updateUserLanguage,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -146,6 +147,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.json(safeUser);
     } catch (error) {
       console.error("Profile update error:", error);
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/auth/language", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { language } = req.body;
+      if (!['it', 'en', 'ar'].includes(language)) {
+        return res.status(400).json({ message: "Lingua non valida" });
+      }
+      const user = await updateUserLanguage(req.session.userId!, language);
+      const { password: _, ...safeUser } = user;
+      return res.json(safeUser);
+    } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }
   });
