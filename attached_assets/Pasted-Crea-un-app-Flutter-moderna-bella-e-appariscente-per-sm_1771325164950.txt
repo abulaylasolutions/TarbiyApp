@@ -1,0 +1,35 @@
+Crea un'app Flutter moderna, bella e appariscente per smartphone (Android e iOS), con grafica pastellosa, bambinesca ma elegante e contemporanea. Usa un tema soft con colori pastello delicati: verde menta chiaro (#A8E6CF), rosa pesca tenue (#FFD3B6), azzurro cielo chiaro (#C7CEEA), beige crema (#FFF5E1), accenti oro tenue (#F4C430) per highlight, sfondo bianco crema o molto chiaro con leggeri gradienti pastello.
+
+L'app si chiama "TarbiyApp" (testo: "Tarbiy" in verde menta bold con font giocoso ma pulito tipo "Comic Neue" o "Poppins" rounded + "App" in grigio scuro moderno). Icona app provvisoria: una fogliolina stilizzata che cresce da un piccolo telefono, in stile line art pastello.
+
+L'app è per genitori musulmani che monitorano l'educazione islamica dei figli. Deve avere sincronizzazione realtime tra due account genitore (babbo e mamma) tramite Firebase (auth + Firestore). Usa Firebase per login (email + Google), creazione famiglia con codice invito condiviso, e sync dei dati.
+
+Monetizzazione: freemium con pagamento per singolo utente (non per coppia/famiglia). 
+- Base gratis: 1 figlio massimo
+- Premium: 2 € al mese o 20 € all'anno (sconti annuale evidente), per figli illimitati + feature extra (da implementare dopo)
+
+Struttura principale:
+- Schermata di splash con logo animato (foglia che cresce dolcemente).
+- Login / Onboarding semplice: email o Google, poi creazione famiglia o inserimento codice invito.
+- Dopo login: Scaffold con BottomNavigationBar fissa con 4 tab, icone moderne arrotondate, label sotto, selectedItemColor verde menta, unselected grigio tenue, background bianco con ombra leggera.
+
+I 4 tab della bottom navigation bar devono essere:
+1. Home (icona: Icons.home_rounded o family_restroom_rounded) – label "Home"
+   - Qui lista dei figli come card pastello arrotondate, con foto rotonda, nome grande giocoso, età piccola. Pulsante + flottante verde menta per aggiungere figlio.
+
+2. Dashboard (icona: Icons.dashboard_rounded o favorite_rounded) – label "Dashboard"
+   - Placeholder per ora: testo centrale "Dashboard del figlio selezionato" con selector in alto (dropdown o carousel pastello con foto piccole dei figli).
+
+3. Bacheca (icona: Icons.push_pin_rounded o sticky_note_2_rounded) – label "Bacheca"
+   - Placeholder: testo "Note condivise tra genitori" con layout stile bacheca corkboard soft pastello (card leggermente ruotate, ombra morbida).
+
+4. Impostazioni (icona: Icons.settings_rounded) – label "Impostazioni"
+   - Placeholder con lista semplice: account, lingua, premium, logout.
+
+Usa Material 3 con shape arrotondate generose (borderRadius 24-32), font moderni rounded (Poppins o Nunito), animazioni leggere (fade, scale soft su tap), shadow delicate.
+
+Genera la struttura base completa: main.dart con tema globale, home screen con bottom nav, placeholder per ogni tab, integrazione Firebase base (auth + firestore per famiglia e figli), e gestione stato semplice (usa Provider o Riverpod per figlio selezionato e premium status).
+
+Fai in modo che l'app sia responsive, bella su diversi schermi, con vibe calda, giocosa ma non infantile, adatta a genitori musulmani moderni. Aggiungi commenti in italiano nel codice.
+
+Inizia subito a generare il codice!
