@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,15 @@ import {
   Modal,
   Alert,
   Image,
+  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
+import { Animated as RNAnimated } from 'react-native';
+import ReAnimated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
@@ -37,12 +39,48 @@ interface ChildCardProps {
   onPress: (child: Child) => void;
 }
 
+const SWIPE_THRESHOLD = 70;
+const ACTION_WIDTH = 140;
+
 function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, onPress }: ChildCardProps) {
   const age = getAge(child.birthDate);
   const cardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
   const cardBgLight = cardBg + '40';
   const isFemale = child.gender === 'femmina';
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';
+
+  const translateX = useRef(new RNAnimated.Value(0)).current;
+  const isSwipedOpen = useRef(false);
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
+      },
+      onPanResponderMove: (_, gestureState) => {
+        if (gestureState.dx < 0) {
+          translateX.setValue(Math.max(gestureState.dx, -ACTION_WIDTH));
+        } else if (isSwipedOpen.current) {
+          translateX.setValue(Math.min(gestureState.dx - ACTION_WIDTH, 0));
+        }
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx < -SWIPE_THRESHOLD) {
+          RNAnimated.spring(translateX, { toValue: -ACTION_WIDTH, useNativeDriver: true, friction: 8 }).start();
+          isSwipedOpen.current = true;
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        } else {
+          RNAnimated.spring(translateX, { toValue: 0, useNativeDriver: true, friction: 8 }).start();
+          isSwipedOpen.current = false;
+        }
+      },
+    })
+  ).current;
+
+  const closeSwipe = () => {
+    RNAnimated.spring(translateX, { toValue: 0, useNativeDriver: true, friction: 8 }).start();
+    isSwipedOpen.current = false;
+  };
 
   let coParentNames: string[] = [];
   if (child.cogenitori) {
@@ -63,58 +101,84 @@ function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, 
 
   const genderPrefix = isFemale ? 'figlia tua e di' : 'figlio tuo e di';
 
-  const handleLongPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      child.name,
-      'Cosa vuoi fare?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        { text: 'Modifica', onPress: () => onEdit(child) },
-        { text: 'Elimina', style: 'destructive', onPress: () => onDelete(child.id) },
-      ]
-    );
-  };
-
   return (
-    <Animated.View entering={FadeInDown.delay(index * 80).duration(400)}>
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onPress(child);
-        }}
-        onLongPress={handleLongPress}
-        style={({ pressed }) => [
-          styles.childCard,
-          { transform: [{ scale: pressed ? 0.97 : 1 }] },
-        ]}
-      >
-        <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
-          {child.photoUri ? (
-            <Image source={{ uri: child.photoUri }} style={styles.childPhoto} />
-          ) : (
-            <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
-              <Text style={styles.childAvatarText}>
-                {child.name.charAt(0).toUpperCase()}
-              </Text>
-            </View>
-          )}
-          <View style={styles.childInfo}>
-            <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
-            <Text style={styles.childAge}>{age}</Text>
-            {coParentNames.length > 0 && child.gender ? (
-              <Text style={styles.coParentLine}>
-                <Text style={styles.coParentPrefix}>{genderPrefix} </Text>
-                <Text style={[styles.coParentNameText, { color: nameColor }]}>
-                  {coParentNames.join(', ')}
-                </Text>
-              </Text>
-            ) : null}
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.25)" />
+    <ReAnimated.View entering={FadeInDown.delay(index * 80).duration(400)}>
+      <View style={styles.swipeContainer}>
+        <View style={styles.swipeActions}>
+          <Pressable
+            onPress={() => {
+              closeSwipe();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onEdit(child);
+            }}
+            style={styles.swipeEditBtn}
+          >
+            <Ionicons name="create" size={22} color={Colors.white} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              closeSwipe();
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              Alert.alert(
+                'Elimina',
+                `Vuoi eliminare ${child.name}?`,
+                [
+                  { text: 'Annulla', style: 'cancel' },
+                  { text: 'Elimina', style: 'destructive', onPress: () => onDelete(child.id) },
+                ]
+              );
+            }}
+            style={styles.swipeDeleteBtn}
+          >
+            <Ionicons name="trash" size={22} color={Colors.white} />
+          </Pressable>
         </View>
-      </Pressable>
-    </Animated.View>
+
+        <RNAnimated.View
+          {...panResponder.panHandlers}
+          style={[styles.childCard, { transform: [{ translateX }] }]}
+        >
+          <Pressable
+            onPress={() => {
+              if (isSwipedOpen.current) {
+                closeSwipe();
+                return;
+              }
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              onPress(child);
+            }}
+            style={({ pressed }) => [
+              { transform: [{ scale: pressed ? 0.98 : 1 }] },
+            ]}
+          >
+            <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
+              {child.photoUri ? (
+                <Image source={{ uri: child.photoUri }} style={styles.childPhoto} />
+              ) : (
+                <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
+                  <Text style={styles.childAvatarText}>
+                    {child.name.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.childInfo}>
+                <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
+                <Text style={styles.childAge}>{age}</Text>
+                {coParentNames.length > 0 && child.gender ? (
+                  <Text style={styles.coParentLine}>
+                    <Text style={styles.coParentPrefix}>{genderPrefix} </Text>
+                    <Text style={[styles.coParentNameText, { color: nameColor }]}>
+                      {coParentNames.join(', ')}
+                    </Text>
+                  </Text>
+                ) : null}
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.25)" />
+            </View>
+          </Pressable>
+        </RNAnimated.View>
+      </View>
+    </ReAnimated.View>
   );
 }
 
@@ -547,9 +611,38 @@ const styles = StyleSheet.create({
   limitBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.creamBeige, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   limitText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.goldAccent },
   childrenList: { gap: 12 },
+  swipeContainer: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative' as const,
+  },
+  swipeActions: {
+    position: 'absolute' as const,
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: ACTION_WIDTH,
+    flexDirection: 'row' as const,
+    borderTopRightRadius: 24,
+    borderBottomRightRadius: 24,
+    overflow: 'hidden' as const,
+  },
+  swipeEditBtn: {
+    flex: 1,
+    backgroundColor: Colors.skyBlue,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  swipeDeleteBtn: {
+    flex: 1,
+    backgroundColor: Colors.danger,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
   childCard: {
     borderRadius: 24,
     overflow: 'hidden',
+    backgroundColor: Colors.cardBackground,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.08,

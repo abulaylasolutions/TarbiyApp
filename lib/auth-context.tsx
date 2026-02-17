@@ -24,6 +24,7 @@ interface AuthContextValue {
   register: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
   completeProfile: (data: { name: string; birthDate: string; gender: string; photoUrl?: string }) => Promise<{ success: boolean; message?: string }>;
+  updateProfile: (data: { name?: string; birthDate?: string; gender?: string; photoUrl?: string }) => Promise<{ success: boolean; message?: string }>;
   refreshUser: () => Promise<void>;
   updatePremium: (isPremium: boolean) => Promise<void>;
 }
@@ -96,6 +97,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const updateProfile = async (data: { name?: string; birthDate?: string; gender?: string; photoUrl?: string }) => {
+    try {
+      const res = await apiRequest('PUT', '/api/auth/profile', data);
+      const updated = await res.json();
+      setUser(updated);
+      return { success: true };
+    } catch (error: any) {
+      const msg = error?.message || 'Errore nell\'aggiornamento profilo';
+      const cleanMsg = msg.replace(/^\d+:\s*/, '');
+      return { success: false, message: cleanMsg };
+    }
+  };
+
   const refreshUser = async () => {
     try {
       const res = await apiRequest('GET', '/api/auth/me');
@@ -120,6 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     register,
     logout,
     completeProfile,
+    updateProfile,
     refreshUser,
     updatePremium,
   }), [user, isLoading]);
