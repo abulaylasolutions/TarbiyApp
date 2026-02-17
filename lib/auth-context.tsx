@@ -10,6 +10,7 @@ export interface AuthUser {
   photoUrl: string | null;
   personalInviteCode: string | null;
   pairedCogenitore: string | null;
+  pairedCogenitori: string | null;
   isProfileComplete: boolean | null;
   isPremium: boolean | null;
   createdAt: string | null;

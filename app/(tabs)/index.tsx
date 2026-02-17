@@ -18,35 +18,49 @@ import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
-import { useApp, Child } from '@/lib/app-context';
+import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 
 const PASTEL_COLORS = [
-  '#FFD3B6',
-  '#C7CEEA',
-  '#A8E6CF',
-  '#E0BBE4',
-  '#FFF5BA',
-  '#FFDAC1',
-  '#B2D8B2',
-  '#F5C6D0',
+  '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
+  '#FFF5BA', '#FFDAC1', '#B2D8B2', '#F5C6D0',
 ];
 
 interface ChildCardProps {
   child: Child;
   index: number;
+  cogenitori: CogenitoreInfo[];
+  currentUserId: string;
   onDelete: (id: string) => void;
   onEdit: (child: Child) => void;
   onPress: (child: Child) => void;
 }
 
-function ChildCard({ child, index, onDelete, onEdit, onPress }: ChildCardProps) {
+function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, onPress }: ChildCardProps) {
   const age = getAge(child.birthDate);
   const cardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
   const cardBgLight = cardBg + '40';
   const isFemale = child.gender === 'femmina';
-  const coParentColor = isFemale ? '#FF6B6B' : '#4A90E2';
+  const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';
+
+  let coParentNames: string[] = [];
+  if (child.cogenitori) {
+    try {
+      const cogIds: string[] = JSON.parse(child.cogenitori);
+      coParentNames = cogIds
+        .filter(id => id !== currentUserId)
+        .map(id => {
+          const cog = cogenitori.find(c => c.id === id);
+          return cog?.name || null;
+        })
+        .filter(Boolean) as string[];
+    } catch {}
+  }
+  if (coParentNames.length === 0 && child.coParentName) {
+    coParentNames = [child.coParentName];
+  }
+
   const genderPrefix = isFemale ? 'figlia tua e di' : 'figlio tuo e di';
 
   const handleLongPress = () => {
@@ -86,13 +100,13 @@ function ChildCard({ child, index, onDelete, onEdit, onPress }: ChildCardProps) 
             </View>
           )}
           <View style={styles.childInfo}>
-            <Text style={styles.childName}>{child.name}</Text>
+            <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
             <Text style={styles.childAge}>{age}</Text>
-            {child.coParentName && child.gender ? (
+            {coParentNames.length > 0 && child.gender ? (
               <Text style={styles.coParentLine}>
                 <Text style={styles.coParentPrefix}>{genderPrefix} </Text>
-                <Text style={[styles.coParentName, { color: coParentColor }]}>
-                  {child.coParentName}
+                <Text style={[styles.coParentNameText, { color: nameColor }]}>
+                  {coParentNames.join(', ')}
                 </Text>
               </Text>
             ) : null}
@@ -111,7 +125,7 @@ interface ChildFormData {
   birthYear: string;
   gender: string;
   photoUri: string;
-  coParentName: string;
+  selectedCogenitori: string[];
   cardColor: string;
 }
 
@@ -122,13 +136,13 @@ const EMPTY_FORM: ChildFormData = {
   birthYear: '',
   gender: '',
   photoUri: '',
-  coParentName: '',
+  selectedCogenitori: [],
   cardColor: PASTEL_COLORS[0],
 };
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild } = useApp();
+  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById } = useApp();
   const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
@@ -154,6 +168,12 @@ export default function HomeScreen() {
   const openEditModal = (child: Child) => {
     setEditingChild(child);
     const birth = new Date(child.birthDate);
+    let selectedCogs: string[] = [];
+    if (child.cogenitori) {
+      try {
+        selectedCogs = JSON.parse(child.cogenitori).filter((id: string) => id !== user?.id);
+      } catch {}
+    }
     setForm({
       name: child.name,
       birthDay: String(birth.getDate()),
@@ -161,7 +181,7 @@ export default function HomeScreen() {
       birthYear: String(birth.getFullYear()),
       gender: child.gender || '',
       photoUri: child.photoUri || '',
-      coParentName: child.coParentName || '',
+      selectedCogenitori: selectedCogs,
       cardColor: child.cardColor || PASTEL_COLORS[0],
     });
     setErrorMsg('');
@@ -185,6 +205,15 @@ export default function HomeScreen() {
     }
   };
 
+  const toggleCogenitore = (id: string) => {
+    setForm(prev => ({
+      ...prev,
+      selectedCogenitori: prev.selectedCogenitori.includes(id)
+        ? prev.selectedCogenitori.filter(c => c !== id)
+        : [...prev.selectedCogenitori, id],
+    }));
+  };
+
   const handleSave = async () => {
     if (!form.name.trim()) {
       setErrorMsg('Inserisci il nome del bambino.');
@@ -203,28 +232,44 @@ export default function HomeScreen() {
     }
 
     const birthDate = new Date(year, month - 1, day).toISOString();
-    const payload = {
-      name: form.name.trim(),
-      birthDate,
-      gender: form.gender,
-      photoUri: form.photoUri || undefined,
-      coParentName: form.coParentName.trim() || undefined,
-      cardColor: form.cardColor,
-    };
 
-    let result;
     if (editingChild) {
-      result = await updateChild(editingChild.id, payload);
+      const cogArray = [user!.id, ...form.selectedCogenitori];
+      const result = await updateChild(editingChild.id, {
+        name: form.name.trim(),
+        birthDate,
+        gender: form.gender,
+        photoUri: form.photoUri || undefined,
+        cardColor: form.cardColor,
+        cogenitori: JSON.stringify(cogArray),
+      });
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowModal(false);
+      } else {
+        setErrorMsg(result.message || 'Errore');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     } else {
-      result = await addChild(payload);
-    }
-
-    if (result.success) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowModal(false);
-    } else {
-      setErrorMsg(result.message || 'Errore');
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      const coParentName = form.selectedCogenitori.length > 0
+        ? form.selectedCogenitori.map(id => getCogenitoreNameById(id)).filter(Boolean).join(', ')
+        : undefined;
+      const result = await addChild({
+        name: form.name.trim(),
+        birthDate,
+        gender: form.gender,
+        photoUri: form.photoUri || undefined,
+        coParentName,
+        cardColor: form.cardColor,
+        selectedCogenitori: form.selectedCogenitori,
+      });
+      if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowModal(false);
+      } else {
+        setErrorMsg(result.message || 'Errore');
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
     }
   };
 
@@ -281,6 +326,8 @@ export default function HomeScreen() {
                 key={child.id}
                 child={child}
                 index={index}
+                cogenitori={cogenitori}
+                currentUserId={user?.id || ''}
                 onDelete={removeChild}
                 onEdit={openEditModal}
                 onPress={handleChildPress}
@@ -337,10 +384,10 @@ export default function HomeScreen() {
                     <Ionicons name="camera" size={28} color={Colors.textMuted} />
                   </View>
                 )}
-                <Text style={styles.photoLabel}>Foto profilo</Text>
+                <Text style={styles.photoLabel}>Foto profilo (opzionale)</Text>
               </Pressable>
 
-              <Text style={styles.inputLabel}>Nome / Soprannome</Text>
+              <Text style={styles.inputLabel}>Nome / Soprannome *</Text>
               <TextInput
                 style={styles.modalInput}
                 value={form.name}
@@ -349,7 +396,7 @@ export default function HomeScreen() {
                 placeholderTextColor={Colors.textMuted}
               />
 
-              <Text style={styles.inputLabel}>Data di nascita</Text>
+              <Text style={styles.inputLabel}>Data di nascita *</Text>
               <View style={styles.dateRow}>
                 <TextInput
                   style={[styles.modalInput, styles.dateInput]}
@@ -380,7 +427,7 @@ export default function HomeScreen() {
                 />
               </View>
 
-              <Text style={styles.inputLabel}>Sesso</Text>
+              <Text style={styles.inputLabel}>Sesso *</Text>
               <View style={styles.genderRow}>
                 <Pressable
                   onPress={() => setForm(p => ({ ...p, gender: 'maschio' }))}
@@ -398,14 +445,40 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
 
-              <Text style={styles.inputLabel}>Nome del cogenitore</Text>
-              <TextInput
-                style={styles.modalInput}
-                value={form.coParentName}
-                onChangeText={(t) => setForm(p => ({ ...p, coParentName: t }))}
-                placeholder="Nome cogenitore (opzionale)"
-                placeholderTextColor={Colors.textMuted}
-              />
+              <Text style={styles.inputLabel}>Cogenitore</Text>
+              {cogenitori.length > 0 ? (
+                <View style={styles.cogSelectorWrap}>
+                  {cogenitori.map(cog => {
+                    const isSelected = form.selectedCogenitori.includes(cog.id);
+                    return (
+                      <Pressable
+                        key={cog.id}
+                        onPress={() => toggleCogenitore(cog.id)}
+                        style={[styles.cogChip, isSelected && styles.cogChipSelected]}
+                      >
+                        <View style={styles.cogChipAvatar}>
+                          <Text style={styles.cogChipAvatarText}>
+                            {(cog.name || cog.email).charAt(0).toUpperCase()}
+                          </Text>
+                        </View>
+                        <Text style={[styles.cogChipName, isSelected && styles.cogChipNameSelected]}>
+                          {cog.name || cog.email}
+                        </Text>
+                        {isSelected && (
+                          <Ionicons name="checkmark-circle" size={18} color={Colors.mintGreen} />
+                        )}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={styles.noCogWarn}>
+                  <Ionicons name="information-circle" size={16} color={Colors.skyBlue} />
+                  <Text style={styles.noCogWarnText}>
+                    Collega prima un cogenitore nelle Impostazioni
+                  </Text>
+                </View>
+              )}
 
               <Text style={styles.inputLabel}>Colore card</Text>
               <View style={styles.colorRow}>
@@ -506,11 +579,11 @@ const styles = StyleSheet.create({
   },
   childAvatarText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 24, color: Colors.textPrimary },
   childInfo: { flex: 1 },
-  childName: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
-  childAge: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.textSecondary, marginTop: 1 },
+  childName: { fontFamily: 'Nunito_700Bold', fontSize: 18 },
+  childAge: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.textPrimary, marginTop: 1 },
   coParentLine: { marginTop: 4, fontSize: 12 },
   coParentPrefix: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textPrimary },
-  coParentName: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
+  coParentNameText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 8 },
   emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   emptyTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textSecondary },
@@ -554,6 +627,25 @@ const styles = StyleSheet.create({
   genderBtnActive: { backgroundColor: '#E3F2FD', borderWidth: 2, borderColor: '#4A90E2' },
   genderBtnFemActive: { backgroundColor: '#FFEBEE', borderWidth: 2, borderColor: '#FF6B6B' },
   genderText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textSecondary },
+  cogSelectorWrap: { gap: 8, marginBottom: 16 },
+  cogChip: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 10, paddingHorizontal: 14, borderRadius: 16,
+    backgroundColor: Colors.creamBeige,
+  },
+  cogChipSelected: { backgroundColor: Colors.mintGreenLight, borderWidth: 2, borderColor: Colors.mintGreen },
+  cogChipAvatar: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(0,0,0,0.08)', alignItems: 'center', justifyContent: 'center',
+  },
+  cogChipAvatarText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: Colors.textPrimary },
+  cogChipName: { fontFamily: 'Nunito_500Medium', fontSize: 15, color: Colors.textSecondary, flex: 1 },
+  cogChipNameSelected: { fontFamily: 'Nunito_700Bold', color: Colors.textPrimary },
+  noCogWarn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.skyBlueLight, borderRadius: 14, padding: 12, marginBottom: 16,
+  },
+  noCogWarnText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.skyBlueDark, flex: 1 },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   colorSwatch: {
     width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',

@@ -264,7 +264,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/children/:id", requireAuth as any, async (req: Request, res: Response) => {
     try {
       const { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori } = req.body;
-      const child = await updateChild(req.params.id, { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori });
+      const child = await updateChild(req.params.id as string, { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori });
       return res.json(child);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -273,7 +273,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/children/:id", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      await removeChild(req.params.id);
+      await removeChild(req.params.id as string);
       return res.json({ message: "Figlio rimosso" });
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -305,7 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/notes/:id", requireAuth as any, async (req: Request, res: Response) => {
     try {
       const { text, color, tags } = req.body;
-      const note = await updateNote(req.params.id, { text, color, tags });
+      const note = await updateNote(req.params.id as string, { text, color, tags });
       return res.json(note);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -314,7 +314,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/notes/:id", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      await removeNote(req.params.id);
+      await removeNote(req.params.id as string);
       return res.json({ message: "Nota rimossa" });
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/pending/:id/approve", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const result = await approvePendingChange(req.params.id);
+      const result = await approvePendingChange(req.params.id as string);
       return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -341,7 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/pending/:id/reject", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const result = await rejectPendingChange(req.params.id);
+      const result = await rejectPendingChange(req.params.id as string);
       return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });

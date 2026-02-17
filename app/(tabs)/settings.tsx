@@ -10,26 +10,19 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
-import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
-import { useApp } from '@/lib/app-context';
+import { useApp, CogenitoreInfo } from '@/lib/app-context';
 import { apiRequest } from '@/lib/query-client';
 import Colors from '@/constants/colors';
-
-interface CogenitoreInfo {
-  id: string;
-  name: string | null;
-  gender: string | null;
-  photoUrl: string | null;
-  email: string;
-}
 
 interface SettingsRowProps {
   icon: string;
@@ -63,29 +56,12 @@ function SettingsRow({ icon, iconColor, iconBg, label, value, onPress, isLast }:
   );
 }
 
-function CogenitoreSection() {
+function CogenitoriSection() {
   const { user, refreshUser } = useAuth();
-  const [cogenitore, setCogenitore] = useState<CogenitoreInfo | null>(null);
-  const [isPaired, setIsPaired] = useState(false);
+  const { cogenitori, refreshCogenitori } = useApp();
   const [inviteCodeInput, setInviteCodeInput] = useState('');
-  const [loading, setLoading] = useState(true);
   const [pairing, setPairing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-
-  useEffect(() => {
-    fetchCogenitore();
-  }, []);
-
-  const fetchCogenitore = async () => {
-    try {
-      const res = await apiRequest('GET', '/api/cogenitore');
-      const data = await res.json();
-      setIsPaired(data.paired);
-      setCogenitore(data.cogenitore);
-    } catch {} finally {
-      setLoading(false);
-    }
-  };
 
   const handlePair = async () => {
     const code = inviteCodeInput.trim().toUpperCase();
@@ -93,18 +69,16 @@ function CogenitoreSection() {
       setErrorMsg('Il codice deve essere di 6 caratteri');
       return;
     }
-
     setErrorMsg('');
     setPairing(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-
     try {
       const res = await apiRequest('POST', '/api/cogenitore/pair', { inviteCode: code });
       const data = await res.json();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Collegato!', data.message || 'Cogenitore collegato con successo!');
       setInviteCodeInput('');
-      await fetchCogenitore();
+      await refreshCogenitori();
       await refreshUser();
     } catch (error: any) {
       const msg = (error?.message || 'Errore').replace(/^\d+:\s*/, '');
@@ -115,10 +89,10 @@ function CogenitoreSection() {
     }
   };
 
-  const handleUnpair = () => {
+  const handleUnpair = (cog: CogenitoreInfo) => {
     Alert.alert(
       'Rimuovi collegamento',
-      'Sei sicuro di voler rimuovere il collegamento con il tuo cogenitore?',
+      `Rimuovere il collegamento con ${cog.name || cog.email}?`,
       [
         { text: 'Annulla', style: 'cancel' },
         {
@@ -126,10 +100,9 @@ function CogenitoreSection() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await apiRequest('POST', '/api/cogenitore/unpair');
+              await apiRequest('POST', '/api/cogenitore/unpair', { targetUserId: cog.id });
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              setCogenitore(null);
-              setIsPaired(false);
+              await refreshCogenitori();
               await refreshUser();
             } catch {}
           },
@@ -146,14 +119,6 @@ function CogenitoreSection() {
     }
   };
 
-  if (loading) {
-    return (
-      <View style={styles.cogenitoreCard}>
-        <ActivityIndicator color={Colors.mintGreen} />
-      </View>
-    );
-  }
-
   return (
     <View style={styles.cogenitoreCard}>
       <View style={styles.cogenitoreHeader}>
@@ -169,73 +134,140 @@ function CogenitoreSection() {
         <Ionicons name="copy-outline" size={20} color={Colors.mintGreenDark} />
       </Pressable>
 
-      {isPaired && cogenitore ? (
+      {cogenitori.length > 0 && (
         <View style={styles.pairedSection}>
-          <View style={styles.pairedCard}>
-            <LinearGradient
-              colors={['#C7CEEA', '#E3E7F5'] as const}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.pairedGradient}
-            >
-              <View style={styles.pairedAvatar}>
-                <Text style={styles.pairedAvatarText}>
-                  {(cogenitore.name || cogenitore.email).charAt(0).toUpperCase()}
-                </Text>
+          {cogenitori.map((cog, index) => (
+            <Animated.View key={cog.id} entering={FadeInDown.delay(index * 80).duration(300)}>
+              <View style={styles.pairedCard}>
+                <LinearGradient
+                  colors={['#C7CEEA', '#E3E7F5'] as const}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.pairedGradient}
+                >
+                  <View style={styles.pairedAvatar}>
+                    <Text style={styles.pairedAvatarText}>
+                      {(cog.name || cog.email).charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.pairedInfo}>
+                    <Text style={styles.pairedName}>{cog.name || cog.email}</Text>
+                    <Text style={styles.pairedGender}>
+                      {cog.gender === 'maschio' ? 'Papa' :
+                       cog.gender === 'femmina' ? 'Mamma' : 'Cogenitore'}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => handleUnpair(cog)}
+                    hitSlop={10}
+                  >
+                    <Ionicons name="close-circle" size={24} color={Colors.danger} />
+                  </Pressable>
+                </LinearGradient>
               </View>
-              <View style={styles.pairedInfo}>
-                <Text style={styles.pairedName}>{cogenitore.name || cogenitore.email}</Text>
-                <Text style={styles.pairedGender}>
-                  {cogenitore.gender === 'maschio' ? 'Papà' :
-                   cogenitore.gender === 'femmina' ? 'Mamma' : 'Cogenitore'}
-                </Text>
-              </View>
-              <Ionicons name="checkmark-circle" size={24} color={Colors.mintGreen} />
-            </LinearGradient>
-          </View>
-          <Pressable
-            onPress={handleUnpair}
-            style={({ pressed }) => [styles.unpairBtn, pressed && { opacity: 0.8 }]}
-          >
-            <Ionicons name="unlink" size={16} color={Colors.danger} />
-            <Text style={styles.unpairText}>Rimuovi collegamento</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <View style={styles.unpaidSection}>
-          <Text style={styles.unpaidText}>Non hai ancora un cogenitore collegato</Text>
-
-          {errorMsg ? (
-            <View style={styles.errorBox}>
-              <Ionicons name="alert-circle" size={14} color={Colors.danger} />
-              <Text style={styles.errorBoxText}>{errorMsg}</Text>
-            </View>
-          ) : null}
-
-          <View style={styles.pairInputRow}>
-            <TextInput
-              style={styles.pairInput}
-              value={inviteCodeInput}
-              onChangeText={(t) => setInviteCodeInput(t.toUpperCase().slice(0, 6))}
-              placeholder="Codice 6 caratteri"
-              placeholderTextColor={Colors.textMuted}
-              autoCapitalize="characters"
-              maxLength={6}
-            />
-            <Pressable
-              onPress={handlePair}
-              disabled={pairing || inviteCodeInput.length !== 6}
-              style={[styles.pairBtn, (pairing || inviteCodeInput.length !== 6) && { opacity: 0.5 }]}
-            >
-              {pairing ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <Ionicons name="link" size={18} color={Colors.white} />
-              )}
-            </Pressable>
-          </View>
+            </Animated.View>
+          ))}
         </View>
       )}
+
+      <View style={styles.addCogenitoreSection}>
+        <Text style={styles.addCogLabel}>
+          {cogenitori.length === 0
+            ? 'Collega il primo cogenitore'
+            : 'Aggiungi altro cogenitore'}
+        </Text>
+
+        {errorMsg ? (
+          <View style={styles.errorBox}>
+            <Ionicons name="alert-circle" size={14} color={Colors.danger} />
+            <Text style={styles.errorBoxText}>{errorMsg}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.pairInputRow}>
+          <TextInput
+            style={styles.pairInput}
+            value={inviteCodeInput}
+            onChangeText={(t) => setInviteCodeInput(t.toUpperCase().slice(0, 6))}
+            placeholder="Codice 6 caratteri"
+            placeholderTextColor={Colors.textMuted}
+            autoCapitalize="characters"
+            maxLength={6}
+          />
+          <Pressable
+            onPress={handlePair}
+            disabled={pairing || inviteCodeInput.length !== 6}
+            style={[styles.pairBtn, (pairing || inviteCodeInput.length !== 6) && { opacity: 0.5 }]}
+          >
+            {pairing ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <Ionicons name="link" size={18} color={Colors.white} />
+            )}
+          </Pressable>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function PendingApprovalsSection() {
+  const { pendingChanges, approvePending, rejectPending, refreshPending } = useApp();
+
+  useEffect(() => {
+    refreshPending();
+  }, []);
+
+  if (pendingChanges.length === 0) return null;
+
+  return (
+    <View style={styles.pendingCard}>
+      <View style={styles.pendingHeader}>
+        <Ionicons name="notifications" size={20} color="#F4C430" />
+        <Text style={styles.pendingTitle}>Approvazioni in attesa</Text>
+        <View style={styles.pendingBadge}>
+          <Text style={styles.pendingBadgeText}>{pendingChanges.length}</Text>
+        </View>
+      </View>
+
+      {pendingChanges.map((change, index) => {
+        let details: any = {};
+        try { details = JSON.parse(change.details || '{}'); } catch {}
+        const actionText = change.action === 'add_child'
+          ? `Vuole aggiungere ${details.childName || 'un figlio'}`
+          : change.action;
+
+        return (
+          <Animated.View key={change.id} entering={FadeInDown.delay(index * 60).duration(300)}>
+            <View style={styles.pendingItem}>
+              <View style={styles.pendingItemInfo}>
+                <Ionicons name="person-add" size={18} color={Colors.skyBlue} />
+                <Text style={styles.pendingItemText}>{actionText}</Text>
+              </View>
+              <View style={styles.pendingActions}>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    rejectPending(change.id);
+                  }}
+                  style={styles.rejectBtn}
+                >
+                  <Ionicons name="close" size={18} color={Colors.danger} />
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    approvePending(change.id);
+                  }}
+                  style={styles.approveBtn}
+                >
+                  <Ionicons name="checkmark" size={18} color={Colors.white} />
+                </Pressable>
+              </View>
+            </View>
+          </Animated.View>
+        );
+      })}
     </View>
   );
 }
@@ -316,7 +348,8 @@ export default function SettingsScreen() {
           </Pressable>
         )}
 
-        <CogenitoreSection />
+        <PendingApprovalsSection />
+        <CogenitoriSection />
 
         <Text style={styles.sectionTitle}>Generale</Text>
         <View style={styles.settingsCardWrap}>
@@ -390,7 +423,7 @@ export default function SettingsScreen() {
             <View style={styles.modalHandle} />
             <MaterialCommunityIcons name="crown" size={48} color={Colors.goldAccent} style={{ alignSelf: 'center' }} />
             <Text style={styles.premiumModalTitle}>TarbiyApp Premium</Text>
-            <Text style={styles.premiumModalSub}>Sblocca tutte le funzionalità</Text>
+            <Text style={styles.premiumModalSub}>Sblocca tutte le funzionalita</Text>
 
             <View style={styles.premiumFeatures}>
               {['Figli illimitati', 'Dashboard dettagliata', 'Sincronizzazione tra genitori', 'Funzioni extra future'].map(f => (
@@ -412,7 +445,7 @@ export default function SettingsScreen() {
                 style={({ pressed }) => [styles.pricingCard, pressed && { opacity: 0.9 }]}
               >
                 <Text style={styles.pricingPeriod}>Mensile</Text>
-                <Text style={styles.pricingPrice}>2 €</Text>
+                <Text style={styles.pricingPrice}>2</Text>
                 <Text style={styles.pricingDetail}>/mese</Text>
               </Pressable>
 
@@ -421,7 +454,7 @@ export default function SettingsScreen() {
                   await updatePremium(true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setShowPremiumModal(false);
-                  Alert.alert('Premium attivato!', 'Risparmi 4€ con il piano annuale (demo).');
+                  Alert.alert('Premium attivato!', 'Risparmi 4 con il piano annuale (demo).');
                 }}
                 style={({ pressed }) => [styles.pricingCard, styles.pricingCardBest, pressed && { opacity: 0.9 }]}
               >
@@ -429,7 +462,7 @@ export default function SettingsScreen() {
                   <Text style={styles.bestValueText}>-17%</Text>
                 </View>
                 <Text style={styles.pricingPeriod}>Annuale</Text>
-                <Text style={styles.pricingPrice}>20 €</Text>
+                <Text style={styles.pricingPrice}>20</Text>
                 <Text style={styles.pricingDetail}>/anno</Text>
               </Pressable>
             </View>
@@ -485,7 +518,7 @@ const styles = StyleSheet.create({
   },
   inviteCodeLabel: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textSecondary },
   inviteCodeValue: { fontFamily: 'Nunito_800ExtraBold', fontSize: 20, color: Colors.mintGreenDark, letterSpacing: 3, marginTop: 2 },
-  pairedSection: { gap: 10 },
+  pairedSection: { gap: 8, marginBottom: 14 },
   pairedCard: { borderRadius: 16, overflow: 'hidden' },
   pairedGradient: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   pairedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
@@ -493,10 +526,8 @@ const styles = StyleSheet.create({
   pairedInfo: { flex: 1 },
   pairedName: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary },
   pairedGender: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textSecondary },
-  unpairBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10 },
-  unpairText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.danger },
-  unpaidSection: { gap: 10 },
-  unpaidText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textSecondary },
+  addCogenitoreSection: { gap: 10 },
+  addCogLabel: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textSecondary },
   errorBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.dangerLight, borderRadius: 10, padding: 10, gap: 6 },
   errorBoxText: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.danger, flex: 1 },
   pairInputRow: { flexDirection: 'row', gap: 10 },
@@ -519,6 +550,37 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.skyBlue,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  pendingCard: {
+    backgroundColor: '#FFF9E6',
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#F4C430',
+  },
+  pendingHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  pendingTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary, flex: 1 },
+  pendingBadge: {
+    backgroundColor: '#F4C430',
+    width: 24, height: 24, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  pendingBadgeText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: Colors.white },
+  pendingItem: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: 14, padding: 12, marginBottom: 8,
+  },
+  pendingItemInfo: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 },
+  pendingItemText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textPrimary, flex: 1 },
+  pendingActions: { flexDirection: 'row', gap: 8 },
+  rejectBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.dangerLight, alignItems: 'center', justifyContent: 'center',
+  },
+  approveBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: Colors.mintGreen, alignItems: 'center', justifyContent: 'center',
   },
   sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginTop: 4 },
   settingsCardWrap: { backgroundColor: Colors.cardBackground, borderRadius: 20, marginBottom: 20, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
