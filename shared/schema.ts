@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -7,14 +7,65 @@ export const users = pgTable("users", {
   id: varchar("id")
     .primaryKey()
     .default(sql`gen_random_uuid()`),
-  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
   password: text("password").notNull(),
+  name: text("name"),
+  birthDate: text("birth_date"),
+  gender: text("gender"),
+  photoUrl: text("photo_url"),
+  personalInviteCode: text("personal_invite_code").unique(),
+  pairedCogenitore: text("paired_cogenitore"),
+  isProfileComplete: boolean("is_profile_complete").default(false),
+  isPremium: boolean("is_premium").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const children = pgTable("children", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  birthDate: text("birth_date").notNull(),
+  photoUri: text("photo_uri"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const notes = pgTable("notes", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  text: text("text").notNull(),
+  color: text("color").notNull(),
+  rotation: text("rotation").notNull(),
+  author: text("author").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
+  email: true,
   password: true,
+});
+
+export const registerSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(1),
+});
+
+export const profileSchema = z.object({
+  name: z.string().min(1),
+  birthDate: z.string().min(1),
+  gender: z.string().min(1),
+  photoUrl: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+export type Child = typeof children.$inferSelect;
+export type Note = typeof notes.$inferSelect;

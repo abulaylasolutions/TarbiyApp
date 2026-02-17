@@ -1,0 +1,40 @@
+ORA MODIFICA E AGGIUNGI SOLO QUESTE FUNZIONALITÀ NUOVE, senza riscrivere l'intera app da zero:
+
+1. Autenticazione multipla:
+   - Aggiungi possibilità di login/registrazione con:
+     - Google Sign-In (firebase_auth + google_sign_in)
+     - Facebook Login (firebase_auth + flutter_facebook_auth)
+     - Email + password (classico firebase_auth)
+   - Dopo login/registrazione riuscito, se il profilo utente è incompleto (primo accesso o campi mancanti), mostra una schermata di completamento profilo (una sola volta o fino a completamento):
+     - Nome (text field obbligatorio)
+     - Data di nascita (date picker obbligatorio)
+     - Sesso (radio buttons: Maschio / Femmina / Preferisco non specificare – obbligatorio)
+     - Foto profilo (opzionale: image_picker per galleria o camera, ritaglio circolare, upload su Firebase Storage e salva URL)
+
+2. Codice personale di invito:
+   - Alla creazione/completamento del profilo, genera automaticamente un codice univoco di 6 caratteri alfanumerici random (es. K7P4M9 – uppercase + numeri) per quell'utente.
+   - Salvalo nel documento Firestore users/{uid} con campo "personalInviteCode".
+   - Assicurati che sia unico (usa transaction o check prima di salvare).
+
+3. Schermata "Cogenitori" nelle Impostazioni:
+   - Aggiungi una nuova sezione nelle Impostazioni chiamata "Cogenitori" (espandibile o card dedicata).
+   - Mostra lo stato attuale:
+     - Se non pairato: testo "Non hai ancora un cogenitore collegato" + TextField per inserire codice 6 caratteri + pulsante "Collega cogenitore"
+     - Se pairato: mostra nome, foto (se presente), sesso del cogenitore pairato + pulsante "Rimuovi collegamento" (con dialog conferma)
+   - Quando l'utente inserisce un codice:
+     - Cerca in Firestore collection "users" dove personalInviteCode == codice inserito
+     - Se trovato e non è lo stesso utente e non è già pairato:
+       - Aggiorna entrambi i documenti users:
+         - users/{mio uid} → pairedCogenitore: uid dell'altro
+         - users/{uid altro} → pairedCogenitore: mio uid
+       - Mostra successo: "Cogenitore collegato con successo!"
+     - Se codice non valido, utente non trovato o già pairato: mostra errore appropriato (SnackBar o AlertDialog)
+
+4. Integrazione Firebase:
+   - Assumi che firebase_core, firebase_auth, cloud_firestore, firebase_storage siano già aggiunti.
+   - Se manca qualche dipendenza (google_sign_in, flutter_facebook_auth, image_picker), aggiungile con flutter pub add.
+   - Usa Provider o Riverpod per gestire stato auth e profilo utente (currentUser, isProfileComplete, pairedCogenitore).
+
+Mantieni il tema pastelloso, font rounded, UI arrotondata e responsive. Aggiungi solo queste parti senza toccare Dashboard e Bacheca (lascia placeholder). Aggiungi commenti in italiano nel codice nuovo.
+
+Modifica i file esistenti (es. main.dart, impostazioni_screen.dart o auth flow) e crea nuovi widget/file necessari (es. profile_completion_screen.dart, cogenitori_section.dart). Inizia subito con le modifiche!
