@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,14 +9,27 @@ import {
   Alert,
   TextInput,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import * as Clipboard from 'expo-clipboard';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { router } from 'expo-router';
+import { useAuth } from '@/lib/auth-context';
 import { useApp } from '@/lib/app-context';
+import { apiRequest } from '@/lib/query-client';
 import Colors from '@/constants/colors';
+
+interface CogenitoreInfo {
+  id: string;
+  name: string | null;
+  gender: string | null;
+  photoUrl: string | null;
+  email: string;
+}
 
 interface SettingsRowProps {
   icon: string;
@@ -26,10 +39,9 @@ interface SettingsRowProps {
   value?: string;
   onPress?: () => void;
   isLast?: boolean;
-  rightElement?: React.ReactNode;
 }
 
-function SettingsRow({ icon, iconColor, iconBg, label, value, onPress, isLast, rightElement }: SettingsRowProps) {
+function SettingsRow({ icon, iconColor, iconBg, label, value, onPress, isLast }: SettingsRowProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -44,32 +56,215 @@ function SettingsRow({ icon, iconColor, iconBg, label, value, onPress, isLast, r
       </View>
       <Text style={styles.settingsLabel}>{label}</Text>
       <View style={styles.settingsRight}>
-        {rightElement || (
-          <>
-            {value && <Text style={styles.settingsValue}>{value}</Text>}
-            {onPress && <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />}
-          </>
-        )}
+        {value && <Text style={styles.settingsValue}>{value}</Text>}
+        {onPress && <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />}
       </View>
     </Pressable>
   );
 }
 
+function CogenitoreSection() {
+  const { user, refreshUser } = useAuth();
+  const [cogenitore, setCogenitore] = useState<CogenitoreInfo | null>(null);
+  const [isPaired, setIsPaired] = useState(false);
+  const [inviteCodeInput, setInviteCodeInput] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [pairing, setPairing] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    fetchCogenitore();
+  }, []);
+
+  const fetchCogenitore = async () => {
+    try {
+      const res = await apiRequest('GET', '/api/cogenitore');
+      const data = await res.json();
+      setIsPaired(data.paired);
+      setCogenitore(data.cogenitore);
+    } catch {} finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePair = async () => {
+    const code = inviteCodeInput.trim().toUpperCase();
+    if (code.length !== 6) {
+      setErrorMsg('Il codice deve essere di 6 caratteri');
+      return;
+    }
+
+    setErrorMsg('');
+    setPairing(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    try {
+      const res = await apiRequest('POST', '/api/cogenitore/pair', { inviteCode: code });
+      const data = await res.json();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Collegato!', data.message || 'Cogenitore collegato con successo!');
+      setInviteCodeInput('');
+      await fetchCogenitore();
+      await refreshUser();
+    } catch (error: any) {
+      const msg = (error?.message || 'Errore').replace(/^\d+:\s*/, '');
+      setErrorMsg(msg);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setPairing(false);
+    }
+  };
+
+  const handleUnpair = () => {
+    Alert.alert(
+      'Rimuovi collegamento',
+      'Sei sicuro di voler rimuovere il collegamento con il tuo cogenitore?',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Rimuovi',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await apiRequest('POST', '/api/cogenitore/unpair');
+              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              setCogenitore(null);
+              setIsPaired(false);
+              await refreshUser();
+            } catch {}
+          },
+        },
+      ]
+    );
+  };
+
+  const copyInviteCode = async () => {
+    if (user?.personalInviteCode) {
+      await Clipboard.setStringAsync(user.personalInviteCode);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Copiato!', 'Codice invito copiato negli appunti');
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.cogenitoreCard}>
+        <ActivityIndicator color={Colors.mintGreen} />
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.cogenitoreCard}>
+      <View style={styles.cogenitoreHeader}>
+        <Ionicons name="people" size={20} color={Colors.skyBlueDark} />
+        <Text style={styles.cogenitoreTitle}>Cogenitori</Text>
+      </View>
+
+      <Pressable onPress={copyInviteCode} style={styles.inviteCodeBox}>
+        <View>
+          <Text style={styles.inviteCodeLabel}>Il tuo codice invito</Text>
+          <Text style={styles.inviteCodeValue}>{user?.personalInviteCode || '------'}</Text>
+        </View>
+        <Ionicons name="copy-outline" size={20} color={Colors.mintGreenDark} />
+      </Pressable>
+
+      {isPaired && cogenitore ? (
+        <View style={styles.pairedSection}>
+          <View style={styles.pairedCard}>
+            <LinearGradient
+              colors={['#C7CEEA', '#E3E7F5'] as const}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.pairedGradient}
+            >
+              <View style={styles.pairedAvatar}>
+                <Text style={styles.pairedAvatarText}>
+                  {(cogenitore.name || cogenitore.email).charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.pairedInfo}>
+                <Text style={styles.pairedName}>{cogenitore.name || cogenitore.email}</Text>
+                <Text style={styles.pairedGender}>
+                  {cogenitore.gender === 'maschio' ? 'Papà' :
+                   cogenitore.gender === 'femmina' ? 'Mamma' : 'Cogenitore'}
+                </Text>
+              </View>
+              <Ionicons name="checkmark-circle" size={24} color={Colors.mintGreen} />
+            </LinearGradient>
+          </View>
+          <Pressable
+            onPress={handleUnpair}
+            style={({ pressed }) => [styles.unpairBtn, pressed && { opacity: 0.8 }]}
+          >
+            <Ionicons name="unlink" size={16} color={Colors.danger} />
+            <Text style={styles.unpairText}>Rimuovi collegamento</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <View style={styles.unpaidSection}>
+          <Text style={styles.unpaidText}>Non hai ancora un cogenitore collegato</Text>
+
+          {errorMsg ? (
+            <View style={styles.errorBox}>
+              <Ionicons name="alert-circle" size={14} color={Colors.danger} />
+              <Text style={styles.errorBoxText}>{errorMsg}</Text>
+            </View>
+          ) : null}
+
+          <View style={styles.pairInputRow}>
+            <TextInput
+              style={styles.pairInput}
+              value={inviteCodeInput}
+              onChangeText={(t) => setInviteCodeInput(t.toUpperCase().slice(0, 6))}
+              placeholder="Codice 6 caratteri"
+              placeholderTextColor={Colors.textMuted}
+              autoCapitalize="characters"
+              maxLength={6}
+            />
+            <Pressable
+              onPress={handlePair}
+              disabled={pairing || inviteCodeInput.length !== 6}
+              style={[styles.pairBtn, (pairing || inviteCodeInput.length !== 6) && { opacity: 0.5 }]}
+            >
+              {pairing ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <Ionicons name="link" size={18} color={Colors.white} />
+              )}
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { isPremium, setPremium, parentName, setParentName, children } = useApp();
-  const [showNameModal, setShowNameModal] = useState(false);
-  const [nameInput, setNameInput] = useState(parentName);
+  const { user, logout, updatePremium, refreshUser } = useAuth();
+  const { children } = useApp();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
-  const handleSaveName = async () => {
-    if (nameInput.trim()) {
-      await setParentName(nameInput.trim());
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }
-    setShowNameModal(false);
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Vuoi uscire dal tuo account?',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            await logout();
+            router.replace('/auth');
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -81,13 +276,7 @@ export default function SettingsScreen() {
       >
         <Text style={styles.headerTitle}>Impostazioni</Text>
 
-        <Pressable
-          onPress={() => {
-            setNameInput(parentName);
-            setShowNameModal(true);
-          }}
-          style={({ pressed }) => [styles.profileCard, pressed && { opacity: 0.9 }]}
-        >
+        <View style={styles.profileCard}>
           <LinearGradient
             colors={['#A8E6CF', '#C7CEEA'] as const}
             start={{ x: 0, y: 0 }}
@@ -96,20 +285,17 @@ export default function SettingsScreen() {
           >
             <View style={styles.profileAvatar}>
               <Text style={styles.profileAvatarText}>
-                {parentName.charAt(0).toUpperCase()}
+                {(user?.name || user?.email || 'G').charAt(0).toUpperCase()}
               </Text>
             </View>
             <View style={styles.profileInfo}>
-              <Text style={styles.profileName}>{parentName}</Text>
-              <Text style={styles.profileSub}>
-                {children.length} {children.length === 1 ? 'figlio' : 'figli'} registrati
-              </Text>
+              <Text style={styles.profileName}>{user?.name || 'Genitore'}</Text>
+              <Text style={styles.profileSub}>{user?.email}</Text>
             </View>
-            <Ionicons name="pencil" size={18} color="rgba(255,255,255,0.8)" />
           </LinearGradient>
-        </Pressable>
+        </View>
 
-        {!isPremium && (
+        {!user?.isPremium && (
           <Pressable
             onPress={() => setShowPremiumModal(true)}
             style={({ pressed }) => [styles.premiumBanner, pressed && { opacity: 0.9 }]}
@@ -130,18 +316,16 @@ export default function SettingsScreen() {
           </Pressable>
         )}
 
+        <CogenitoreSection />
+
         <Text style={styles.sectionTitle}>Generale</Text>
-        <View style={styles.settingsCard}>
+        <View style={styles.settingsCardWrap}>
           <SettingsRow
             icon="person"
             iconColor={Colors.mintGreenDark}
             iconBg={Colors.mintGreenLight}
             label="Account"
-            value={parentName}
-            onPress={() => {
-              setNameInput(parentName);
-              setShowNameModal(true);
-            }}
+            value={user?.name || user?.email || ''}
           />
           <SettingsRow
             icon="language"
@@ -149,29 +333,27 @@ export default function SettingsScreen() {
             iconBg={Colors.skyBlueLight}
             label="Lingua"
             value="Italiano"
-            onPress={() => {
-              Alert.alert('Lingua', 'Attualmente disponibile solo in italiano.');
-            }}
+            onPress={() => Alert.alert('Lingua', 'Attualmente disponibile solo in italiano.')}
           />
           <SettingsRow
             icon="star"
             iconColor="#F4C430"
             iconBg={Colors.creamBeige}
             label="Piano"
-            value={isPremium ? 'Premium' : 'Gratuito'}
+            value={user?.isPremium ? 'Premium' : 'Gratuito'}
             onPress={() => setShowPremiumModal(true)}
             isLast
           />
         </View>
 
         <Text style={styles.sectionTitle}>Info</Text>
-        <View style={styles.settingsCard}>
+        <View style={styles.settingsCardWrap}>
           <SettingsRow
             icon="shield-checkmark"
             iconColor={Colors.mintGreenDark}
             iconBg={Colors.mintGreenLight}
             label="Privacy"
-            onPress={() => Alert.alert('Privacy', 'I tuoi dati sono salvati localmente sul dispositivo.')}
+            onPress={() => Alert.alert('Privacy', 'I tuoi dati sono sincronizzati in modo sicuro.')}
           />
           <SettingsRow
             icon="information-circle"
@@ -184,10 +366,7 @@ export default function SettingsScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            Alert.alert('Logout', 'Funzione disponibile con account online.');
-          }}
+          onPress={handleLogout}
           style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.8 }]}
         >
           <Ionicons name="log-out" size={20} color={Colors.danger} />
@@ -199,36 +378,6 @@ export default function SettingsScreen() {
 
         <View style={{ height: Platform.OS === 'web' ? 34 : 100 }} />
       </ScrollView>
-
-      <Modal visible={showNameModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalDismiss} onPress={() => setShowNameModal(false)} />
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(150)}
-            style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
-          >
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Il tuo nome</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={nameInput}
-              onChangeText={setNameInput}
-              placeholder="Come ti chiami?"
-              placeholderTextColor={Colors.textMuted}
-              autoFocus
-            />
-            <View style={styles.modalActions}>
-              <Pressable onPress={() => setShowNameModal(false)} style={styles.modalCancelBtn}>
-                <Text style={styles.modalCancelText}>Annulla</Text>
-              </Pressable>
-              <Pressable onPress={handleSaveName} style={styles.modalSaveBtn}>
-                <Ionicons name="checkmark" size={22} color={Colors.white} />
-              </Pressable>
-            </View>
-          </Animated.View>
-        </View>
-      </Modal>
 
       <Modal visible={showPremiumModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -244,28 +393,18 @@ export default function SettingsScreen() {
             <Text style={styles.premiumModalSub}>Sblocca tutte le funzionalità</Text>
 
             <View style={styles.premiumFeatures}>
-              <View style={styles.premiumFeatureRow}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors.mintGreen} />
-                <Text style={styles.premiumFeatureText}>Figli illimitati</Text>
-              </View>
-              <View style={styles.premiumFeatureRow}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors.mintGreen} />
-                <Text style={styles.premiumFeatureText}>Dashboard dettagliata</Text>
-              </View>
-              <View style={styles.premiumFeatureRow}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors.mintGreen} />
-                <Text style={styles.premiumFeatureText}>Sincronizzazione tra genitori</Text>
-              </View>
-              <View style={styles.premiumFeatureRow}>
-                <Ionicons name="checkmark-circle" size={20} color={Colors.mintGreen} />
-                <Text style={styles.premiumFeatureText}>Funzioni extra future</Text>
-              </View>
+              {['Figli illimitati', 'Dashboard dettagliata', 'Sincronizzazione tra genitori', 'Funzioni extra future'].map(f => (
+                <View key={f} style={styles.premiumFeatureRow}>
+                  <Ionicons name="checkmark-circle" size={20} color={Colors.mintGreen} />
+                  <Text style={styles.premiumFeatureText}>{f}</Text>
+                </View>
+              ))}
             </View>
 
             <View style={styles.pricingCards}>
               <Pressable
-                onPress={() => {
-                  setPremium(true);
+                onPress={async () => {
+                  await updatePremium(true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setShowPremiumModal(false);
                   Alert.alert('Premium attivato!', 'Grazie per aver scelto Premium (demo).');
@@ -278,8 +417,8 @@ export default function SettingsScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() => {
-                  setPremium(true);
+                onPress={async () => {
+                  await updatePremium(true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setShowPremiumModal(false);
                   Alert.alert('Premium attivato!', 'Risparmi 4€ con il piano annuale (demo).');
@@ -306,95 +445,26 @@ export default function SettingsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-  },
-  headerTitle: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 28,
-    color: Colors.textPrimary,
-    marginBottom: 20,
-  },
-  profileCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    marginBottom: 20,
-  },
-  profileGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    gap: 16,
-  },
-  profileAvatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  profileAvatarText: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
-    color: Colors.textPrimary,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  profileName: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
-    color: Colors.white,
-  },
-  profileSub: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  premiumBanner: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    marginBottom: 24,
-  },
-  premiumGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    gap: 12,
-  },
-  premiumTextWrap: {
-    flex: 1,
-  },
-  premiumTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 16,
-    color: Colors.white,
-  },
-  premiumSubtitle: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.85)',
-  },
-  sectionTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  settingsCard: {
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollView: { flex: 1 },
+  content: { paddingHorizontal: 20 },
+  headerTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 28, color: Colors.textPrimary, marginBottom: 20 },
+  profileCard: { borderRadius: 24, overflow: 'hidden', marginBottom: 20 },
+  profileGradient: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16 },
+  profileAvatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
+  profileAvatarText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 24, color: Colors.textPrimary },
+  profileInfo: { flex: 1 },
+  profileName: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.white },
+  profileSub: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: 'rgba(255,255,255,0.8)' },
+  premiumBanner: { borderRadius: 20, overflow: 'hidden', marginBottom: 20 },
+  premiumGradient: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
+  premiumTextWrap: { flex: 1 },
+  premiumTitle: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
+  premiumSubtitle: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: 'rgba(255,255,255,0.85)' },
+  cogenitoreCard: {
     backgroundColor: Colors.cardBackground,
     borderRadius: 20,
+    padding: 16,
     marginBottom: 20,
     shadowColor: Colors.shadow,
     shadowOffset: { width: 0, height: 2 },
@@ -402,214 +472,83 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
-  settingsRow: {
+  cogenitoreHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  cogenitoreTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary },
+  inviteCodeBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
-    gap: 12,
+    justifyContent: 'space-between',
+    backgroundColor: Colors.mintGreenLight,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
   },
-  settingsRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.creamBeige,
-  },
-  settingsIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsLabel: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
-    color: Colors.textPrimary,
+  inviteCodeLabel: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textSecondary },
+  inviteCodeValue: { fontFamily: 'Nunito_800ExtraBold', fontSize: 20, color: Colors.mintGreenDark, letterSpacing: 3, marginTop: 2 },
+  pairedSection: { gap: 10 },
+  pairedCard: { borderRadius: 16, overflow: 'hidden' },
+  pairedGradient: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  pairedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
+  pairedAvatarText: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
+  pairedInfo: { flex: 1 },
+  pairedName: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary },
+  pairedGender: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textSecondary },
+  unpairBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10 },
+  unpairText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.danger },
+  unpaidSection: { gap: 10 },
+  unpaidText: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textSecondary },
+  errorBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.dangerLight, borderRadius: 10, padding: 10, gap: 6 },
+  errorBoxText: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.danger, flex: 1 },
+  pairInputRow: { flexDirection: 'row', gap: 10 },
+  pairInput: {
     flex: 1,
-  },
-  settingsRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  settingsValue: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: Colors.textMuted,
-  },
-  logoutBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    marginTop: 8,
-  },
-  logoutText: {
     fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
-    color: Colors.danger,
-  },
-  footerText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 14,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: 20,
-  },
-  footerSubtext: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 12,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    marginTop: 4,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalDismiss: {
-    flex: 1,
-  },
-  modalContent: {
-    backgroundColor: Colors.cardBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.textMuted,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
-    color: Colors.textPrimary,
-    marginBottom: 16,
-  },
-  modalInput: {
-    fontFamily: 'Nunito_400Regular',
     fontSize: 16,
     color: Colors.textPrimary,
     backgroundColor: Colors.creamBeige,
-    borderRadius: 16,
-    padding: 16,
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  modalCancelBtn: {
+    borderRadius: 14,
+    paddingHorizontal: 16,
     paddingVertical: 12,
-    paddingHorizontal: 20,
+    letterSpacing: 2,
+    textAlign: 'center',
   },
-  modalCancelText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
-  modalSaveBtn: {
+  pairBtn: {
     width: 48,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.mintGreen,
+    borderRadius: 14,
+    backgroundColor: Colors.skyBlue,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  premiumModalContent: {
-    backgroundColor: Colors.cardBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-    alignItems: 'center',
-  },
-  premiumModalTitle: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 24,
-    color: Colors.textPrimary,
-    marginTop: 12,
-  },
-  premiumModalSub: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  premiumFeatures: {
-    width: '100%',
-    gap: 12,
-    marginBottom: 24,
-  },
-  premiumFeatureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  premiumFeatureText: {
-    fontFamily: 'Nunito_500Medium',
-    fontSize: 15,
-    color: Colors.textPrimary,
-  },
-  pricingCards: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-    marginBottom: 16,
-  },
-  pricingCard: {
-    flex: 1,
-    backgroundColor: Colors.creamBeige,
-    borderRadius: 20,
-    padding: 20,
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  pricingCardBest: {
-    borderColor: Colors.goldAccent,
-    backgroundColor: '#FFF9E6',
-  },
-  bestValueBadge: {
-    backgroundColor: Colors.goldAccent,
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    position: 'absolute',
-    top: -10,
-  },
-  bestValueText: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 11,
-    color: Colors.white,
-  },
-  pricingPeriod: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-  },
-  pricingPrice: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 32,
-    color: Colors.textPrimary,
-  },
-  pricingDetail: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: Colors.textMuted,
-  },
-  premiumCloseBtn: {
-    paddingVertical: 12,
-  },
-  premiumCloseText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
-    color: Colors.textMuted,
-  },
+  sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8, marginTop: 4 },
+  settingsCardWrap: { backgroundColor: Colors.cardBackground, borderRadius: 20, marginBottom: 20, shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  settingsRow: { flexDirection: 'row', alignItems: 'center', padding: 16, gap: 12 },
+  settingsRowBorder: { borderBottomWidth: 1, borderBottomColor: Colors.creamBeige },
+  settingsIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  settingsLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textPrimary, flex: 1 },
+  settingsRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  settingsValue: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textMuted },
+  logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 16, marginTop: 8 },
+  logoutText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.danger },
+  footerText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textMuted, textAlign: 'center', marginTop: 20 },
+  footerSubtext: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted, textAlign: 'center', marginTop: 4 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalDismiss: { flex: 1 },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: 20 },
+  premiumModalContent: { backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, alignItems: 'center' },
+  premiumModalTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 24, color: Colors.textPrimary, marginTop: 12 },
+  premiumModalSub: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textSecondary, marginTop: 4, marginBottom: 20 },
+  premiumFeatures: { width: '100%', gap: 12, marginBottom: 24 },
+  premiumFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  premiumFeatureText: { fontFamily: 'Nunito_500Medium', fontSize: 15, color: Colors.textPrimary },
+  pricingCards: { flexDirection: 'row', gap: 12, width: '100%', marginBottom: 16 },
+  pricingCard: { flex: 1, backgroundColor: Colors.creamBeige, borderRadius: 20, padding: 20, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  pricingCardBest: { borderColor: Colors.goldAccent, backgroundColor: '#FFF9E6' },
+  bestValueBadge: { backgroundColor: Colors.goldAccent, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, position: 'absolute', top: -10 },
+  bestValueText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: Colors.white },
+  pricingPeriod: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 4 },
+  pricingPrice: { fontFamily: 'Nunito_800ExtraBold', fontSize: 32, color: Colors.textPrimary },
+  pricingDetail: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textMuted },
+  premiumCloseBtn: { paddingVertical: 12 },
+  premiumCloseText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textMuted },
 });

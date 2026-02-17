@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { useApp } from '@/lib/app-context';
+import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 
 const CHILD_COLORS = [
@@ -97,16 +98,20 @@ function ChildCard({ child, index, onDelete, isSelected, onSelect }: ChildCardPr
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, addChild, removeChild, selectChild, isPremium } = useApp();
+  const { children, selectedChildId, addChild, removeChild, selectChild } = useApp();
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [childName, setChildName] = useState('');
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
   const [birthYear, setBirthYear] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+  const isPremium = user?.isPremium;
 
-  const canAddChild = isPremium || children.length < 1;
+  const ownChildren = children.filter(c => c.userId === user?.id);
+  const canAddChild = isPremium || ownChildren.length < 1;
 
   const handleAdd = () => {
     if (!canAddChild) {
@@ -120,12 +125,13 @@ export default function HomeScreen() {
     setBirthDay('');
     setBirthMonth('');
     setBirthYear('');
+    setErrorMsg('');
     setShowModal(true);
   };
 
   const handleSaveChild = async () => {
     if (!childName.trim()) {
-      Alert.alert('Nome richiesto', 'Inserisci il nome del bambino.');
+      setErrorMsg('Inserisci il nome del bambino.');
       return;
     }
 
@@ -134,15 +140,20 @@ export default function HomeScreen() {
     const year = parseInt(birthYear, 10);
 
     if (!day || !month || !year || day < 1 || day > 31 || month < 1 || month > 12 || year < 2000 || year > 2026) {
-      Alert.alert('Data non valida', 'Inserisci una data di nascita valida.');
+      setErrorMsg('Inserisci una data di nascita valida.');
       return;
     }
 
     const birthDate = new Date(year, month - 1, day).toISOString();
+    const result = await addChild({ name: childName.trim(), birthDate });
 
-    await addChild({ name: childName.trim(), birthDate });
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    setShowModal(false);
+    if (result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowModal(false);
+    } else {
+      setErrorMsg(result.message || 'Errore');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
   };
 
   return (
@@ -165,7 +176,7 @@ export default function HomeScreen() {
               <Text style={styles.brandTarbiy}>Tarbiy</Text>
               <Text style={styles.brandApp}>App</Text>
             </Text>
-            <Text style={styles.headerSubtitle}>Educazione islamica dei tuoi figli</Text>
+            <Text style={styles.headerSubtitle}>Ciao, {user?.name || 'Genitore'}</Text>
           </View>
         </View>
 
@@ -236,6 +247,13 @@ export default function HomeScreen() {
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Aggiungi figlio</Text>
 
+            {errorMsg ? (
+              <View style={styles.errorBox}>
+                <Ionicons name="alert-circle" size={16} color={Colors.danger} />
+                <Text style={styles.errorText}>{errorMsg}</Text>
+              </View>
+            ) : null}
+
             <Text style={styles.inputLabel}>Nome</Text>
             <TextInput
               style={styles.modalInput}
@@ -251,9 +269,7 @@ export default function HomeScreen() {
               <TextInput
                 style={[styles.modalInput, styles.dateInput]}
                 value={birthDay}
-                onChangeText={(t) => {
-                  if (t.length <= 2) setBirthDay(t);
-                }}
+                onChangeText={(t) => { if (t.length <= 2) setBirthDay(t); }}
                 placeholder="GG"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
@@ -262,9 +278,7 @@ export default function HomeScreen() {
               <TextInput
                 style={[styles.modalInput, styles.dateInput]}
                 value={birthMonth}
-                onChangeText={(t) => {
-                  if (t.length <= 2) setBirthMonth(t);
-                }}
+                onChangeText={(t) => { if (t.length <= 2) setBirthMonth(t); }}
                 placeholder="MM"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
@@ -273,9 +287,7 @@ export default function HomeScreen() {
               <TextInput
                 style={[styles.modalInput, styles.dateInputYear]}
                 value={birthYear}
-                onChangeText={(t) => {
-                  if (t.length <= 4) setBirthYear(t);
-                }}
+                onChangeText={(t) => { if (t.length <= 4) setBirthYear(t); }}
                 placeholder="AAAA"
                 placeholderTextColor={Colors.textMuted}
                 keyboardType="number-pad"
@@ -289,10 +301,7 @@ export default function HomeScreen() {
               </Pressable>
               <Pressable
                 onPress={handleSaveChild}
-                style={[
-                  styles.modalSaveBtn,
-                  !childName.trim() && styles.modalSaveBtnDisabled,
-                ]}
+                style={[styles.modalSaveBtn, !childName.trim() && styles.modalSaveBtnDisabled]}
               >
                 <Ionicons name="checkmark" size={22} color={Colors.white} />
               </Pressable>
@@ -320,241 +329,48 @@ function getAge(birthDate: string): string {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  content: {
-    paddingHorizontal: 20,
-  },
-  header: {
-    marginBottom: 24,
-  },
-  brandName: {
-    fontSize: 32,
-  },
-  brandTarbiy: {
-    fontFamily: 'Nunito_800ExtraBold',
-    color: Colors.mintGreen,
-    fontSize: 32,
-  },
-  brandApp: {
-    fontFamily: 'Nunito_600SemiBold',
-    color: Colors.textPrimary,
-    fontSize: 32,
-  },
-  headerSubtitle: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 4,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 18,
-    color: Colors.textPrimary,
-  },
-  limitBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.creamBeige,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  limitText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 12,
-    color: Colors.goldAccent,
-  },
-  childrenList: {
-    gap: 12,
-  },
-  childCard: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    shadowColor: Colors.shadow,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  childCardSelected: {
-    shadowOpacity: 0.15,
-    shadowRadius: 14,
-  },
-  childGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 20,
-    gap: 16,
-  },
-  childAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(255,255,255,0.7)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  childAvatarText: {
-    fontFamily: 'Nunito_800ExtraBold',
-    fontSize: 26,
-    color: Colors.textPrimary,
-  },
-  childInfo: {
-    flex: 1,
-  },
-  childName: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
-    color: Colors.textPrimary,
-  },
-  childAge: {
-    fontFamily: 'Nunito_500Medium',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  selectedBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.mintGreenDark,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 60,
-    gap: 8,
-  },
-  emptyIconWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.mintGreenLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  emptyTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 18,
-    color: Colors.textSecondary,
-  },
-  emptySubtext: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 14,
-    color: Colors.textMuted,
-    textAlign: 'center',
-    paddingHorizontal: 40,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: Colors.mintGreen,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.mintGreenDark,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  modalDismiss: {
-    flex: 1,
-  },
-  modalContent: {
-    backgroundColor: Colors.cardBackground,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 24,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: Colors.textMuted,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontFamily: 'Nunito_700Bold',
-    fontSize: 20,
-    color: Colors.textPrimary,
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginBottom: 8,
-  },
-  modalInput: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 16,
-    color: Colors.textPrimary,
-    backgroundColor: Colors.creamBeige,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  dateInput: {
-    flex: 1,
-    textAlign: 'center',
-  },
-  dateInputYear: {
-    flex: 1.5,
-    textAlign: 'center',
-  },
-  modalActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  modalCancelBtn: {
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-  },
-  modalCancelText: {
-    fontFamily: 'Nunito_600SemiBold',
-    fontSize: 16,
-    color: Colors.textSecondary,
-  },
-  modalSaveBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: Colors.mintGreen,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalSaveBtnDisabled: {
-    opacity: 0.5,
-  },
+  container: { flex: 1, backgroundColor: Colors.background },
+  scrollView: { flex: 1 },
+  content: { paddingHorizontal: 20 },
+  header: { marginBottom: 24 },
+  brandName: { fontSize: 32 },
+  brandTarbiy: { fontFamily: 'Nunito_800ExtraBold', color: Colors.mintGreen, fontSize: 32 },
+  brandApp: { fontFamily: 'Nunito_600SemiBold', color: Colors.textPrimary, fontSize: 32 },
+  headerSubtitle: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textSecondary, marginTop: 4 },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
+  limitBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.creamBeige, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  limitText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.goldAccent },
+  childrenList: { gap: 12 },
+  childCard: { borderRadius: 24, overflow: 'hidden', shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 10, elevation: 3 },
+  childCardSelected: { shadowOpacity: 0.15, shadowRadius: 14 },
+  childGradient: { flexDirection: 'row', alignItems: 'center', padding: 20, gap: 16 },
+  childAvatar: { width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.7)', alignItems: 'center', justifyContent: 'center' },
+  childAvatarText: { fontFamily: 'Nunito_800ExtraBold', fontSize: 26, color: Colors.textPrimary },
+  childInfo: { flex: 1 },
+  childName: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary },
+  childAge: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textSecondary, marginTop: 2 },
+  selectedBadge: { width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.mintGreenDark, alignItems: 'center', justifyContent: 'center' },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 8 },
+  emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  emptyTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textSecondary },
+  emptySubtext: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textMuted, textAlign: 'center', paddingHorizontal: 40 },
+  fab: { position: 'absolute', right: 20, width: 56, height: 56, borderRadius: 28, backgroundColor: Colors.mintGreen, alignItems: 'center', justifyContent: 'center', shadowColor: Colors.mintGreenDark, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalDismiss: { flex: 1 },
+  modalContent: { backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24 },
+  modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: 20 },
+  modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 20 },
+  errorBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.dangerLight, borderRadius: 12, padding: 12, gap: 8, marginBottom: 16 },
+  errorText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.danger, flex: 1 },
+  inputLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8 },
+  modalInput: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 16, marginBottom: 16 },
+  dateRow: { flexDirection: 'row', gap: 10 },
+  dateInput: { flex: 1, textAlign: 'center' as const },
+  dateInputYear: { flex: 1.5, textAlign: 'center' as const },
+  modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
+  modalCancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
+  modalCancelText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textSecondary },
+  modalSaveBtn: { width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.mintGreen, alignItems: 'center', justifyContent: 'center' },
+  modalSaveBtnDisabled: { opacity: 0.5 },
 });

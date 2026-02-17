@@ -17,6 +17,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, ZoomIn } from 'react-native-reanimated';
 import { useApp } from '@/lib/app-context';
+import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -82,6 +83,7 @@ function NoteCard({ note, onDelete }: NoteCardProps) {
 export default function BachecaScreen() {
   const insets = useSafeAreaInsets();
   const { notes, addNote, removeNote } = useApp();
+  const { user } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [noteText, setNoteText] = useState('');
 
@@ -89,7 +91,7 @@ export default function BachecaScreen() {
 
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
-    await addNote(noteText.trim());
+    await addNote(noteText.trim(), user?.name || 'Genitore');
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNoteText('');
     setShowModal(false);

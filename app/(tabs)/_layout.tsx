@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
 import Colors from "@/constants/colors";
+import { AppProvider } from "@/lib/app-context";
 
 function NativeTabLayout() {
   return (
@@ -133,8 +134,6 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
+  const content = isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />;
+  return <AppProvider>{content}</AppProvider>;
 }
