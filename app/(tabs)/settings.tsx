@@ -11,12 +11,14 @@ import {
   Modal,
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
+import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
@@ -274,11 +276,85 @@ function PendingApprovalsSection() {
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
-  const { user, logout, updatePremium, refreshUser } = useAuth();
+  const { user, logout, updatePremium, refreshUser, updateProfile } = useAuth();
   const { children } = useApp();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editBirthDay, setEditBirthDay] = useState('');
+  const [editBirthMonth, setEditBirthMonth] = useState('');
+  const [editBirthYear, setEditBirthYear] = useState('');
+  const [editGender, setEditGender] = useState('');
+  const [editPhotoUrl, setEditPhotoUrl] = useState('');
+  const [editError, setEditError] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+
+  const openEditModal = () => {
+    setEditName(user?.name || '');
+    if (user?.birthDate) {
+      const d = new Date(user.birthDate);
+      setEditBirthDay(String(d.getDate()));
+      setEditBirthMonth(String(d.getMonth() + 1));
+      setEditBirthYear(String(d.getFullYear()));
+    } else {
+      setEditBirthDay('');
+      setEditBirthMonth('');
+      setEditBirthYear('');
+    }
+    setEditGender(user?.gender || '');
+    setEditPhotoUrl(user?.photoUrl || '');
+    setEditError('');
+    setShowEditModal(true);
+  };
+
+  const pickProfilePhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setEditPhotoUrl(result.assets[0].uri);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    if (!editName.trim()) {
+      setEditError('Inserisci il tuo nome.');
+      return;
+    }
+    const day = parseInt(editBirthDay, 10);
+    const month = parseInt(editBirthMonth, 10);
+    const year = parseInt(editBirthYear, 10);
+    if (!day || !month || !year || day < 1 || day > 31 || month < 1 || month > 12 || year < 1940 || year > 2010) {
+      setEditError('Data di nascita non valida.');
+      return;
+    }
+    if (!editGender) {
+      setEditError('Seleziona il genere.');
+      return;
+    }
+    setEditSaving(true);
+    setEditError('');
+    const birthDate = new Date(year, month - 1, day).toISOString();
+    const result = await updateProfile({
+      name: editName.trim(),
+      birthDate,
+      gender: editGender,
+      photoUrl: editPhotoUrl || undefined,
+    });
+    setEditSaving(false);
+    if (result.success) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowEditModal(false);
+    } else {
+      setEditError(result.message || 'Errore');
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    }
+  };
 
   const handleLogout = () => {
     Alert.alert(
@@ -308,24 +384,29 @@ export default function SettingsScreen() {
       >
         <Text style={styles.headerTitle}>Impostazioni</Text>
 
-        <View style={styles.profileCard}>
+        <Pressable onPress={openEditModal} style={({ pressed }) => [styles.profileCard, pressed && { opacity: 0.9 }]}>
           <LinearGradient
             colors={['#A8E6CF', '#C7CEEA'] as const}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.profileGradient}
           >
-            <View style={styles.profileAvatar}>
-              <Text style={styles.profileAvatarText}>
-                {(user?.name || user?.email || 'G').charAt(0).toUpperCase()}
-              </Text>
-            </View>
+            {user?.photoUrl ? (
+              <Image source={{ uri: user.photoUrl }} style={styles.profilePhoto} />
+            ) : (
+              <View style={styles.profileAvatar}>
+                <Text style={styles.profileAvatarText}>
+                  {(user?.name || user?.email || 'G').charAt(0).toUpperCase()}
+                </Text>
+              </View>
+            )}
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name || 'Genitore'}</Text>
               <Text style={styles.profileSub}>{user?.email}</Text>
             </View>
+            <Ionicons name="create-outline" size={20} color="rgba(255,255,255,0.8)" />
           </LinearGradient>
-        </View>
+        </Pressable>
 
         {!user?.isPremium && (
           <Pressable
@@ -359,6 +440,7 @@ export default function SettingsScreen() {
             iconBg={Colors.mintGreenLight}
             label="Account"
             value={user?.name || user?.email || ''}
+            onPress={openEditModal}
           />
           <SettingsRow
             icon="language"
@@ -411,6 +493,115 @@ export default function SettingsScreen() {
 
         <View style={{ height: Platform.OS === 'web' ? 34 : 100 }} />
       </ScrollView>
+
+      <Modal visible={showEditModal} animationType="slide" transparent>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalDismiss} onPress={() => setShowEditModal(false)} />
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              style={[styles.editModalContent, { paddingBottom: insets.bottom + 16 }]}
+            >
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
+                <View style={styles.modalHandle} />
+                <Text style={styles.editModalTitle}>Modifica profilo</Text>
+
+                {editError ? (
+                  <View style={styles.errorBox}>
+                    <Ionicons name="alert-circle" size={14} color={Colors.danger} />
+                    <Text style={styles.errorBoxText}>{editError}</Text>
+                  </View>
+                ) : null}
+
+                <Pressable onPress={pickProfilePhoto} style={styles.editPhotoWrap}>
+                  {editPhotoUrl ? (
+                    <Image source={{ uri: editPhotoUrl }} style={styles.editPhotoPreview} />
+                  ) : (
+                    <View style={styles.editPhotoPlaceholder}>
+                      <Ionicons name="camera" size={28} color={Colors.textMuted} />
+                    </View>
+                  )}
+                  <Text style={styles.editPhotoLabel}>Cambia foto</Text>
+                </Pressable>
+
+                <Text style={styles.editInputLabel}>Nome</Text>
+                <TextInput
+                  style={styles.editInput}
+                  value={editName}
+                  onChangeText={setEditName}
+                  placeholder="Il tuo nome"
+                  placeholderTextColor={Colors.textMuted}
+                />
+
+                <Text style={styles.editInputLabel}>Data di nascita</Text>
+                <View style={styles.editDateRow}>
+                  <TextInput
+                    style={[styles.editInput, styles.editDateInput]}
+                    value={editBirthDay}
+                    onChangeText={(t) => { if (t.length <= 2) setEditBirthDay(t); }}
+                    placeholder="GG"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                  <TextInput
+                    style={[styles.editInput, styles.editDateInput]}
+                    value={editBirthMonth}
+                    onChangeText={(t) => { if (t.length <= 2) setEditBirthMonth(t); }}
+                    placeholder="MM"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                  <TextInput
+                    style={[styles.editInput, styles.editDateInputYear]}
+                    value={editBirthYear}
+                    onChangeText={(t) => { if (t.length <= 4) setEditBirthYear(t); }}
+                    placeholder="AAAA"
+                    placeholderTextColor={Colors.textMuted}
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                </View>
+
+                <Text style={styles.editInputLabel}>Genere</Text>
+                <View style={styles.editGenderRow}>
+                  <Pressable
+                    onPress={() => setEditGender('maschio')}
+                    style={[styles.editGenderBtn, editGender === 'maschio' && styles.editGenderBtnActive]}
+                  >
+                    <Ionicons name="man" size={20} color={editGender === 'maschio' ? '#4A90E2' : Colors.textMuted} />
+                    <Text style={[styles.editGenderText, editGender === 'maschio' && { color: '#4A90E2' }]}>Maschio</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => setEditGender('femmina')}
+                    style={[styles.editGenderBtn, editGender === 'femmina' && styles.editGenderBtnFemActive]}
+                  >
+                    <Ionicons name="woman" size={20} color={editGender === 'femmina' ? '#FF6B6B' : Colors.textMuted} />
+                    <Text style={[styles.editGenderText, editGender === 'femmina' && { color: '#FF6B6B' }]}>Femmina</Text>
+                  </Pressable>
+                </View>
+
+                <Pressable
+                  onPress={handleSaveProfile}
+                  disabled={editSaving}
+                  style={[styles.editSaveBtn, editSaving && { opacity: 0.6 }]}
+                >
+                  {editSaving ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark" size={20} color={Colors.white} />
+                      <Text style={styles.editSaveText}>Salva</Text>
+                    </>
+                  )}
+                </Pressable>
+              </ScrollView>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal visible={showPremiumModal} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
@@ -613,4 +804,38 @@ const styles = StyleSheet.create({
   pricingDetail: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textMuted },
   premiumCloseBtn: { paddingVertical: 12 },
   premiumCloseText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textMuted },
+  profilePhoto: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)' },
+  editModalContent: {
+    backgroundColor: Colors.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    maxHeight: '85%',
+  },
+  editModalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 20 },
+  editPhotoWrap: { alignItems: 'center', marginBottom: 20 },
+  editPhotoPreview: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: Colors.mintGreenLight },
+  editPhotoPlaceholder: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.creamBeige,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.textMuted, borderStyle: 'dashed',
+  },
+  editPhotoLabel: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.mintGreenDark, marginTop: 6 },
+  editInputLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8 },
+  editInput: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 14, marginBottom: 16 },
+  editDateRow: { flexDirection: 'row', gap: 10 },
+  editDateInput: { flex: 1, textAlign: 'center' as const },
+  editDateInputYear: { flex: 1.5, textAlign: 'center' as const },
+  editGenderRow: { flexDirection: 'row', gap: 12, marginBottom: 16 },
+  editGenderBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 14, borderRadius: 16, backgroundColor: Colors.creamBeige,
+  },
+  editGenderBtnActive: { backgroundColor: '#E3F2FD', borderWidth: 2, borderColor: '#4A90E2' },
+  editGenderBtnFemActive: { backgroundColor: '#FFEBEE', borderWidth: 2, borderColor: '#FF6B6B' },
+  editGenderText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textSecondary },
+  editSaveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    backgroundColor: Colors.mintGreen, paddingVertical: 16, borderRadius: 20, marginTop: 8,
+  },
+  editSaveText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
 });
