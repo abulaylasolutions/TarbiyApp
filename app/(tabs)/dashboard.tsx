@@ -30,6 +30,23 @@ const SUBJECTS = [
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
+const SURAH_NAMES = [
+  'Al-Fatiha','Al-Baqarah','Ali \'Imran','An-Nisa','Al-Ma\'idah','Al-An\'am','Al-A\'raf','Al-Anfal','At-Tawbah','Yunus',
+  'Hud','Yusuf','Ar-Ra\'d','Ibrahim','Al-Hijr','An-Nahl','Al-Isra','Al-Kahf','Maryam','Taha',
+  'Al-Anbiya','Al-Hajj','Al-Mu\'minun','An-Nur','Al-Furqan','Ash-Shu\'ara','An-Naml','Al-Qasas','Al-Ankabut','Ar-Rum',
+  'Luqman','As-Sajdah','Al-Ahzab','Saba','Fatir','Ya-Sin','As-Saffat','Sad','Az-Zumar','Ghafir',
+  'Fussilat','Ash-Shura','Az-Zukhruf','Ad-Dukhan','Al-Jathiyah','Al-Ahqaf','Muhammad','Al-Fath','Al-Hujurat','Qaf',
+  'Adh-Dhariyat','At-Tur','An-Najm','Al-Qamar','Ar-Rahman','Al-Waqi\'ah','Al-Hadid','Al-Mujadila','Al-Hashr','Al-Mumtahanah',
+  'As-Saff','Al-Jumu\'ah','Al-Munafiqun','At-Taghabun','At-Talaq','At-Tahrim','Al-Mulk','Al-Qalam','Al-Haqqah','Al-Ma\'arij',
+  'Nuh','Al-Jinn','Al-Muzzammil','Al-Muddaththir','Al-Qiyamah','Al-Insan','Al-Mursalat','An-Naba','An-Nazi\'at','Abasa',
+  'At-Takwir','Al-Infitar','Al-Mutaffifin','Al-Inshiqaq','Al-Buruj','At-Tariq','Al-A\'la','Al-Ghashiyah','Al-Fajr','Al-Balad',
+  'Ash-Shams','Al-Layl','Ad-Duha','Ash-Sharh','At-Tin','Al-Alaq','Al-Qadr','Al-Bayyinah','Az-Zalzalah','Al-Adiyat',
+  'Al-Qari\'ah','At-Takathur','Al-Asr','Al-Humazah','Al-Fil','Quraysh','Al-Ma\'un','Al-Kawthar','Al-Kafirun','An-Nasr',
+  'Al-Masad','Al-Ikhlas','Al-Falaq','An-Nas',
+];
+
+type SurahStatus = 'not_started' | 'in_progress' | 'learned';
+
 function formatDate(d: Date): string {
   return d.toISOString().split('T')[0];
 }
@@ -151,6 +168,9 @@ export default function DashboardScreen() {
   const [quranToday, setQuranToday] = useState(false);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
+  const [quranLogs, setQuranLogs] = useState<Record<string, SurahStatus>>({});
+  const [showQuranModal, setShowQuranModal] = useState(false);
+  const [quranFilter, setQuranFilter] = useState<'all' | 'learned' | 'in_progress' | 'not_started'>('all');
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -195,6 +215,7 @@ export default function DashboardScreen() {
         fetches.push(fetch(new URL(`/api/children/${childId}/fasting/${dateStr}`, base).toString(), { credentials: 'include' }));
       }
       fetches.push(fetch(new URL(`/api/children/${childId}/quran-daily/${dateStr}`, base).toString(), { credentials: 'include' }));
+      fetches.push(fetch(new URL(`/api/children/${childId}/quran`, base).toString(), { credentials: 'include' }));
 
       const results = await Promise.all(fetches);
       const [tasksData, compData, actData] = await Promise.all(results.slice(0, 3).map(r => r.json()));
@@ -223,6 +244,13 @@ export default function DashboardScreen() {
       }
       const quranDailyData = await results[idx].json();
       setQuranToday(!!quranDailyData.completed);
+      idx++;
+      const quranLogsData = await results[idx].json();
+      if (Array.isArray(quranLogsData)) {
+        const logsMap: Record<string, SurahStatus> = {};
+        quranLogsData.forEach((log: any) => { logsMap[log.surahNumber] = log.status as SurahStatus; });
+        setQuranLogs(logsMap);
+      }
     } catch {}
   }, [childId, dateStr, salahEnabled, fastingEnabled]);
 
@@ -293,6 +321,29 @@ export default function DashboardScreen() {
       await apiRequest('POST', `/api/children/${childId}/quran-daily`, { date: dateStr, completed: newVal });
     } catch {}
   };
+
+  const updateSurahStatus = async (surahNumber: number, newStatus: SurahStatus) => {
+    if (!childId) return;
+    const key = String(surahNumber);
+    setQuranLogs(prev => ({ ...prev, [key]: newStatus }));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('POST', `/api/children/${childId}/quran`, { surahNumber: key, status: newStatus });
+    } catch {}
+  };
+
+  const cycleSurahStatus = (surahNumber: number) => {
+    const key = String(surahNumber);
+    const current = quranLogs[key] || 'not_started';
+    const next: SurahStatus = current === 'not_started' ? 'in_progress' : current === 'in_progress' ? 'learned' : 'not_started';
+    updateSurahStatus(surahNumber, next);
+  };
+
+  const learnedCount = Object.values(quranLogs).filter(s => s === 'learned').length;
+  const inProgressCount = Object.values(quranLogs).filter(s => s === 'in_progress').length;
+
+  const filteredSurahs = SURAH_NAMES.map((name, i) => ({ name, number: i + 1, status: quranLogs[String(i + 1)] || 'not_started' as SurahStatus }))
+    .filter(s => quranFilter === 'all' || s.status === quranFilter);
 
   const handleAddTask = async () => {
     if (!childId || !newTaskName.trim()) return;
@@ -594,6 +645,52 @@ export default function DashboardScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(600).duration(300)}>
+            <View style={s.quranMemHeader}>
+              <Text style={s.sectionTitle}>{t('quranMemorization')}</Text>
+              <Pressable onPress={() => setShowQuranModal(true)} style={s.quranViewAllBtn}>
+                <Ionicons name="list-outline" size={16} color={cardColor} />
+              </Pressable>
+            </View>
+            <View style={s.card}>
+              <View style={s.quranStats}>
+                <View style={[s.quranStatItem, { backgroundColor: Colors.mintGreen + '18' }]}>
+                  <Text style={[s.quranStatNum, { color: Colors.mintGreen }]}>{learnedCount}</Text>
+                  <Text style={s.quranStatLabel}>{t('surahLearned')}</Text>
+                </View>
+                <View style={[s.quranStatItem, { backgroundColor: '#F4C430' + '18' }]}>
+                  <Text style={[s.quranStatNum, { color: '#F4C430' }]}>{inProgressCount}</Text>
+                  <Text style={s.quranStatLabel}>{t('surahInProgress')}</Text>
+                </View>
+                <View style={[s.quranStatItem, { backgroundColor: Colors.textMuted + '18' }]}>
+                  <Text style={[s.quranStatNum, { color: Colors.textMuted }]}>{114 - learnedCount - inProgressCount}</Text>
+                  <Text style={s.quranStatLabel}>{t('surahNotStarted')}</Text>
+                </View>
+              </View>
+              <View style={s.quranProgressWrap}>
+                <View style={s.quranProgressBar}>
+                  <View style={[s.quranProgressFill, { width: `${(learnedCount / 114) * 100}%`, backgroundColor: Colors.mintGreen }]} />
+                  <View style={[s.quranProgressFill, { width: `${(inProgressCount / 114) * 100}%`, backgroundColor: '#F4C430' }]} />
+                </View>
+                <Text style={s.quranProgressText}>{learnedCount}/114</Text>
+              </View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.quranPreviewScroll}>
+                <View style={s.quranPreviewRow}>
+                  {SURAH_NAMES.slice(-30).map((name, i) => {
+                    const num = 114 - 29 + i;
+                    const status = quranLogs[String(num)] || 'not_started';
+                    const bgColor = status === 'learned' ? Colors.mintGreen : status === 'in_progress' ? '#F4C430' : Colors.creamBeige;
+                    return (
+                      <Pressable key={num} onPress={() => cycleSurahStatus(num)} style={[s.quranMiniChip, { backgroundColor: bgColor }]}>
+                        <Text style={[s.quranMiniNum, status !== 'not_started' && { color: Colors.white }]}>{num}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </ScrollView>
+            </View>
+          </Animated.View>
+
+          <Animated.View entering={FadeInDown.delay(700).duration(300)}>
             <Text style={s.sectionTitle}>{t('recentActivityLog')}</Text>
             {activities.length > 0 ? (
               <View style={s.card}>
@@ -618,6 +715,53 @@ export default function DashboardScreen() {
           </Animated.View>
         </View>
       </ScrollView>
+
+      <Modal visible={showQuranModal} animationType="slide" transparent>
+        <View style={s.modalOverlay}>
+          <Pressable style={s.modalDismiss} onPress={() => setShowQuranModal(false)} />
+          <View style={[s.quranModalContent, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={s.modalHandle} />
+            <Text style={s.modalTitle}>{t('quranMemorization')}</Text>
+            <View style={s.quranFilterRow}>
+              {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
+                const isActive = quranFilter === f;
+                const filterColor = f === 'learned' ? Colors.mintGreen : f === 'in_progress' ? '#F4C430' : f === 'not_started' ? Colors.textMuted : cardColor;
+                return (
+                  <Pressable
+                    key={f}
+                    onPress={() => setQuranFilter(f)}
+                    style={[s.quranFilterBtn, isActive && { backgroundColor: filterColor + '20', borderColor: filterColor }]}
+                  >
+                    <Text style={[s.quranFilterText, isActive && { color: filterColor }]}>
+                      {f === 'all' ? (lang === 'ar' ? 'الكل' : lang === 'en' ? 'All' : 'Tutte') : t(f === 'learned' ? 'surahLearned' : f === 'in_progress' ? 'surahInProgress' : 'surahNotStarted')}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+            <FlatList
+              data={filteredSurahs}
+              keyExtractor={(item) => String(item.number)}
+              showsVerticalScrollIndicator={false}
+              style={s.quranList}
+              renderItem={({ item }) => {
+                const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
+                const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
+                return (
+                  <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
+                    <View style={[s.surahNumBadge, { backgroundColor: statusColor + '18' }]}>
+                      <Text style={[s.surahNum, { color: statusColor }]}>{item.number}</Text>
+                    </View>
+                    <Text style={s.surahName}>{item.name}</Text>
+                    <Ionicons name={statusIcon as any} size={22} color={statusColor} />
+                  </Pressable>
+                );
+              }}
+              ItemSeparatorComponent={() => <View style={s.taskRowBorder} />}
+            />
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={showAddTask} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
@@ -834,6 +978,45 @@ const s = StyleSheet.create({
     backgroundColor: Colors.creamBeige,
   },
   fastingBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary },
+
+  quranMemHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 8 },
+  quranViewAllBtn: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.creamBeige,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  quranStats: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  quranStatItem: {
+    flex: 1, borderRadius: 14, paddingVertical: 10, alignItems: 'center',
+  },
+  quranStatNum: { fontFamily: 'Nunito_800ExtraBold', fontSize: 22 },
+  quranStatLabel: { fontFamily: 'Nunito_500Medium', fontSize: 11, color: Colors.textMuted, marginTop: 2 },
+  quranProgressWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  quranProgressBar: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Colors.creamBeige, flexDirection: 'row', overflow: 'hidden' },
+  quranProgressFill: { height: 6 },
+  quranProgressText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textSecondary, minWidth: 40 },
+  quranPreviewScroll: { marginTop: 4 },
+  quranPreviewRow: { flexDirection: 'row', gap: 6 },
+  quranMiniChip: {
+    width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+  },
+  quranMiniNum: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: Colors.textSecondary },
+  quranModalContent: {
+    backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 24, maxHeight: '85%',
+  },
+  quranFilterRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
+  quranFilterBtn: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
+    borderWidth: 2, borderColor: Colors.creamBeige, backgroundColor: Colors.creamBeige,
+  },
+  quranFilterText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
+  quranList: { flex: 1 },
+  surahRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  surahNumBadge: {
+    width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+  },
+  surahNum: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
+  surahName: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary, flex: 1 },
 
   subjectRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
   subjectName: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary, flex: 1 },
