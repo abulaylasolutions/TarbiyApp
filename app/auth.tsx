@@ -8,6 +8,7 @@ import {
   Platform,
   KeyboardAvoidingView,
   ScrollView,
+  Image,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -95,7 +96,7 @@ export default function AuthScreen() {
         >
           <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.logoSection}>
             <View style={styles.logoCircle}>
-              <Ionicons name="leaf" size={40} color={Colors.mintGreen} />
+              <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
             </View>
             <Text style={styles.brandName}>
               <Text style={styles.brandTarbiy}>Tarbiy</Text>
@@ -255,10 +256,13 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: 'rgba(168, 230, 207, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
+  },
+  logoImage: {
+    width: 72,
+    height: 72,
   },
   brandName: {
     fontSize: 36,
