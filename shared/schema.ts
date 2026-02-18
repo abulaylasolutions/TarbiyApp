@@ -74,6 +74,74 @@ export const pendingChanges = pgTable("pending_changes", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const customTasks = pgTable("custom_tasks", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  userId: text("user_id").notNull(),
+  name: text("name").notNull(),
+  frequency: text("frequency").notNull().default("daily"),
+  time: text("time"),
+  days: text("days"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const taskCompletions = pgTable("task_completions", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  taskId: text("task_id").notNull(),
+  childId: text("child_id").notNull(),
+  date: text("date").notNull(),
+  completed: boolean("completed").default(false),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const prayerLogs = pgTable("prayer_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  date: text("date").notNull(),
+  fajr: boolean("fajr").default(false),
+  dhuhr: boolean("dhuhr").default(false),
+  asr: boolean("asr").default(false),
+  maghrib: boolean("maghrib").default(false),
+  isha: boolean("isha").default(false),
+  fajrNote: text("fajr_note"),
+  dhuhrNote: text("dhuhr_note"),
+  asrNote: text("asr_note"),
+  maghribNote: text("maghrib_note"),
+  ishaNote: text("isha_note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const fastingLogs = pgTable("fasting_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  date: text("date").notNull(),
+  status: text("status").notNull().default("no"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const activityLogs = pgTable("activity_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  userId: text("user_id").notNull(),
+  authorName: text("author_name").notNull(),
+  text: text("text").notNull(),
+  category: text("category"),
+  date: text("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   email: true,
   password: true,
@@ -102,3 +170,8 @@ export type Child = typeof children.$inferSelect;
 export type Note = typeof notes.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type PendingChange = typeof pendingChanges.$inferSelect;
+export type CustomTask = typeof customTasks.$inferSelect;
+export type TaskCompletion = typeof taskCompletions.$inferSelect;
+export type PrayerLog = typeof prayerLogs.$inferSelect;
+export type FastingLog = typeof fastingLogs.$inferSelect;
+export type ActivityLog = typeof activityLogs.$inferSelect;

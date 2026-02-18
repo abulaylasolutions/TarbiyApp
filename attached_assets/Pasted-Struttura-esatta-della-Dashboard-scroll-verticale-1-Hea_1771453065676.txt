@@ -1,0 +1,54 @@
+Struttura esatta della Dashboard (scroll verticale):
+
+1. Header pinned/fisso in alto:
+   - Foto profilo figlio grande rotonda (da children/photoUrl, CachedNetworkImage, fallback placeholder pastello)
+   - Nome in grassetto (rosa #FF6B6B se femmina, celeste #4A90E2 se maschio)
+   - Età in nero normale
+   - Sotto: testo "figlia tua e di [Nome Cogenitore]" (se femmina) o "figlio tuo e di [Nome Cogenitore]" (se maschio)
+     - "figlia tua e di" / "figlio tuo e di" in nero
+     - [Nome Cogenitore] in rosso #FF6B6B se femmina, blu #4A90E2 se maschio (prendi sesso da users/sex del paired uid)
+   - Sfondo header: usa children/cardColor con opacità 0.8-1.0
+
+2. Barra date orizzontale (subito sotto header, sempre visibile, scrollabile):
+   - Lista di pillole/giorni (stile calendario compatto: cerchi o rettangoli arrotondati pastello)
+   - Data odierna centrata e evidenziata (bordo verde menta o sfondo oro tenue)
+   - Freccette sinistra/destra o swipe per scorrere (±30 giorni)
+   - Pulsante piccolo "Oggi" a destra per tornare a data corrente
+   - Usa ListView.horizontal con DateTime.now() + offset, stato gestito con Provider (currentDate)
+
+3. Eventi odierni / custom task (card o sezione visibile solo se matcha currentDate):
+   - Titolo: "Eventi di oggi" o "Attività programmate"
+   - Lista dinamica: per ogni customTask in children/customTasks che matcha currentDate/frequenza (es. giornaliero sempre, settimanale se giorno corrisponde)
+     - Riga: nome evento, orario/durata, checkbox tappabile "Fatto" / "Non fatto" + TextField nota breve
+   - Se vuoto: placeholder soft pastello "Nessun evento oggi – aggiungi con +"
+
+4. Tasto + per aggiungere evento custom (in alto a destra, vicino selector figlio o flottante):
+   - Icona + verde menta, visibile solo in Dashboard
+   - Clic: modale o bottom sheet con:
+     - TextField "Nome evento" (es. Scuola Arabo)
+     - Dropdown frequenza (giornaliero, 1-3 volte/settimana, settimanale, mensile)
+     - TimePicker per orario/durata
+     - DatePicker o toggle per giorni specifici
+   - Salva in children/customTasks array Firestore (realtime sync)
+
+5. Tracker Salah (se children/trackPrayer == true):
+   - Card dedicata: "Salah di oggi"
+   - 5 icone/orari tappabili (Fajr, Dhuhr, Asr, Maghrib, Isha) – cerchio vuoto → verde check + nota opzionale
+   - Salva per currentDate in subcollection children/prayers/{date} o array giornaliero
+
+6. Tracker Digiuno (se children/trackFasting == true):
+   - Riga semplice in card: "Digiuno oggi?" + toggle Sì/No/Parziale + TextField nota
+   - Salva per currentDate
+
+7. Sezioni fisse permanenti (sotto, usa ExpansionTile collassabili per non sovraccaricare):
+   - Arabo, Qur'an, Akhlaq, Aqidah, Sira, ecc. (checklist permanenti + note/date)
+   - Espandibili su tap, stile accordion pastello
+
+8. Attività recenti (in fondo, come nella tua immagine attuale):
+   - Lista verticale scrollabile di log (es. "Ha memorizzato Surat Al-Fatiha", "Ha detto Bismillah oggi")
+   - Stile bolle pastello, timestamp, autore (babbo/mamma con colore)
+   - Sync realtime da subcollection children/activityLog
+
+Mantieni responsive, animazioni soft (fade su cambio data, check con stellina verde), Material 3 con borderRadius 24-32. Usa Provider/Riverpod per currentDate e refresh. Aggiungi dipendenze se manca (cached_network_image, intl per date, table_calendar se vuoi calendario più bello).
+
+Modifica dashboard_screen.dart e crea nuovi widget necessari (es. date_bar.dart, daily_events.dart, salah_tracker.dart). Inizia con queste integrazioni precise!
