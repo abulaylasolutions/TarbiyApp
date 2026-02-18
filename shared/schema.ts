@@ -34,6 +34,8 @@ export const children = pgTable("children", {
   coParentName: text("co_parent_name"),
   cogenitori: text("cogenitori"),
   cardColor: text("card_color"),
+  salahEnabled: boolean("salah_enabled").default(true),
+  fastingEnabled: boolean("fasting_enabled").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -83,6 +85,7 @@ export const customTasks = pgTable("custom_tasks", {
   name: text("name").notNull(),
   frequency: text("frequency").notNull().default("daily"),
   time: text("time"),
+  endTime: text("end_time"),
   days: text("days"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -125,6 +128,27 @@ export const fastingLogs = pgTable("fasting_logs", {
   childId: text("child_id").notNull(),
   date: text("date").notNull(),
   status: text("status").notNull().default("no"),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const quranLogs = pgTable("quran_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  surahNumber: text("surah_number").notNull(),
+  status: text("status").notNull().default("not_started"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const quranDailyLogs = pgTable("quran_daily_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  date: text("date").notNull(),
+  completed: boolean("completed").default(false),
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -175,3 +199,5 @@ export type TaskCompletion = typeof taskCompletions.$inferSelect;
 export type PrayerLog = typeof prayerLogs.$inferSelect;
 export type FastingLog = typeof fastingLogs.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
+export type QuranLog = typeof quranLogs.$inferSelect;
+export type QuranDailyLog = typeof quranDailyLogs.$inferSelect;

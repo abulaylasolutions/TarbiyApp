@@ -42,6 +42,10 @@ import {
   upsertFastingLog,
   getActivityLogs,
   addActivityLog,
+  getQuranLogs,
+  upsertQuranLog,
+  getQuranDailyLog,
+  upsertQuranDailyLog,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -422,9 +426,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/children/:childId/tasks", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { name, frequency, time, days } = req.body;
+      const { name, frequency, time, endTime, days } = req.body;
       if (!name) return res.status(400).json({ message: "Nome richiesto" });
-      const task = await addTask(req.params.childId as string, req.session.userId!, name, frequency || "daily", time, days);
+      const task = await addTask(req.params.childId as string, req.session.userId!, name, frequency || "daily", time, endTime, days);
       return res.status(201).json(task);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -522,6 +526,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const d = date || new Date().toISOString().split("T")[0];
       const result = await addActivityLog(req.params.childId as string, req.session.userId!, authorName, text, category || "general", d);
       return res.status(201).json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Child settings (salah/fasting toggle)
+  app.patch("/api/children/:childId/settings", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { salahEnabled, fastingEnabled } = req.body;
+      const data: any = {};
+      if (typeof salahEnabled === "boolean") data.salahEnabled = salahEnabled;
+      if (typeof fastingEnabled === "boolean") data.fastingEnabled = fastingEnabled;
+      const result = await updateChild(req.params.childId as string, data);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Quran Memorization
+  app.get("/api/children/:childId/quran", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getQuranLogs(req.params.childId as string);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/quran", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { surahNumber, status } = req.body;
+      if (!surahNumber) return res.status(400).json({ message: "surahNumber richiesto" });
+      const result = await upsertQuranLog(req.params.childId as string, surahNumber, status || "not_started");
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Quran Daily Log
+  app.get("/api/children/:childId/quran-daily/:date", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getQuranDailyLog(req.params.childId as string, req.params.date as string);
+      return res.json(result || { completed: false, note: "" });
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/quran-daily", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { date, completed, note } = req.body;
+      if (!date) return res.status(400).json({ message: "date richiesto" });
+      const result = await upsertQuranDailyLog(req.params.childId as string, date, completed, note);
+      return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }

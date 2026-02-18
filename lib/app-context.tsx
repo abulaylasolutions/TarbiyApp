@@ -18,6 +18,8 @@ export interface Child {
   coParentName?: string | null;
   cogenitori?: string | null;
   cardColor?: string | null;
+  salahEnabled?: boolean | null;
+  fastingEnabled?: boolean | null;
   userId: string;
   createdAt: string;
 }
@@ -51,7 +53,7 @@ interface AppContextValue {
   cogenitori: CogenitoreInfo[];
   pendingChanges: PendingChange[];
   addChild: (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => Promise<{ success: boolean; message?: string }>;
-  updateChild: (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string }) => Promise<{ success: boolean; message?: string }>;
+  updateChild: (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string; salahEnabled?: boolean; fastingEnabled?: boolean }) => Promise<{ success: boolean; message?: string }>;
   removeChild: (id: string) => Promise<void>;
   selectChild: (id: string) => void;
   addNote: (text: string, author: string, tags?: string) => Promise<void>;

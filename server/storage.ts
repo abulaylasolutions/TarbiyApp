@@ -1,7 +1,7 @@
 import { eq, or, and, inArray, sql, desc } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs } from "@shared/schema";
-import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog } from "@shared/schema";
+import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs } from "@shared/schema";
+import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -208,6 +208,8 @@ export async function updateChild(
     coParentName?: string;
     cardColor?: string;
     cogenitori?: string;
+    salahEnabled?: boolean;
+    fastingEnabled?: boolean;
   }
 ): Promise<Child> {
   const result = await db
@@ -359,8 +361,8 @@ export async function getTasksForChild(childId: string): Promise<CustomTask[]> {
   return db.select().from(customTasks).where(eq(customTasks.childId, childId));
 }
 
-export async function addTask(childId: string, userId: string, name: string, frequency: string, time?: string, days?: string): Promise<CustomTask> {
-  const result = await db.insert(customTasks).values({ childId, userId, name, frequency, time, days }).returning();
+export async function addTask(childId: string, userId: string, name: string, frequency: string, time?: string, endTime?: string, days?: string): Promise<CustomTask> {
+  const result = await db.insert(customTasks).values({ childId, userId, name, frequency, time, endTime, days }).returning();
   return result[0];
 }
 
@@ -419,5 +421,34 @@ export async function getActivityLogs(childId: string, limit = 20): Promise<Acti
 
 export async function addActivityLog(childId: string, userId: string, authorName: string, text: string, category: string, date: string): Promise<ActivityLog> {
   const result = await db.insert(activityLogs).values({ childId, userId, authorName, text, category, date }).returning();
+  return result[0];
+}
+
+export async function getQuranLogs(childId: string): Promise<QuranLog[]> {
+  return db.select().from(quranLogs).where(eq(quranLogs.childId, childId));
+}
+
+export async function upsertQuranLog(childId: string, surahNumber: string, status: string): Promise<QuranLog> {
+  const existing = await db.select().from(quranLogs).where(and(eq(quranLogs.childId, childId), eq(quranLogs.surahNumber, surahNumber)));
+  if (existing.length > 0) {
+    const result = await db.update(quranLogs).set({ status }).where(eq(quranLogs.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(quranLogs).values({ childId, surahNumber, status }).returning();
+  return result[0];
+}
+
+export async function getQuranDailyLog(childId: string, date: string): Promise<QuranDailyLog | null> {
+  const result = await db.select().from(quranDailyLogs).where(and(eq(quranDailyLogs.childId, childId), eq(quranDailyLogs.date, date)));
+  return result[0] || null;
+}
+
+export async function upsertQuranDailyLog(childId: string, date: string, completed: boolean, note?: string): Promise<QuranDailyLog> {
+  const existing = await db.select().from(quranDailyLogs).where(and(eq(quranDailyLogs.childId, childId), eq(quranDailyLogs.date, date)));
+  if (existing.length > 0) {
+    const result = await db.update(quranDailyLogs).set({ completed, note }).where(eq(quranDailyLogs.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(quranDailyLogs).values({ childId, date, completed, note }).returning();
   return result[0];
 }
