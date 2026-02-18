@@ -1,7 +1,7 @@
-import { eq, or, inArray, sql } from "drizzle-orm";
+import { eq, or, and, inArray, sql, desc } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes, comments, pendingChanges } from "@shared/schema";
-import type { User, Child, Note, Comment, PendingChange } from "@shared/schema";
+import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs } from "@shared/schema";
+import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -353,4 +353,71 @@ export async function addComment(
 
 export async function removeComment(id: string): Promise<void> {
   await db.delete(comments).where(eq(comments.id, id));
+}
+
+export async function getTasksForChild(childId: string): Promise<CustomTask[]> {
+  return db.select().from(customTasks).where(eq(customTasks.childId, childId));
+}
+
+export async function addTask(childId: string, userId: string, name: string, frequency: string, time?: string, days?: string): Promise<CustomTask> {
+  const result = await db.insert(customTasks).values({ childId, userId, name, frequency, time, days }).returning();
+  return result[0];
+}
+
+export async function removeTask(id: string): Promise<void> {
+  await db.delete(taskCompletions).where(eq(taskCompletions.taskId, id));
+  await db.delete(customTasks).where(eq(customTasks.id, id));
+}
+
+export async function getTaskCompletions(childId: string, date: string): Promise<TaskCompletion[]> {
+  return db.select().from(taskCompletions).where(and(eq(taskCompletions.childId, childId), eq(taskCompletions.date, date)));
+}
+
+export async function upsertTaskCompletion(taskId: string, childId: string, date: string, completed: boolean, note?: string): Promise<TaskCompletion> {
+  const existing = await db.select().from(taskCompletions).where(and(eq(taskCompletions.taskId, taskId), eq(taskCompletions.date, date)));
+  if (existing.length > 0) {
+    const result = await db.update(taskCompletions).set({ completed, note }).where(eq(taskCompletions.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(taskCompletions).values({ taskId, childId, date, completed, note }).returning();
+  return result[0];
+}
+
+export async function getPrayerLog(childId: string, date: string): Promise<PrayerLog | null> {
+  const result = await db.select().from(prayerLogs).where(and(eq(prayerLogs.childId, childId), eq(prayerLogs.date, date)));
+  return result[0] || null;
+}
+
+export async function upsertPrayerLog(childId: string, date: string, data: Partial<PrayerLog>): Promise<PrayerLog> {
+  const existing = await db.select().from(prayerLogs).where(and(eq(prayerLogs.childId, childId), eq(prayerLogs.date, date)));
+  if (existing.length > 0) {
+    const result = await db.update(prayerLogs).set(data).where(eq(prayerLogs.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(prayerLogs).values({ childId, date, ...data } as any).returning();
+  return result[0];
+}
+
+export async function getFastingLog(childId: string, date: string): Promise<FastingLog | null> {
+  const result = await db.select().from(fastingLogs).where(and(eq(fastingLogs.childId, childId), eq(fastingLogs.date, date)));
+  return result[0] || null;
+}
+
+export async function upsertFastingLog(childId: string, date: string, status: string, note?: string): Promise<FastingLog> {
+  const existing = await db.select().from(fastingLogs).where(and(eq(fastingLogs.childId, childId), eq(fastingLogs.date, date)));
+  if (existing.length > 0) {
+    const result = await db.update(fastingLogs).set({ status, note }).where(eq(fastingLogs.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(fastingLogs).values({ childId, date, status, note }).returning();
+  return result[0];
+}
+
+export async function getActivityLogs(childId: string, limit = 20): Promise<ActivityLog[]> {
+  return db.select().from(activityLogs).where(eq(activityLogs.childId, childId)).orderBy(desc(activityLogs.createdAt)).limit(limit);
+}
+
+export async function addActivityLog(childId: string, userId: string, authorName: string, text: string, category: string, date: string): Promise<ActivityLog> {
+  const result = await db.insert(activityLogs).values({ childId, userId, authorName, text, category, date }).returning();
+  return result[0];
 }

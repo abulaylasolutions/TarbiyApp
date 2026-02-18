@@ -31,6 +31,17 @@ import {
   approvePendingChange,
   rejectPendingChange,
   updateUserLanguage,
+  getTasksForChild,
+  addTask,
+  removeTask,
+  getTaskCompletions,
+  upsertTaskCompletion,
+  getPrayerLog,
+  upsertPrayerLog,
+  getFastingLog,
+  upsertFastingLog,
+  getActivityLogs,
+  addActivityLog,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -394,6 +405,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const result = await rejectPendingChange(req.params.id as string);
       return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Dashboard: Custom Tasks
+  app.get("/api/children/:childId/tasks", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getTasksForChild(req.params.childId as string);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/tasks", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { name, frequency, time, days } = req.body;
+      if (!name) return res.status(400).json({ message: "Nome richiesto" });
+      const task = await addTask(req.params.childId as string, req.session.userId!, name, frequency || "daily", time, days);
+      return res.status(201).json(task);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.delete("/api/tasks/:id", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      await removeTask(req.params.id as string);
+      return res.json({ message: "Task rimosso" });
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Dashboard: Task Completions
+  app.get("/api/children/:childId/completions/:date", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getTaskCompletions(req.params.childId as string, req.params.date as string);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/completions", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { taskId, date, completed, note } = req.body;
+      if (!taskId || !date) return res.status(400).json({ message: "taskId e date richiesti" });
+      const result = await upsertTaskCompletion(taskId, req.params.childId as string, date, completed, note);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Dashboard: Prayer Logs
+  app.get("/api/children/:childId/prayers/:date", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getPrayerLog(req.params.childId as string, req.params.date as string);
+      return res.json(result || {});
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/prayers", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { date, ...prayerData } = req.body;
+      if (!date) return res.status(400).json({ message: "date richiesto" });
+      const result = await upsertPrayerLog(req.params.childId as string, date, prayerData);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Dashboard: Fasting Logs
+  app.get("/api/children/:childId/fasting/:date", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getFastingLog(req.params.childId as string, req.params.date as string);
+      return res.json(result || { status: "no", note: "" });
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/fasting", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { date, status, note } = req.body;
+      if (!date) return res.status(400).json({ message: "date richiesto" });
+      const result = await upsertFastingLog(req.params.childId as string, date, status || "no", note);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  // Dashboard: Activity Logs
+  app.get("/api/children/:childId/activity", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const result = await getActivityLogs(req.params.childId as string);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/activity", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { text, category, date } = req.body;
+      if (!text) return res.status(400).json({ message: "Testo richiesto" });
+      const user = await getUserById(req.session.userId!);
+      const authorName = user?.name || "Genitore";
+      const d = date || new Date().toISOString().split("T")[0];
+      const result = await addActivityLog(req.params.childId as string, req.session.userId!, authorName, text, category || "general", d);
+      return res.status(201).json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }
