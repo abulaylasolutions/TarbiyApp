@@ -8,6 +8,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
+import { useQueryClient } from '@tanstack/react-query';
 import { useApp } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
@@ -44,6 +45,23 @@ const SURAH_NAMES = [
   'Al-Qari\'ah','At-Takathur','Al-Asr','Al-Humazah','Al-Fil','Quraysh','Al-Ma\'un','Al-Kawthar','Al-Kafirun','An-Nasr',
   'Al-Masad','Al-Ikhlas','Al-Falaq','An-Nas',
 ];
+
+const SURAH_NAMES_AR = [
+  'الفاتحة','البقرة','آل عمران','النساء','المائدة','الأنعام','الأعراف','الأنفال','التوبة','يونس',
+  'هود','يوسف','الرعد','إبراهيم','الحجر','النحل','الإسراء','الكهف','مريم','طه',
+  'الأنبياء','الحج','المؤمنون','النور','الفرقان','الشعراء','النمل','القصص','العنكبوت','الروم',
+  'لقمان','السجدة','الأحزاب','سبأ','فاطر','يس','الصافات','ص','الزمر','غافر',
+  'فصلت','الشورى','الزخرف','الدخان','الجاثية','الأحقاف','محمد','الفتح','الحجرات','ق',
+  'الذاريات','الطور','النجم','القمر','الرحمن','الواقعة','الحديد','المجادلة','الحشر','الممتحنة',
+  'الصف','الجمعة','المنافقون','التغابن','الطلاق','التحريم','الملك','القلم','الحاقة','المعارج',
+  'نوح','الجن','المزمل','المدثر','القيامة','الإنسان','المرسلات','النبأ','النازعات','عبس',
+  'التكوير','الانفطار','المطففين','الانشقاق','البروج','الطارق','الأعلى','الغاشية','الفجر','البلد',
+  'الشمس','الليل','الضحى','الشرح','التين','العلق','القدر','البينة','الزلزلة','العاديات',
+  'القارعة','التكاثر','العصر','الهمزة','الفيل','قريش','الماعون','الكوثر','الكافرون','النصر',
+  'المسد','الإخلاص','الفلق','الناس',
+];
+
+const ARABIC_LETTERS = ['ا','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ي'];
 
 type SurahStatus = 'not_started' | 'in_progress' | 'learned';
 
@@ -149,6 +167,7 @@ export default function DashboardScreen() {
   const { children, selectedChildId, selectChild, cogenitori } = useApp();
   const { user } = useAuth();
   const { t, lang, isRTL } = useI18n();
+  const queryClient = useQueryClient();
 
   const selectedChild = children.find(c => c.id === selectedChildId);
   const selectedIndex = children.findIndex(c => c.id === selectedChildId);
@@ -332,18 +351,16 @@ export default function DashboardScreen() {
     } catch {}
   };
 
-  const cycleSurahStatus = (surahNumber: number) => {
-    const key = String(surahNumber);
-    const current = quranLogs[key] || 'not_started';
-    const next: SurahStatus = current === 'not_started' ? 'in_progress' : current === 'in_progress' ? 'learned' : 'not_started';
-    updateSurahStatus(surahNumber, next);
-  };
-
   const learnedCount = Object.values(quranLogs).filter(s => s === 'learned').length;
-  const inProgressCount = Object.values(quranLogs).filter(s => s === 'in_progress').length;
 
-  const filteredSurahs = SURAH_NAMES.map((name, i) => ({ name, number: i + 1, status: quranLogs[String(i + 1)] || 'not_started' as SurahStatus }))
-    .filter(s => quranFilter === 'all' || s.status === quranFilter);
+  const filteredSurahs = SURAH_NAMES.map((name, i) => ({
+    name,
+    arabicName: SURAH_NAMES_AR[i],
+    number: i + 1,
+    status: (quranLogs[String(i + 1)] || 'not_started') as SurahStatus,
+  }))
+    .filter(s => quranFilter === 'all' || s.status === quranFilter)
+    .reverse();
 
   const handleAddTask = async () => {
     if (!childId || !newTaskName.trim()) return;
@@ -401,6 +418,38 @@ export default function DashboardScreen() {
     setExpandedSubjects(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
     );
+  };
+
+  const getArabicLearnedLetters = (): string[] => {
+    try {
+      if (selectedChild?.arabicLearnedLetters) {
+        return JSON.parse(selectedChild.arabicLearnedLetters);
+      }
+    } catch {}
+    return [];
+  };
+
+  const toggleArabicLetter = async (letter: string) => {
+    if (!childId) return;
+    const current = getArabicLearnedLetters();
+    const updated = current.includes(letter)
+      ? current.filter(l => l !== letter)
+      : [...current, letter];
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('PATCH', `/api/children/${childId}/settings`, { arabicLearnedLetters: JSON.stringify(updated) });
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+    } catch {}
+  };
+
+  const toggleArabicSetting = async (field: 'hasHarakat' | 'canReadArabic' | 'canWriteArabic') => {
+    if (!childId) return;
+    const currentVal = !!(selectedChild as any)?.[field];
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('PATCH', `/api/children/${childId}/settings`, { [field]: !currentVal });
+      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+    } catch {}
   };
 
   if (!selectedChild) {
@@ -633,7 +682,59 @@ export default function DashboardScreen() {
                       <Text style={s.subjectName}>{t(subject.key)}</Text>
                       <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textMuted} />
                     </Pressable>
-                    {isExpanded && (
+                    {isExpanded && subject.key === 'arabo' && (
+                      <View style={s.subjectContent}>
+                        <Text style={s.arabicCountLabel}>{t('learnedLetters')}: {getArabicLearnedLetters().length} / 28</Text>
+                        <View style={s.arabicLettersGrid}>
+                          {ARABIC_LETTERS.map((letter) => {
+                            const isSelected = getArabicLearnedLetters().includes(letter);
+                            return (
+                              <Pressable
+                                key={letter}
+                                onPress={() => toggleArabicLetter(letter)}
+                                style={[s.arabicLetterChip, isSelected && { backgroundColor: Colors.mintGreen }]}
+                              >
+                                <Text style={[s.arabicLetterText, isSelected && { color: Colors.white }]}>{letter}</Text>
+                              </Pressable>
+                            );
+                          })}
+                        </View>
+                        <View style={s.arabicToggleRow}>
+                          <Text style={s.arabicToggleLabel}>{t('harakat')}</Text>
+                          <Pressable
+                            onPress={() => toggleArabicSetting('hasHarakat')}
+                            style={[s.arabicPill, selectedChild?.hasHarakat && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                          >
+                            <Text style={[s.arabicPillText, selectedChild?.hasHarakat && { color: Colors.white }]}>
+                              {selectedChild?.hasHarakat ? t('yes') : t('no')}
+                            </Text>
+                          </Pressable>
+                        </View>
+                        <View style={s.arabicToggleRow}>
+                          <Text style={s.arabicToggleLabel}>{t('canReadArabic')}</Text>
+                          <Pressable
+                            onPress={() => toggleArabicSetting('canReadArabic')}
+                            style={[s.arabicPill, selectedChild?.canReadArabic && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                          >
+                            <Text style={[s.arabicPillText, selectedChild?.canReadArabic && { color: Colors.white }]}>
+                              {selectedChild?.canReadArabic ? t('yes') : t('no')}
+                            </Text>
+                          </Pressable>
+                        </View>
+                        <View style={s.arabicToggleRow}>
+                          <Text style={s.arabicToggleLabel}>{t('canWriteArabic')}</Text>
+                          <Pressable
+                            onPress={() => toggleArabicSetting('canWriteArabic')}
+                            style={[s.arabicPill, selectedChild?.canWriteArabic && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                          >
+                            <Text style={[s.arabicPillText, selectedChild?.canWriteArabic && { color: Colors.white }]}>
+                              {selectedChild?.canWriteArabic ? t('yes') : t('no')}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      </View>
+                    )}
+                    {isExpanded && subject.key !== 'arabo' && (
                       <View style={s.subjectContent}>
                         <Text style={s.subjectPlaceholder}>{t('noActivity')}</Text>
                       </View>
@@ -645,49 +746,14 @@ export default function DashboardScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(600).duration(300)}>
-            <View style={s.quranMemHeader}>
-              <Text style={s.sectionTitle}>{t('quranMemorization')}</Text>
-              <Pressable onPress={() => setShowQuranModal(true)} style={s.quranViewAllBtn}>
-                <Ionicons name="list-outline" size={16} color={cardColor} />
-              </Pressable>
-            </View>
-            <View style={s.card}>
-              <View style={s.quranStats}>
-                <View style={[s.quranStatItem, { backgroundColor: Colors.mintGreen + '18' }]}>
-                  <Text style={[s.quranStatNum, { color: Colors.mintGreen }]}>{learnedCount}</Text>
-                  <Text style={s.quranStatLabel}>{t('surahLearned')}</Text>
-                </View>
-                <View style={[s.quranStatItem, { backgroundColor: '#F4C430' + '18' }]}>
-                  <Text style={[s.quranStatNum, { color: '#F4C430' }]}>{inProgressCount}</Text>
-                  <Text style={s.quranStatLabel}>{t('surahInProgress')}</Text>
-                </View>
-                <View style={[s.quranStatItem, { backgroundColor: Colors.textMuted + '18' }]}>
-                  <Text style={[s.quranStatNum, { color: Colors.textMuted }]}>{114 - learnedCount - inProgressCount}</Text>
-                  <Text style={s.quranStatLabel}>{t('surahNotStarted')}</Text>
-                </View>
+            <Text style={s.sectionTitle}>{t('quranMemorization')}</Text>
+            <Pressable onPress={() => setShowQuranModal(true)} style={s.card}>
+              <View style={s.quranTapRow}>
+                <Ionicons name="book-outline" size={20} color={cardColor} />
+                <Text style={s.quranTapText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
+                <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
               </View>
-              <View style={s.quranProgressWrap}>
-                <View style={s.quranProgressBar}>
-                  <View style={[s.quranProgressFill, { width: `${(learnedCount / 114) * 100}%`, backgroundColor: Colors.mintGreen }]} />
-                  <View style={[s.quranProgressFill, { width: `${(inProgressCount / 114) * 100}%`, backgroundColor: '#F4C430' }]} />
-                </View>
-                <Text style={s.quranProgressText}>{learnedCount}/114</Text>
-              </View>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={s.quranPreviewScroll}>
-                <View style={s.quranPreviewRow}>
-                  {SURAH_NAMES.slice(-30).map((name, i) => {
-                    const num = 114 - 29 + i;
-                    const status = quranLogs[String(num)] || 'not_started';
-                    const bgColor = status === 'learned' ? Colors.mintGreen : status === 'in_progress' ? '#F4C430' : Colors.creamBeige;
-                    return (
-                      <Pressable key={num} onPress={() => cycleSurahStatus(num)} style={[s.quranMiniChip, { backgroundColor: bgColor }]}>
-                        <Text style={[s.quranMiniNum, status !== 'not_started' && { color: Colors.white }]}>{num}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              </ScrollView>
-            </View>
+            </Pressable>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(700).duration(300)}>
@@ -744,19 +810,37 @@ export default function DashboardScreen() {
               keyExtractor={(item) => String(item.number)}
               showsVerticalScrollIndicator={false}
               style={s.quranList}
-              renderItem={({ item }) => {
-                const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
-                const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
-                return (
-                  <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
-                    <View style={[s.surahNumBadge, { backgroundColor: statusColor + '18' }]}>
-                      <Text style={[s.surahNum, { color: statusColor }]}>{item.number}</Text>
-                    </View>
-                    <Text style={s.surahName}>{item.name}</Text>
-                    <Ionicons name={statusIcon as any} size={22} color={statusColor} />
-                  </Pressable>
-                );
-              }}
+              renderItem={({ item }) => (
+                <View style={s.surahRow}>
+                  <View style={s.surahNumBadge}>
+                    <Text style={s.surahNum}>{item.number}</Text>
+                  </View>
+                  <View style={s.surahNameCol}>
+                    <Text style={s.surahArabicName}>{item.arabicName}</Text>
+                    <Text style={s.surahLatinName}>{item.name}</Text>
+                  </View>
+                  <View style={s.surahStatusBtns}>
+                    <Pressable
+                      onPress={() => updateSurahStatus(item.number, 'not_started')}
+                      style={[s.surahStatusBtn, item.status === 'not_started' && { backgroundColor: '#999' + '30' }]}
+                    >
+                      <Ionicons name="book-outline" size={16} color={item.status === 'not_started' ? '#999' : '#ccc'} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => updateSurahStatus(item.number, 'in_progress')}
+                      style={[s.surahStatusBtn, item.status === 'in_progress' && { backgroundColor: '#F4C430' + '30' }]}
+                    >
+                      <Ionicons name="book" size={16} color={item.status === 'in_progress' ? '#F4C430' : '#ccc'} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => updateSurahStatus(item.number, 'learned')}
+                      style={[s.surahStatusBtn, item.status === 'learned' && { backgroundColor: Colors.mintGreen + '30' }]}
+                    >
+                      <Ionicons name="checkmark-circle" size={16} color={item.status === 'learned' ? Colors.mintGreen : '#ccc'} />
+                    </Pressable>
+                  </View>
+                </View>
+              )}
               ItemSeparatorComponent={() => <View style={s.taskRowBorder} />}
             />
           </View>
@@ -979,27 +1063,8 @@ const s = StyleSheet.create({
   },
   fastingBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary },
 
-  quranMemHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 8 },
-  quranViewAllBtn: {
-    width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.creamBeige,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  quranStats: { flexDirection: 'row', gap: 8, marginBottom: 12 },
-  quranStatItem: {
-    flex: 1, borderRadius: 14, paddingVertical: 10, alignItems: 'center',
-  },
-  quranStatNum: { fontFamily: 'Nunito_800ExtraBold', fontSize: 22 },
-  quranStatLabel: { fontFamily: 'Nunito_500Medium', fontSize: 11, color: Colors.textMuted, marginTop: 2 },
-  quranProgressWrap: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-  quranProgressBar: { flex: 1, height: 6, borderRadius: 3, backgroundColor: Colors.creamBeige, flexDirection: 'row', overflow: 'hidden' },
-  quranProgressFill: { height: 6 },
-  quranProgressText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textSecondary, minWidth: 40 },
-  quranPreviewScroll: { marginTop: 4 },
-  quranPreviewRow: { flexDirection: 'row', gap: 6 },
-  quranMiniChip: {
-    width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-  },
-  quranMiniNum: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: Colors.textSecondary },
+  quranTapRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  quranTapText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary, flex: 1 },
   quranModalContent: {
     backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24,
     padding: 24, maxHeight: '85%',
@@ -1011,17 +1076,40 @@ const s = StyleSheet.create({
   },
   quranFilterText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
   quranList: { flex: 1 },
-  surahRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
+  surahRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   surahNumBadge: {
-    width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.creamBeige,
   },
-  surahNum: { fontFamily: 'Nunito_700Bold', fontSize: 14 },
-  surahName: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary, flex: 1 },
+  surahNum: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textSecondary },
+  surahNameCol: { flex: 1 },
+  surahArabicName: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: Colors.textPrimary },
+  surahLatinName: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted },
+  surahStatusBtns: { flexDirection: 'row', gap: 6 },
+  surahStatusBtn: {
+    width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.creamBeige,
+  },
 
   subjectRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 10 },
   subjectName: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary, flex: 1 },
-  subjectContent: { paddingLeft: 30, paddingBottom: 12 },
+  subjectContent: { paddingLeft: 12, paddingBottom: 12 },
   subjectPlaceholder: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textMuted, fontStyle: 'italic' },
+
+  arabicCountLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary, marginBottom: 8 },
+  arabicLettersGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 },
+  arabicLetterChip: {
+    width: 40, height: 40, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.creamBeige,
+  },
+  arabicLetterText: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
+  arabicToggleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 8 },
+  arabicToggleLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary },
+  arabicPill: {
+    paddingHorizontal: 16, paddingVertical: 6, borderRadius: 12,
+    borderWidth: 2, borderColor: Colors.creamBeige, backgroundColor: Colors.creamBeige,
+  },
+  arabicPillText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
 
   activityRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
   activityDot: { width: 10, height: 10, borderRadius: 5, marginTop: 5 },
