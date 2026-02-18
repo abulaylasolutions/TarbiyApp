@@ -531,13 +531,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Child settings (salah/fasting toggle)
+  // Child settings (salah/fasting toggle + arabic education)
   app.patch("/api/children/:childId/settings", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { salahEnabled, fastingEnabled } = req.body;
+      const { salahEnabled, fastingEnabled, arabicLearnedLetters, hasHarakat, canReadArabic, canWriteArabic } = req.body;
       const data: any = {};
       if (typeof salahEnabled === "boolean") data.salahEnabled = salahEnabled;
       if (typeof fastingEnabled === "boolean") data.fastingEnabled = fastingEnabled;
+      if (typeof arabicLearnedLetters === "string") data.arabicLearnedLetters = arabicLearnedLetters;
+      if (typeof hasHarakat === "boolean") data.hasHarakat = hasHarakat;
+      if (typeof canReadArabic === "boolean") data.canReadArabic = canReadArabic;
+      if (typeof canWriteArabic === "boolean") data.canWriteArabic = canWriteArabic;
       const result = await updateChild(req.params.childId as string, data);
       return res.json(result);
     } catch (error) {

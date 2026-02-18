@@ -36,6 +36,10 @@ export const children = pgTable("children", {
   cardColor: text("card_color"),
   salahEnabled: boolean("salah_enabled").default(true),
   fastingEnabled: boolean("fasting_enabled").default(true),
+  arabicLearnedLetters: text("arabic_learned_letters"),
+  hasHarakat: boolean("has_harakat").default(false),
+  canReadArabic: boolean("can_read_arabic").default(false),
+  canWriteArabic: boolean("can_write_arabic").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

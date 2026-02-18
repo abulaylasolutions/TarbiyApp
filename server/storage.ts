@@ -210,6 +210,10 @@ export async function updateChild(
     cogenitori?: string;
     salahEnabled?: boolean;
     fastingEnabled?: boolean;
+    arabicLearnedLetters?: string;
+    hasHarakat?: boolean;
+    canReadArabic?: boolean;
+    canWriteArabic?: boolean;
   }
 ): Promise<Child> {
   const result = await db
