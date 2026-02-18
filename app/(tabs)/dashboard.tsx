@@ -24,12 +24,11 @@ type PrayerName = typeof PRAYER_NAMES[number];
 
 const SUBJECTS = [
   { key: 'arabo', icon: 'book-outline' as const },
-  { key: 'quran', icon: 'book' as const },
   { key: 'akhlaq', icon: 'heart-outline' as const },
   { key: 'aqidah', icon: 'star-outline' as const },
-  { key: 'sira', icon: 'time-outline' as const },
-  { key: 'hadith', icon: 'chatbubble-outline' as const },
 ];
+
+const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
 function formatDate(d: Date): string {
   return d.toISOString().split('T')[0];
@@ -71,6 +70,7 @@ interface TaskItem {
   name: string;
   frequency: string;
   time?: string | null;
+  endTime?: string | null;
   days?: string | null;
 }
 
@@ -86,11 +86,6 @@ interface PrayerData {
   asr: boolean;
   maghrib: boolean;
   isha: boolean;
-  fajrNote?: string;
-  dhuhrNote?: string;
-  asrNote?: string;
-  maghribNote?: string;
-  ishaNote?: string;
 }
 
 interface ActivityItem {
@@ -142,6 +137,9 @@ export default function DashboardScreen() {
   const selectedIndex = children.findIndex(c => c.id === selectedChildId);
   const cardColor = selectedChild?.cardColor || PASTEL_COLORS[Math.max(0, selectedIndex) % PASTEL_COLORS.length];
 
+  const salahEnabled = selectedChild?.salahEnabled !== false;
+  const fastingEnabled = selectedChild?.fastingEnabled !== false;
+
   const [currentDate, setCurrentDate] = useState(new Date());
   const dateStr = formatDate(currentDate);
   const todayStr = formatDate(new Date());
@@ -150,6 +148,7 @@ export default function DashboardScreen() {
   const [completions, setCompletions] = useState<Record<string, TaskCompletionItem>>({});
   const [prayers, setPrayers] = useState<PrayerData>({ fajr: false, dhuhr: false, asr: false, maghrib: false, isha: false });
   const [fasting, setFasting] = useState<{ status: string; note: string }>({ status: 'no', note: '' });
+  const [quranToday, setQuranToday] = useState(false);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [expandedSubjects, setExpandedSubjects] = useState<string[]>([]);
 
@@ -157,6 +156,9 @@ export default function DashboardScreen() {
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskFreq, setNewTaskFreq] = useState('daily');
   const [newTaskTime, setNewTaskTime] = useState('');
+  const [newTaskEndTime, setNewTaskEndTime] = useState('');
+  const [newTaskDays, setNewTaskDays] = useState<number[]>([]);
+  const [newTaskDayOfMonth, setNewTaskDayOfMonth] = useState('');
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const dateScrollRef = useRef<FlatList>(null);
@@ -167,14 +169,12 @@ export default function DashboardScreen() {
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';
 
   let coParentName: string | null = null;
-  let coParentGender: string | null = null;
   if (selectedChild?.cogenitori) {
     try {
       const cogIds: string[] = JSON.parse(selectedChild.cogenitori);
       const otherCog = cogIds.filter(id => id !== user?.id).map(id => cogenitori.find(c => c.id === id)).filter(Boolean);
       if (otherCog.length > 0) {
         coParentName = otherCog[0]!.name || otherCog[0]!.email;
-        coParentGender = otherCog[0]!.gender;
       }
     } catch {}
   }
@@ -183,33 +183,48 @@ export default function DashboardScreen() {
     if (!childId) return;
     try {
       const base = getApiUrl();
-      const [tasksRes, compRes, prayerRes, fastRes, actRes] = await Promise.all([
+      const fetches: Promise<Response>[] = [
         fetch(new URL(`/api/children/${childId}/tasks`, base).toString(), { credentials: 'include' }),
         fetch(new URL(`/api/children/${childId}/completions/${dateStr}`, base).toString(), { credentials: 'include' }),
-        fetch(new URL(`/api/children/${childId}/prayers/${dateStr}`, base).toString(), { credentials: 'include' }),
-        fetch(new URL(`/api/children/${childId}/fasting/${dateStr}`, base).toString(), { credentials: 'include' }),
         fetch(new URL(`/api/children/${childId}/activity`, base).toString(), { credentials: 'include' }),
-      ]);
-      const [tasksData, compData, prayerData, fastData, actData] = await Promise.all([
-        tasksRes.json(), compRes.json(), prayerRes.json(), fastRes.json(), actRes.json(),
-      ]);
+      ];
+      if (salahEnabled) {
+        fetches.push(fetch(new URL(`/api/children/${childId}/prayers/${dateStr}`, base).toString(), { credentials: 'include' }));
+      }
+      if (fastingEnabled) {
+        fetches.push(fetch(new URL(`/api/children/${childId}/fasting/${dateStr}`, base).toString(), { credentials: 'include' }));
+      }
+      fetches.push(fetch(new URL(`/api/children/${childId}/quran-daily/${dateStr}`, base).toString(), { credentials: 'include' }));
+
+      const results = await Promise.all(fetches);
+      const [tasksData, compData, actData] = await Promise.all(results.slice(0, 3).map(r => r.json()));
+
       setTasks(Array.isArray(tasksData) ? tasksData : []);
       const compMap: Record<string, TaskCompletionItem> = {};
       if (Array.isArray(compData)) {
         compData.forEach((c: any) => { compMap[c.taskId] = { taskId: c.taskId, completed: c.completed, note: c.note }; });
       }
       setCompletions(compMap);
-      setPrayers({
-        fajr: !!prayerData.fajr, dhuhr: !!prayerData.dhuhr, asr: !!prayerData.asr,
-        maghrib: !!prayerData.maghrib, isha: !!prayerData.isha,
-        fajrNote: prayerData.fajrNote || '', dhuhrNote: prayerData.dhuhrNote || '',
-        asrNote: prayerData.asrNote || '', maghribNote: prayerData.maghribNote || '',
-        ishaNote: prayerData.ishaNote || '',
-      });
-      setFasting({ status: fastData.status || 'no', note: fastData.note || '' });
       setActivities(Array.isArray(actData) ? actData : []);
+
+      let idx = 3;
+      if (salahEnabled) {
+        const prayerData = await results[idx].json();
+        setPrayers({
+          fajr: !!prayerData.fajr, dhuhr: !!prayerData.dhuhr, asr: !!prayerData.asr,
+          maghrib: !!prayerData.maghrib, isha: !!prayerData.isha,
+        });
+        idx++;
+      }
+      if (fastingEnabled) {
+        const fastData = await results[idx].json();
+        setFasting({ status: fastData.status || 'no', note: fastData.note || '' });
+        idx++;
+      }
+      const quranDailyData = await results[idx].json();
+      setQuranToday(!!quranDailyData.completed);
     } catch {}
-  }, [childId, dateStr]);
+  }, [childId, dateStr, salahEnabled, fastingEnabled]);
 
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
 
@@ -226,6 +241,12 @@ export default function DashboardScreen() {
       return true;
     }
     if (task.frequency === 'monthly') {
+      if (task.days) {
+        try {
+          const dayOfMonth: number = JSON.parse(task.days);
+          return currentDate.getDate() === dayOfMonth;
+        } catch {}
+      }
       return currentDate.getDate() === 1;
     }
     return true;
@@ -263,13 +284,34 @@ export default function DashboardScreen() {
     } catch {}
   };
 
+  const toggleQuranToday = async () => {
+    if (!childId) return;
+    const newVal = !quranToday;
+    setQuranToday(newVal);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('POST', `/api/children/${childId}/quran-daily`, { date: dateStr, completed: newVal });
+    } catch {}
+  };
+
   const handleAddTask = async () => {
     if (!childId || !newTaskName.trim()) return;
     try {
+      let days: string | undefined;
+      if (newTaskFreq === 'weekly' && newTaskDays.length > 0) {
+        days = JSON.stringify(newTaskDays);
+      } else if (newTaskFreq === 'monthly' && newTaskDayOfMonth) {
+        days = newTaskDayOfMonth;
+      }
       await apiRequest('POST', `/api/children/${childId}/tasks`, {
-        name: newTaskName.trim(), frequency: newTaskFreq, time: newTaskTime || undefined,
+        name: newTaskName.trim(),
+        frequency: newTaskFreq,
+        time: newTaskTime || undefined,
+        endTime: newTaskEndTime || undefined,
+        days,
       });
-      setNewTaskName(''); setNewTaskFreq('daily'); setNewTaskTime('');
+      setNewTaskName(''); setNewTaskFreq('daily'); setNewTaskTime(''); setNewTaskEndTime('');
+      setNewTaskDays([]); setNewTaskDayOfMonth('');
       setShowAddTask(false);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       fetchDashboardData();
@@ -286,6 +328,10 @@ export default function DashboardScreen() {
         } catch {}
       }},
     ]);
+  };
+
+  const toggleDayOfWeek = (day: number) => {
+    setNewTaskDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
   };
 
   const dates = Array.from({ length: 61 }, (_, i) => {
@@ -323,12 +369,10 @@ export default function DashboardScreen() {
   return (
     <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 100 }} showsVerticalScrollIndicator={false}>
-        {/* Child Selector */}
         <View style={{ paddingTop: topPadding + 8 }}>
           <ChildSelector children={children} selectedChildId={selectedChildId} selectChild={selectChild} />
         </View>
 
-        {/* Header Card */}
         <Animated.View entering={FadeIn.duration(300)} style={s.headerCard}>
           <LinearGradient
             colors={[cardColor, cardColor + '60']}
@@ -349,7 +393,7 @@ export default function DashboardScreen() {
                 {coParentName && (
                   <Text style={s.headerCoParent}>
                     {isFemale ? t('daughterOf') : t('sonOf')}{' '}
-                    <Text style={{ color: nameColor, fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
+                    <Text style={{ color: '#333', fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
                   </Text>
                 )}
               </View>
@@ -360,7 +404,6 @@ export default function DashboardScreen() {
           </LinearGradient>
         </Animated.View>
 
-        {/* Date Bar */}
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
           <View style={s.dateBarHeader}>
             <Text style={s.dateBarMonth}>
@@ -407,13 +450,15 @@ export default function DashboardScreen() {
         </Animated.View>
 
         <View style={s.sectionsWrap}>
-          {/* Today's Events */}
           <Animated.View entering={FadeInDown.delay(200).duration(300)}>
             <Text style={s.sectionTitle}>{t('todayEvents')}</Text>
             {todayTasks.length > 0 ? (
               <View style={s.card}>
                 {todayTasks.map((task, i) => {
                   const comp = completions[task.id];
+                  const timeDisplay = task.time && task.endTime
+                    ? `${task.time} - ${task.endTime}`
+                    : task.time || task.endTime || null;
                   return (
                     <View key={task.id} style={[s.taskRow, i > 0 && s.taskRowBorder]}>
                       <Pressable onPress={() => toggleTaskCompletion(task.id)} style={s.taskCheck}>
@@ -423,7 +468,7 @@ export default function DashboardScreen() {
                       </Pressable>
                       <View style={s.taskInfo}>
                         <Text style={[s.taskName, comp?.completed && s.taskNameDone]}>{task.name}</Text>
-                        {task.time && <Text style={s.taskTime}>{task.time}</Text>}
+                        {timeDisplay && <Text style={s.taskTime}>{timeDisplay}</Text>}
                       </View>
                       <Pressable onPress={() => handleDeleteTask(task.id, task.name)} hitSlop={8}>
                         <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
@@ -441,64 +486,87 @@ export default function DashboardScreen() {
             )}
           </Animated.View>
 
-          {/* Salah Tracker */}
-          <Animated.View entering={FadeInDown.delay(300).duration(300)}>
-            <Text style={s.sectionTitle}>{t('salahToday')}</Text>
-            <View style={s.card}>
-              <View style={s.prayerGrid}>
-                {PRAYER_NAMES.map((prayer) => {
-                  const done = prayers[prayer];
-                  return (
-                    <Pressable key={prayer} onPress={() => togglePrayer(prayer)} style={s.prayerItem}>
-                      <View style={[s.prayerCircle, done && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
-                        {done ? (
-                          <Ionicons name="checkmark" size={20} color={Colors.white} />
-                        ) : (
-                          <MaterialCommunityIcons name="mosque" size={18} color={Colors.textMuted} />
-                        )}
-                      </View>
-                      <Text style={[s.prayerLabel, done && s.prayerLabelDone]}>{t(prayer)}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              <View style={s.prayerSummary}>
-                <View style={[s.prayerBar, { width: '100%' }]}>
-                  <View style={[s.prayerBarFill, { width: `${(prayerCount / 5) * 100}%`, backgroundColor: cardColor }]} />
+          {salahEnabled && (
+            <Animated.View entering={FadeInDown.delay(300).duration(300)}>
+              <Text style={s.sectionTitle}>{t('salahToday')}</Text>
+              <View style={s.card}>
+                <View style={s.prayerGrid}>
+                  {PRAYER_NAMES.map((prayer) => {
+                    const done = prayers[prayer];
+                    return (
+                      <Pressable key={prayer} onPress={() => togglePrayer(prayer)} style={s.prayerItem}>
+                        <View style={[s.prayerCircle, done && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                          {done ? (
+                            <Ionicons name="checkmark" size={20} color={Colors.white} />
+                          ) : (
+                            <MaterialCommunityIcons name="mosque" size={18} color={Colors.textMuted} />
+                          )}
+                        </View>
+                        <Text style={[s.prayerLabel, done && s.prayerLabelDone]}>{t(prayer)}</Text>
+                      </Pressable>
+                    );
+                  })}
                 </View>
-                <Text style={s.prayerCountText}>{prayerCount}/5</Text>
+                <View style={s.prayerSummary}>
+                  <View style={[s.prayerBar, { width: '100%' }]}>
+                    <View style={[s.prayerBarFill, { width: `${(prayerCount / 5) * 100}%`, backgroundColor: cardColor }]} />
+                  </View>
+                  <Text style={s.prayerCountText}>{prayerCount}/5</Text>
+                </View>
               </View>
-            </View>
-          </Animated.View>
+            </Animated.View>
+          )}
 
-          {/* Fasting Tracker */}
-          <Animated.View entering={FadeInDown.delay(400).duration(300)}>
-            <Text style={s.sectionTitle}>{t('fastingToday')}</Text>
-            <View style={s.card}>
-              <View style={s.fastingRow}>
-                {(['yes', 'no', 'partial'] as const).map((status) => {
-                  const isActive = fasting.status === status;
-                  const color = status === 'yes' ? Colors.mintGreen : status === 'partial' ? '#F4C430' : Colors.textMuted;
-                  return (
-                    <Pressable
-                      key={status}
-                      onPress={() => updateFasting(status)}
-                      style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }]}
-                    >
-                      <Ionicons
-                        name={status === 'yes' ? 'checkmark-circle' : status === 'partial' ? 'remove-circle' : 'close-circle'}
-                        size={20}
-                        color={isActive ? color : Colors.textMuted}
-                      />
-                      <Text style={[s.fastingBtnText, isActive && { color }]}>{t(status)}</Text>
-                    </Pressable>
-                  );
-                })}
+          {fastingEnabled && (
+            <Animated.View entering={FadeInDown.delay(400).duration(300)}>
+              <View style={s.fastingHeaderRow}>
+                <Text style={s.sectionTitle}>{t('fastingToday')}</Text>
+                <Pressable onPress={toggleQuranToday} style={s.quranTodayRow}>
+                  <View style={[s.quranCheckBox, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                    {quranToday && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                  </View>
+                  <Text style={s.quranTodayLabel}>{t('quranToday')}</Text>
+                </Pressable>
               </View>
-            </View>
-          </Animated.View>
+              <View style={s.card}>
+                <View style={s.fastingRow}>
+                  {(['yes', 'no', 'partial'] as const).map((status) => {
+                    const isActive = fasting.status === status;
+                    const color = status === 'yes' ? Colors.mintGreen : status === 'partial' ? '#F4C430' : Colors.textMuted;
+                    return (
+                      <Pressable
+                        key={status}
+                        onPress={() => updateFasting(status)}
+                        style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }]}
+                      >
+                        <Ionicons
+                          name={status === 'yes' ? 'checkmark-circle' : status === 'partial' ? 'remove-circle' : 'close-circle'}
+                          size={20}
+                          color={isActive ? color : Colors.textMuted}
+                        />
+                        <Text style={[s.fastingBtnText, isActive && { color }]}>{t(status)}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </Animated.View>
+          )}
 
-          {/* Subjects (Collapsible) */}
+          {!fastingEnabled && (
+            <Animated.View entering={FadeInDown.delay(400).duration(300)}>
+              <View style={s.fastingHeaderRow}>
+                <View />
+                <Pressable onPress={toggleQuranToday} style={s.quranTodayRow}>
+                  <View style={[s.quranCheckBox, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                    {quranToday && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                  </View>
+                  <Text style={s.quranTodayLabel}>{t('quranToday')}</Text>
+                </Pressable>
+              </View>
+            </Animated.View>
+          )}
+
           <Animated.View entering={FadeInDown.delay(500).duration(300)}>
             <Text style={s.sectionTitle}>{t('subjects')}</Text>
             <View style={s.card}>
@@ -525,7 +593,6 @@ export default function DashboardScreen() {
             </View>
           </Animated.View>
 
-          {/* Recent Activity */}
           <Animated.View entering={FadeInDown.delay(600).duration(300)}>
             <Text style={s.sectionTitle}>{t('recentActivityLog')}</Text>
             {activities.length > 0 ? (
@@ -552,12 +619,11 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      {/* Add Task Modal */}
       <Modal visible={showAddTask} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
           <View style={s.modalOverlay}>
             <Pressable style={s.modalDismiss} onPress={() => setShowAddTask(false)} />
-            <View style={[s.modalContent, { paddingBottom: insets.bottom + 16 }]}>
+            <ScrollView style={s.modalScroll} contentContainerStyle={[s.modalContent, { paddingBottom: insets.bottom + 16 }]}>
               <View style={s.modalHandle} />
               <Text style={s.modalTitle}>{t('addEvent')}</Text>
 
@@ -575,7 +641,11 @@ export default function DashboardScreen() {
                 {(['daily', 'weekly', 'monthly'] as const).map((freq) => (
                   <Pressable
                     key={freq}
-                    onPress={() => setNewTaskFreq(freq)}
+                    onPress={() => {
+                      setNewTaskFreq(freq);
+                      setNewTaskDays([]);
+                      setNewTaskDayOfMonth('');
+                    }}
                     style={[s.freqBtn, newTaskFreq === freq && { backgroundColor: cardColor + '30', borderColor: cardColor }]}
                   >
                     <Text style={[s.freqBtnText, newTaskFreq === freq && { color: cardColor }]}>{t(freq)}</Text>
@@ -583,15 +653,68 @@ export default function DashboardScreen() {
                 ))}
               </View>
 
-              <Text style={s.inputLabel}>{t('timePicker')}</Text>
-              <TextInput
-                style={s.input}
-                placeholder="HH:MM"
-                placeholderTextColor={Colors.textMuted}
-                value={newTaskTime}
-                onChangeText={setNewTaskTime}
-                keyboardType="numbers-and-punctuation"
-              />
+              {newTaskFreq === 'weekly' && (
+                <>
+                  <Text style={s.inputLabel}>{t('selectDay')}</Text>
+                  <View style={s.dayPickerRow}>
+                    {DAY_KEYS.map((dayKey, i) => {
+                      const isActive = newTaskDays.includes(i);
+                      return (
+                        <Pressable
+                          key={dayKey}
+                          onPress={() => toggleDayOfWeek(i)}
+                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                        >
+                          <Text style={[s.dayChipText, isActive && { color: Colors.white }]}>{t(dayKey)}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+
+              {newTaskFreq === 'monthly' && (
+                <>
+                  <Text style={s.inputLabel}>{t('selectDayOfMonth')}</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="1-31"
+                    placeholderTextColor={Colors.textMuted}
+                    value={newTaskDayOfMonth}
+                    onChangeText={(v) => {
+                      const num = parseInt(v);
+                      if (v === '' || (num >= 1 && num <= 31)) setNewTaskDayOfMonth(v);
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                </>
+              )}
+
+              <View style={s.timeRow}>
+                <View style={s.timeCol}>
+                  <Text style={s.inputLabel}>{t('startTime')}</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="HH:MM"
+                    placeholderTextColor={Colors.textMuted}
+                    value={newTaskTime}
+                    onChangeText={setNewTaskTime}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+                <View style={s.timeCol}>
+                  <Text style={s.inputLabel}>{t('endTimePicker')}</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="HH:MM"
+                    placeholderTextColor={Colors.textMuted}
+                    value={newTaskEndTime}
+                    onChangeText={setNewTaskEndTime}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+              </View>
 
               <Pressable
                 onPress={handleAddTask}
@@ -600,7 +723,7 @@ export default function DashboardScreen() {
                 <Ionicons name="checkmark" size={20} color={Colors.white} />
                 <Text style={s.saveBtnText}>{t('save')}</Text>
               </Pressable>
-            </View>
+            </ScrollView>
           </View>
         </KeyboardAvoidingView>
       </Modal>
@@ -696,6 +819,14 @@ const s = StyleSheet.create({
   prayerBarFill: { height: 6, borderRadius: 3 },
   prayerCountText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textSecondary, minWidth: 28 },
 
+  fastingHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 8 },
+  quranTodayRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  quranCheckBox: {
+    width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: Colors.textMuted,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  quranTodayLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
+
   fastingRow: { flexDirection: 'row', gap: 10 },
   fastingBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
@@ -717,8 +848,14 @@ const s = StyleSheet.create({
 
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalDismiss: { flex: 1 },
+  modalScroll: {
+    maxHeight: '80%',
+    backgroundColor: Colors.cardBackground,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+  },
   modalContent: {
-    backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24,
+    padding: 24,
   },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: 20 },
   modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 20 },
@@ -733,6 +870,14 @@ const s = StyleSheet.create({
     backgroundColor: Colors.creamBeige, alignItems: 'center',
   },
   freqBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary },
+  dayPickerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  dayChip: {
+    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, borderWidth: 2,
+    borderColor: Colors.creamBeige, backgroundColor: Colors.creamBeige,
+  },
+  dayChipText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
+  timeRow: { flexDirection: 'row', gap: 12 },
+  timeCol: { flex: 1 },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     paddingVertical: 16, borderRadius: 20, marginTop: 8,

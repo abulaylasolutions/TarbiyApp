@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,20 +10,19 @@ import {
   Modal,
   Alert,
   Image,
-  PanResponder,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
-import { Animated as RNAnimated } from 'react-native';
 import ReAnimated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
+import { apiRequest } from '@/lib/query-client';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
@@ -38,51 +37,17 @@ interface ChildCardProps {
   onDelete: (id: string) => void;
   onEdit: (child: Child) => void;
   onPress: (child: Child) => void;
+  onSettings: (child: Child) => void;
 }
 
-const SWIPE_THRESHOLD = 70;
-const ACTION_WIDTH = 140;
-
-function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, onPress }: ChildCardProps) {
+function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, onPress, onSettings }: ChildCardProps) {
   const { t } = useI18n();
+  const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
   const cardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
   const cardBgLight = cardBg + '40';
   const isFemale = child.gender === 'femmina';
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';
-
-  const translateX = useRef(new RNAnimated.Value(0)).current;
-  const isSwipedOpen = useRef(false);
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => {
-        return Math.abs(gestureState.dx) > 10 && Math.abs(gestureState.dy) < 20;
-      },
-      onPanResponderMove: (_, gestureState) => {
-        if (gestureState.dx > 0) {
-          translateX.setValue(Math.min(gestureState.dx, ACTION_WIDTH));
-        } else if (isSwipedOpen.current) {
-          translateX.setValue(Math.max(gestureState.dx + ACTION_WIDTH, 0));
-        }
-      },
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx > SWIPE_THRESHOLD) {
-          RNAnimated.spring(translateX, { toValue: ACTION_WIDTH, useNativeDriver: true, friction: 8 }).start();
-          isSwipedOpen.current = true;
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        } else {
-          RNAnimated.spring(translateX, { toValue: 0, useNativeDriver: true, friction: 8 }).start();
-          isSwipedOpen.current = false;
-        }
-      },
-    })
-  ).current;
-
-  const closeSwipe = () => {
-    RNAnimated.spring(translateX, { toValue: 0, useNativeDriver: true, friction: 8 }).start();
-    isSwipedOpen.current = false;
-  };
 
   let coParentNames: string[] = [];
   if (child.cogenitori) {
@@ -103,109 +68,93 @@ function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, 
 
   const genderPrefix = isFemale ? t('daughterOf') : t('sonOf');
 
-  let coParentInfos: CogenitoreInfo[] = [];
-  if (child.cogenitori) {
-    try {
-      const cogIds: string[] = JSON.parse(child.cogenitori);
-      coParentInfos = cogIds
-        .filter(id => id !== currentUserId)
-        .map(id => cogenitori.find(c => c.id === id))
-        .filter(Boolean) as CogenitoreInfo[];
-    } catch {}
-  }
-
   return (
     <ReAnimated.View entering={FadeInDown.delay(index * 80).duration(400)}>
-      <View style={styles.swipeContainer}>
-        <View style={styles.swipeActions}>
-          <Pressable
-            onPress={() => {
-              closeSwipe();
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onEdit(child);
-            }}
-            style={styles.swipeEditBtn}
-          >
-            <Ionicons name="create" size={22} color={Colors.white} />
-          </Pressable>
-          <Pressable
-            onPress={() => {
-              closeSwipe();
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              Alert.alert(
-                t('delete'),
-                `${t('deleteConfirm')} ${child.name}?`,
-                [
-                  { text: t('cancel'), style: 'cancel' },
-                  { text: t('delete'), style: 'destructive', onPress: () => onDelete(child.id) },
-                ]
-              );
-            }}
-            style={styles.swipeDeleteBtn}
-          >
-            <Ionicons name="trash" size={22} color={Colors.white} />
-          </Pressable>
-        </View>
-
-        <RNAnimated.View
-          {...panResponder.panHandlers}
-          style={[styles.childCard, { transform: [{ translateX }] }]}
-        >
-          <Pressable
-            onPress={() => {
-              if (isSwipedOpen.current) {
-                closeSwipe();
-                return;
-              }
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              onPress(child);
-            }}
-            style={({ pressed }) => [
-              { transform: [{ scale: pressed ? 0.98 : 1 }] },
-            ]}
-          >
-            <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
-              {child.photoUri ? (
-                <Image source={{ uri: child.photoUri }} style={styles.childPhoto} />
-              ) : (
-                <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
-                  <Text style={styles.childAvatarText}>
-                    {child.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
-              <View style={styles.childInfo}>
-                <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
-                <Text style={styles.childAge}>{age}</Text>
-                {coParentNames.length > 0 && child.gender ? (
-                  <Text style={styles.coParentLine}>
-                    <Text style={styles.coParentPrefix}>{genderPrefix} </Text>
-                    <Text style={[styles.coParentNameText, { color: nameColor }]}>
-                      {coParentNames.join(', ')}
-                    </Text>
-                  </Text>
-                ) : null}
-                {coParentInfos.length > 0 ? (
-                  <View style={styles.coParentAvatarRow}>
-                    {coParentInfos.map(cog => (
-                      cog.photoUrl ? (
-                        <Image key={cog.id} source={{ uri: cog.photoUrl }} style={styles.coParentAvatar} />
-                      ) : (
-                        <View key={cog.id} style={styles.coParentAvatarFallback}>
-                          <Text style={styles.coParentAvatarInitial}>
-                            {(cog.name || cog.email).charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-                      )
-                    ))}
-                  </View>
-                ) : null}
-              </View>
-              <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.25)" />
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          onPress(child);
+        }}
+        onLongPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setShowMenu(true);
+        }}
+        style={({ pressed }) => [
+          styles.childCard,
+          { transform: [{ scale: pressed ? 0.97 : 1 }] },
+        ]}
+      >
+        <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
+          {child.photoUri ? (
+            <Image source={{ uri: child.photoUri }} style={styles.childPhoto} />
+          ) : (
+            <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
+              <Text style={styles.childAvatarText}>
+                {child.name.charAt(0).toUpperCase()}
+              </Text>
             </View>
-          </Pressable>
-        </RNAnimated.View>
-      </View>
+          )}
+          <View style={styles.childInfo}>
+            <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
+            <Text style={styles.childAge}>{age}</Text>
+            {coParentNames.length > 0 && child.gender ? (
+              <Text style={styles.coParentLine}>
+                <Text style={styles.coParentPrefix}>{genderPrefix} </Text>
+                <Text style={[styles.coParentNameText, { color: '#333' }]}>
+                  {coParentNames.join(', ')}
+                </Text>
+              </Text>
+            ) : null}
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.25)" />
+        </View>
+      </Pressable>
+
+      <Modal visible={showMenu} transparent animationType="fade">
+        <Pressable style={styles.popupOverlay} onPress={() => setShowMenu(false)}>
+          <View style={styles.popupMenu}>
+            <Pressable
+              onPress={() => {
+                setShowMenu(false);
+                onEdit(child);
+              }}
+              style={styles.popupItem}
+            >
+              <Ionicons name="create-outline" size={20} color={Colors.textPrimary} />
+              <Text style={styles.popupItemText}>{t('editProfile')}</Text>
+            </Pressable>
+            <View style={styles.popupDivider} />
+            <Pressable
+              onPress={() => {
+                setShowMenu(false);
+                onSettings(child);
+              }}
+              style={styles.popupItem}
+            >
+              <Ionicons name="settings-outline" size={20} color={Colors.textPrimary} />
+              <Text style={styles.popupItemText}>{t('childSettings')}</Text>
+            </Pressable>
+            <View style={styles.popupDivider} />
+            <Pressable
+              onPress={() => {
+                setShowMenu(false);
+                Alert.alert(
+                  t('delete'),
+                  `${t('deleteConfirm')} ${child.name}?`,
+                  [
+                    { text: t('cancel'), style: 'cancel' },
+                    { text: t('delete'), style: 'destructive', onPress: () => onDelete(child.id) },
+                  ]
+                );
+              }}
+              style={styles.popupItem}
+            >
+              <Ionicons name="trash-outline" size={20} color={Colors.danger} />
+              <Text style={[styles.popupItemText, { color: Colors.danger }]}>{t('deleteChild')}</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
     </ReAnimated.View>
   );
 }
@@ -241,6 +190,10 @@ export default function HomeScreen() {
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [form, setForm] = useState<ChildFormData>(EMPTY_FORM);
   const [errorMsg, setErrorMsg] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+  const [settingsChild, setSettingsChild] = useState<Child | null>(null);
+  const [settingsSalah, setSettingsSalah] = useState(true);
+  const [settingsFasting, setSettingsFasting] = useState(true);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const isPremium = user?.isPremium;
@@ -284,6 +237,29 @@ export default function HomeScreen() {
   const handleChildPress = (child: Child) => {
     selectChild(child.id);
     router.push('/(tabs)/dashboard');
+  };
+
+  const openSettings = (child: Child) => {
+    setSettingsChild(child);
+    setSettingsSalah(child.salahEnabled !== false);
+    setSettingsFasting(child.fastingEnabled !== false);
+    setShowSettings(true);
+  };
+
+  const saveSettings = async () => {
+    if (!settingsChild) return;
+    try {
+      await apiRequest('PATCH', `/api/children/${settingsChild.id}/settings`, {
+        salahEnabled: settingsSalah,
+        fastingEnabled: settingsFasting,
+      });
+      await updateChild(settingsChild.id, {
+        salahEnabled: settingsSalah,
+        fastingEnabled: settingsFasting,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowSettings(false);
+    } catch {}
   };
 
   const pickImage = async () => {
@@ -424,6 +400,7 @@ export default function HomeScreen() {
                 onDelete={removeChild}
                 onEdit={openEditModal}
                 onPress={handleChildPress}
+                onSettings={openSettings}
               />
             ))}
           </View>
@@ -607,6 +584,56 @@ export default function HomeScreen() {
           </ReAnimated.View>
         </View>
       </Modal>
+
+      <Modal visible={showSettings} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <Pressable style={styles.modalDismiss} onPress={() => setShowSettings(false)} />
+          <View style={[styles.settingsContent, { paddingBottom: insets.bottom + 16 }]}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>{t('childSettings')}</Text>
+            {settingsChild && (
+              <Text style={styles.settingsChildName}>{settingsChild.name}</Text>
+            )}
+
+            <View style={styles.settingsRow}>
+              <View style={styles.settingsLabelRow}>
+                <MaterialCommunityIcons name="mosque" size={22} color={Colors.mintGreen} />
+                <Text style={styles.settingsLabel}>{t('salahTracker')}</Text>
+              </View>
+              <Pressable
+                onPress={() => setSettingsSalah(!settingsSalah)}
+                style={[styles.toggleTrack, settingsSalah && styles.toggleTrackActive]}
+              >
+                <View style={[styles.toggleThumb, settingsSalah && styles.toggleThumbActive]} />
+              </Pressable>
+            </View>
+            <Text style={styles.settingsHint}>
+              {settingsSalah ? t('enabled') : t('disabled')}
+            </Text>
+
+            <View style={styles.settingsRow}>
+              <View style={styles.settingsLabelRow}>
+                <Ionicons name="moon-outline" size={22} color="#F4C430" />
+                <Text style={styles.settingsLabel}>{t('fastingTracker')}</Text>
+              </View>
+              <Pressable
+                onPress={() => setSettingsFasting(!settingsFasting)}
+                style={[styles.toggleTrack, settingsFasting && styles.toggleTrackActive]}
+              >
+                <View style={[styles.toggleThumb, settingsFasting && styles.toggleThumbActive]} />
+              </Pressable>
+            </View>
+            <Text style={styles.settingsHint}>
+              {settingsFasting ? t('enabled') : t('disabled')}
+            </Text>
+
+            <Pressable onPress={saveSettings} style={styles.settingsSaveBtn}>
+              <Ionicons name="checkmark" size={20} color={Colors.white} />
+              <Text style={styles.settingsSaveBtnText}>{t('save')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -640,34 +667,6 @@ const styles = StyleSheet.create({
   limitBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.creamBeige, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
   limitText: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.goldAccent },
   childrenList: { gap: 12 },
-  swipeContainer: {
-    borderRadius: 24,
-    overflow: 'hidden',
-    position: 'relative' as const,
-  },
-  swipeActions: {
-    position: 'absolute' as const,
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: ACTION_WIDTH,
-    flexDirection: 'row' as const,
-    borderTopLeftRadius: 24,
-    borderBottomLeftRadius: 24,
-    overflow: 'hidden' as const,
-  },
-  swipeEditBtn: {
-    flex: 1,
-    backgroundColor: '#E8D5A0',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  swipeDeleteBtn: {
-    flex: 1,
-    backgroundColor: '#E88B8B',
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
   childCard: {
     borderRadius: 24,
     overflow: 'hidden',
@@ -706,10 +705,46 @@ const styles = StyleSheet.create({
   coParentLine: { marginTop: 4, fontSize: 12 },
   coParentPrefix: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textPrimary },
   coParentNameText: { fontFamily: 'Nunito_700Bold', fontSize: 12 },
-  coParentAvatarRow: { flexDirection: 'row', gap: 4, marginTop: 4 },
-  coParentAvatar: { width: 24, height: 24, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.8)' },
-  coParentAvatarFallback: { width: 24, height: 24, borderRadius: 12, backgroundColor: 'rgba(0,0,0,0.1)', alignItems: 'center', justifyContent: 'center' },
-  coParentAvatarInitial: { fontFamily: 'Nunito_700Bold', fontSize: 10, color: Colors.textPrimary },
+  popupOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  popupMenu: {
+    backgroundColor: Colors.cardBackground, borderRadius: 20, padding: 8,
+    minWidth: 220, shadowColor: '#000', shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15, shadowRadius: 20, elevation: 10,
+  },
+  popupItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    paddingVertical: 14, paddingHorizontal: 20,
+  },
+  popupItemText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textPrimary },
+  popupDivider: { height: 1, backgroundColor: Colors.creamBeige, marginHorizontal: 16 },
+  settingsContent: {
+    backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24,
+  },
+  settingsChildName: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textSecondary, marginBottom: 20 },
+  settingsRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  settingsLabelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  settingsLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textPrimary },
+  settingsHint: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted, marginBottom: 12, marginLeft: 32 },
+  toggleTrack: {
+    width: 50, height: 28, borderRadius: 14, backgroundColor: Colors.creamBeige,
+    justifyContent: 'center', paddingHorizontal: 3,
+  },
+  toggleTrackActive: { backgroundColor: Colors.mintGreen },
+  toggleThumb: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.white,
+  },
+  toggleThumbActive: { alignSelf: 'flex-end' as const },
+  settingsSaveBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+    paddingVertical: 16, borderRadius: 20, marginTop: 8, backgroundColor: Colors.mintGreen,
+  },
+  settingsSaveBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
   emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60, gap: 8 },
   emptyIconWrap: { width: 96, height: 96, borderRadius: 48, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   emptyTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textSecondary },
