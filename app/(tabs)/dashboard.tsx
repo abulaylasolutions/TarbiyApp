@@ -1087,10 +1087,10 @@ const s = StyleSheet.create({
   quranList: { flex: 1 },
   surahRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
   surahNumBadge: {
-    width: 32, height: 32, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-    backgroundColor: Colors.creamBeige,
+    width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: Colors.mintGreen,
   },
-  surahNum: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textSecondary },
+  surahNum: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
   surahNameCol: { flex: 1 },
   surahArabicName: { fontFamily: 'Nunito_700Bold', fontSize: 15, color: Colors.textPrimary },
   surahLatinName: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted },
