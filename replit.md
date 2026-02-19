@@ -44,8 +44,8 @@ Preferred communication style: Simple, everyday language.
   - `/api/notes/*` — CRUD for bulletin board notes
   - `/api/cogenitore/*` — pair/unpair co-parents, get co-parent info
   - `/api/premium/*` — premium subscription management
-  - `/api/custom-photos` — GET per-user custom photos map, POST `/:childId` upserts custom photo
-  - `/api/upload` — photo upload with JPEG conversion (sharp)
+  - `/api/custom-photos` — GET per-user custom photos map, POST `/:childId` upserts custom photo, DELETE `/:childId` removes custom photo
+  - `/api/upload` — photo upload with JPEG conversion (sharp), returns cloud URL
 - **CORS:** Dynamic CORS configuration supporting Replit dev/deployment domains and localhost
 - **Middleware:** `requireAuth` middleware protects authenticated endpoints
 
