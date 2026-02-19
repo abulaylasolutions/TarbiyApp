@@ -1069,7 +1069,7 @@ export default function DashboardScreen() {
       <Modal visible={showQuranModal} animationType="slide" transparent={false}>
         <View style={[s.quranFullPage, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
           <View style={s.quranAppBar}>
-            <Pressable onPress={() => setShowQuranModal(false)} style={s.quranBackBtn}>
+            <Pressable testID="quran-back-btn" onPress={() => setShowQuranModal(false)} style={s.quranBackBtn}>
               <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
             </Pressable>
             <Text style={s.quranAppBarTitle}>{t('quranMemorization')}</Text>
@@ -1368,8 +1368,8 @@ const s = StyleSheet.create({
     paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.creamBeige,
     backgroundColor: Colors.cardBackground,
   },
-  quranBackBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
-  quranAppBarTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary, flex: 1, textAlign: 'center' },
+  quranBackBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20, zIndex: 10 },
+  quranAppBarTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary, position: 'absolute', left: 0, right: 0, textAlign: 'center' },
   quranLearnedSummary: { paddingHorizontal: 20, paddingVertical: 14, backgroundColor: Colors.cardBackground, borderBottomWidth: 1, borderBottomColor: Colors.creamBeige },
   quranLearnedText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8 },
   quranLearnedBar: { height: 6, borderRadius: 3, backgroundColor: Colors.creamBeige },
