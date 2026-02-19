@@ -291,6 +291,7 @@ export default function DashboardScreen() {
 
   const salahEnabled = selectedChild?.salahEnabled !== false;
   const fastingEnabled = selectedChild?.fastingEnabled !== false;
+  const trackQuranToday = selectedChild?.trackQuranToday !== false;
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const dateStr = formatDate(currentDate);
@@ -671,6 +672,7 @@ export default function DashboardScreen() {
       feed.push({ icon: 'time', iconColor: cardColor, text: act.text, time: act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', author: act.authorName, sortTime: new Date(act.createdAt || 0).getTime() });
     });
 
+    feed.sort((a, b) => b.sortTime - a.sortTime);
     return feed.slice(0, 20).map(({ sortTime, ...rest }) => rest);
   };
 
@@ -841,52 +843,54 @@ export default function DashboardScreen() {
             </Animated.View>
           )}
 
-          {fastingEnabled && (
+          {(fastingEnabled || trackQuranToday) && (
             <Animated.View entering={FadeInDown.delay(400).duration(300)}>
-              <View style={s.fastingHeaderRow}>
-                <Text style={s.sectionTitle}>{t('fastingToday')}</Text>
-                <Pressable onPress={toggleQuranToday} style={s.quranTodayRow}>
-                  <View style={[s.quranCheckBox, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
-                    {quranToday && <Ionicons name="checkmark" size={12} color={Colors.white} />}
-                  </View>
-                  <Text style={s.quranTodayLabel}>{t('quranToday')}</Text>
-                </Pressable>
-              </View>
+              <Text style={s.sectionTitle}>{fastingEnabled ? t('fastingToday') : t('quranToday')}</Text>
               <View style={s.card}>
-                <View style={s.fastingRow}>
-                  {(['yes', 'no', 'partial'] as const).map((status) => {
-                    const isActive = fasting.status === status;
-                    const color = status === 'yes' ? Colors.mintGreen : status === 'partial' ? '#F4C430' : Colors.textMuted;
-                    return (
-                      <Pressable
-                        key={status}
-                        onPress={() => updateFasting(status)}
-                        style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }]}
-                      >
-                        <Ionicons
-                          name={status === 'yes' ? 'checkmark-circle' : status === 'partial' ? 'remove-circle' : 'close-circle'}
-                          size={20}
-                          color={isActive ? color : Colors.textMuted}
-                        />
-                        <Text style={[s.fastingBtnText, isActive && { color }]}>{t(status)}</Text>
+                <View style={s.fastingQuranRow}>
+                  {fastingEnabled && (
+                    <View style={[s.fastingCol, trackQuranToday && { flex: 3 }]}>
+                      <Text style={s.fastingColLabel}>{t('fastingToday')}</Text>
+                      <View style={s.fastingRow}>
+                        {(['yes', 'no', 'partial'] as const).map((status) => {
+                          const isActive = fasting.status === status;
+                          const color = status === 'yes' ? Colors.mintGreen : status === 'partial' ? '#F4C430' : Colors.textMuted;
+                          return (
+                            <Pressable
+                              key={status}
+                              onPress={() => updateFasting(status)}
+                              style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }]}
+                            >
+                              <Ionicons
+                                name={status === 'yes' ? 'checkmark-circle' : status === 'partial' ? 'remove-circle' : 'close-circle'}
+                                size={20}
+                                color={isActive ? color : Colors.textMuted}
+                              />
+                              <Text style={[s.fastingBtnText, isActive && { color }]}>{t(status)}</Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  )}
+                  {trackQuranToday && (
+                    <View style={[s.quranTodayCol, fastingEnabled && { flex: 1, borderLeftWidth: 1, borderLeftColor: Colors.creamBeige, paddingLeft: 12 }]}>
+                      <Text style={s.fastingColLabel}>{t('quranToday')}</Text>
+                      <Pressable onPress={toggleQuranToday} style={s.quranTodayToggle}>
+                        <View style={[s.quranTodayCircle, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                          {quranToday ? (
+                            <Ionicons name="checkmark" size={20} color={Colors.white} />
+                          ) : (
+                            <Ionicons name="book-outline" size={16} color={Colors.textMuted} />
+                          )}
+                        </View>
+                        <Text style={[s.quranTodayStatus, quranToday && { color: Colors.mintGreen }]}>
+                          {quranToday ? t('yes') : t('no')}
+                        </Text>
                       </Pressable>
-                    );
-                  })}
+                    </View>
+                  )}
                 </View>
-              </View>
-            </Animated.View>
-          )}
-
-          {!fastingEnabled && (
-            <Animated.View entering={FadeInDown.delay(400).duration(300)}>
-              <View style={s.fastingHeaderRow}>
-                <View />
-                <Pressable onPress={toggleQuranToday} style={s.quranTodayRow}>
-                  <View style={[s.quranCheckBox, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
-                    {quranToday && <Ionicons name="checkmark" size={12} color={Colors.white} />}
-                  </View>
-                  <Text style={s.quranTodayLabel}>{t('quranToday')}</Text>
-                </Pressable>
               </View>
             </Animated.View>
           )}
@@ -1287,13 +1291,16 @@ const s = StyleSheet.create({
   prayerBarFill: { height: 6, borderRadius: 3 },
   prayerCountText: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textSecondary, minWidth: 28 },
 
-  fastingHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 8 },
-  quranTodayRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  quranCheckBox: {
-    width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: Colors.textMuted,
-    alignItems: 'center', justifyContent: 'center',
+  fastingQuranRow: { flexDirection: 'row', gap: 12 },
+  fastingCol: { flex: 1 },
+  fastingColLabel: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: Colors.textMuted, marginBottom: 8, textTransform: 'uppercase' as const, letterSpacing: 0.5 },
+  quranTodayCol: { alignItems: 'center' as const, justifyContent: 'center' as const },
+  quranTodayToggle: { alignItems: 'center' as const, gap: 6 },
+  quranTodayCircle: {
+    width: 44, height: 44, borderRadius: 22, borderWidth: 2, borderColor: Colors.textMuted,
+    alignItems: 'center' as const, justifyContent: 'center' as const, backgroundColor: Colors.creamBeige,
   },
-  quranTodayLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
+  quranTodayStatus: { fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.textMuted },
 
   fastingRow: { flexDirection: 'row', gap: 10 },
   fastingBtn: {

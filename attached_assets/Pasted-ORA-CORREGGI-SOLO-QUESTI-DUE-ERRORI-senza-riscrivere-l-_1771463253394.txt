@@ -1,0 +1,36 @@
+ORA CORREGGI SOLO QUESTI DUE ERRORI, senza riscrivere l'intera app:
+
+1. Fix numeri sure in "Memorizzazione del Qur'an":
+   - Nel dialog/box che si apre cliccando "Sure imparate: X / 114":
+     - Assicura che ogni riga mostri chiaramente il NUMERO + nome (es. "114 - An-Nas", "113 - Al-Falaq", ..., "1 - Al-Fatiha")
+     - Ordine decrescente (114 prima, 1 ultima) – usa reverse: true in ListView o GridView
+     - Se non appare il numero: aggiungi Text("${surahNumber} - ${surahName}") con surahNumber bold o in parentesi
+     - Usa lista statica completa (array di map: {number: 1, nameAr: "الفاتحة", nameIt: "Al-Fatiha"}, ..., {number: 114, nameAr: "الناس", nameIt: "An-Nas"})
+     - Ogni riga tappabile per cambiare stato ("Da imparare", "In corso", "Imparata") con icone e aggiornamento realtime in children/quranMemorized
+
+2. Fix ordine Attività recenti:
+   - Nella sezione "Attività recenti" in fondo alla Dashboard:
+     - Cambia ordine in decrescente: la più recente (ultimo evento) deve stare in alto, la più vecchia in basso
+     - Usa .reversed su lista o query Firestore con orderBy('timestamp', descending: true)
+     - Limita a max 20, sync realtime con StreamBuilder
+     - Ogni riga: icona evento, descrizione ("Fajr fatta", "Surah 114 imparata", ecc.), timestamp breve, autore (babbo/mamma)
+
+3. Aggiungi toggle per "Qur'an oggi?" nelle impostazioni profilo figlio (add/edit child screen):
+   - Aggiungi SwitchListTile pastello: "Abilita tracker Qur'an oggi" (ON/OFF)
+   - Salva in children/trackQuranToday bool (default ON o OFF a tua scelta)
+   - Se OFF, nasconde la riga "Qur'an oggi?" in Dashboard
+
+4. Modifica sezione giornaliera in Dashboard (daily section con Salah, Digiuno, ecc.):
+   - Nella stessa riga del "Digiuno oggi?": crea layout orizzontale (Row o Card con due colonne)
+     - Colonna sinistra (75% larghezza): "Digiuno oggi?" + toggle Sì/No/Parziale (come già esiste)
+     - Colonna destra (25% larghezza): "Qur'an oggi?" + toggle Sì/No (checkbox o switch semplice)
+   - Se trackQuranToday == false, nascondi la colonna destra
+   - Stile: entrambi in card pastello leggera, label bold, toggle verdi quando attivi
+   - Salva valore Qur'an oggi in daily data (es. children/daily/{currentDate}/quranToday bool)
+
+Mantieni responsive: su schermi piccoli la riga si adatta (usa Flexible o Expanded per proporzioni 75-25), su grandi resta affiancata. Animazioni soft su toggle (fade/check verde). Usa Provider per refresh se necessario.
+
+Modifica dashboard_screen.dart (sezione giornaliera) e add_child_screen.dart (aggiungi toggle). Inizia con queste integrazioni precise!
+
+Mantieni responsive, animazioni soft. Modifica dashboard_screen.dart e widget relativi (quran_memorization_dialog.dart, activity_recent.dart). Inizia subito con queste correzioni precise!
+

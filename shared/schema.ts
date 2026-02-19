@@ -41,6 +41,7 @@ export const children = pgTable("children", {
   canReadArabic: boolean("can_read_arabic").default(false),
   canWriteArabic: boolean("can_write_arabic").default(false),
   akhlaqAdabChecked: text("akhlaq_adab_checked"),
+  trackQuranToday: boolean("track_quran_today").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

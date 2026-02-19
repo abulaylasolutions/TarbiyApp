@@ -194,6 +194,7 @@ export default function HomeScreen() {
   const [settingsChild, setSettingsChild] = useState<Child | null>(null);
   const [settingsSalah, setSettingsSalah] = useState(true);
   const [settingsFasting, setSettingsFasting] = useState(true);
+  const [settingsQuranToday, setSettingsQuranToday] = useState(true);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const isPremium = user?.isPremium;
@@ -243,6 +244,7 @@ export default function HomeScreen() {
     setSettingsChild(child);
     setSettingsSalah(child.salahEnabled !== false);
     setSettingsFasting(child.fastingEnabled !== false);
+    setSettingsQuranToday(child.trackQuranToday !== false);
     setShowSettings(true);
   };
 
@@ -252,10 +254,12 @@ export default function HomeScreen() {
       await apiRequest('PATCH', `/api/children/${settingsChild.id}/settings`, {
         salahEnabled: settingsSalah,
         fastingEnabled: settingsFasting,
+        trackQuranToday: settingsQuranToday,
       });
       await updateChild(settingsChild.id, {
         salahEnabled: settingsSalah,
         fastingEnabled: settingsFasting,
+        trackQuranToday: settingsQuranToday,
       });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowSettings(false);
@@ -625,6 +629,22 @@ export default function HomeScreen() {
             </View>
             <Text style={styles.settingsHint}>
               {settingsFasting ? t('enabled') : t('disabled')}
+            </Text>
+
+            <View style={styles.settingsRow}>
+              <View style={styles.settingsLabelRow}>
+                <Ionicons name="book-outline" size={22} color={Colors.peachPink} />
+                <Text style={styles.settingsLabel}>{t('quranTodayTracker')}</Text>
+              </View>
+              <Pressable
+                onPress={() => setSettingsQuranToday(!settingsQuranToday)}
+                style={[styles.toggleTrack, settingsQuranToday && styles.toggleTrackActive]}
+              >
+                <View style={[styles.toggleThumb, settingsQuranToday && styles.toggleThumbActive]} />
+              </Pressable>
+            </View>
+            <Text style={styles.settingsHint}>
+              {settingsQuranToday ? t('enabled') : t('disabled')}
             </Text>
 
             <Pressable onPress={saveSettings} style={styles.settingsSaveBtn}>
