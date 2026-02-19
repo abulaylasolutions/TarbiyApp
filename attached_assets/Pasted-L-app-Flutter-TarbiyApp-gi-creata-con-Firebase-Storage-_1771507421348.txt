@@ -1,0 +1,35 @@
+L'app Flutter "TarbiyApp" è già creata con Firebase Storage per foto profilo figlio, CachedNetworkImage per mostrarla in Home/Dashboard/card, e sync cogenitori.
+
+ORA FIXA SOLO IL PROBLEMA: quando carico una foto su un figlio, NON appare né per il creatore né per il cogenitore (placeholder o blank).
+
+Correggi così, passo per passo:
+
+1. Nella schermata aggiungi/modifica figlio (add_child_screen.dart o simile):
+   - Dopo image_picker e upload su Storage:
+     - Assicura che dopo uploadFile restituisca URL corretto (await uploadTask.snapshot.ref.getDownloadURL())
+     - Salva ESPLICITAMENTE photoUrl: url nel documento children/{childId}
+     - Aggiungi debugPrint("Foto salvata: $url") per verificare in console
+   - Dopo save: chiama setState() o notifyListeners() se usi Provider, per refresh UI immediata
+
+2. Fix visualizzazione foto (child_card.dart, dashboard header, ecc.):
+   - Usa CachedNetworkImage con:
+     - key: ValueKey(photoUrl ?? 'placeholder') per forzare rebuild se URL cambia
+     - placeholder: (context, url) => CircleAvatar(backgroundColor: pastello, child: Icon(Icons.person))
+     - errorWidget: (context, url, error) => CircleAvatar(backgroundColor: rosso tenue, child: Icon(Icons.error))
+     - fadeInDuration: Duration(milliseconds: 300)
+   - Aggiungi print("Caricando foto: $photoUrl") per debug
+
+3. Sincronizzazione per cogenitore:
+   - Assicura query in Home/Dashboard includa tutti i figli dove currentUid in cogenitori o creator
+     - .where('cogenitori', arrayContains: currentUid).orderBy('orderIndex')
+   - Usa StreamBuilder con questa query per realtime (foto appare appena salvata dall'altro genitore)
+
+4. Regole Firebase Storage (se non già):
+   - Assicura regole allow read: if request.auth != null (o più restrittivo ma permetti ai pairati)
+
+5. Test refresh:
+   - Aggiungi pulsante "Refresh" in Home/Dashboard che chiama setState() o stream refresh per forzare reload foto
+
+Mantieni responsive, animazioni soft. Aggiungi debug print per tracciare upload e load.
+
+Modifica add_child_screen.dart (upload e save photoUrl), child_card.dart / dashboard_screen.dart (CachedNetworkImage), home_screen.dart (query). Inizia subito con queste correzioni precise!
