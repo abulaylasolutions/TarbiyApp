@@ -1,7 +1,7 @@
 import { eq, or, and, inArray, sql, desc } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs } from "@shared/schema";
-import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog } from "@shared/schema";
+import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs, childCustomPhotos } from "@shared/schema";
+import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog, ChildCustomPhoto } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -486,4 +486,29 @@ export async function upsertQuranDailyLog(childId: string, date: string, complet
   }
   const result = await db.insert(quranDailyLogs).values({ childId, date, completed, note }).returning();
   return result[0];
+}
+
+export async function getCustomPhotosForUser(userId: string): Promise<ChildCustomPhoto[]> {
+  return db.select().from(childCustomPhotos).where(eq(childCustomPhotos.userId, userId));
+}
+
+export async function upsertCustomPhoto(userId: string, childId: string, photoUrl: string): Promise<ChildCustomPhoto> {
+  const existing = await db.select().from(childCustomPhotos).where(
+    and(eq(childCustomPhotos.userId, userId), eq(childCustomPhotos.childId, childId))
+  );
+  if (existing.length > 0) {
+    const result = await db.update(childCustomPhotos).set({ photoUrl }).where(eq(childCustomPhotos.id, existing[0].id)).returning();
+    console.log(`Foto personalizzata aggiornata per ${childId}: ${photoUrl}`);
+    return result[0];
+  }
+  const result = await db.insert(childCustomPhotos).values({ userId, childId, photoUrl }).returning();
+  console.log(`Foto personalizzata salvata per ${childId}: ${photoUrl}`);
+  return result[0];
+}
+
+export async function getCustomPhoto(userId: string, childId: string): Promise<ChildCustomPhoto | null> {
+  const result = await db.select().from(childCustomPhotos).where(
+    and(eq(childCustomPhotos.userId, userId), eq(childCustomPhotos.childId, childId))
+  );
+  return result[0] || null;
 }

@@ -51,6 +51,8 @@ import {
   getQuranDailyLog,
   upsertQuranDailyLog,
   archiveNote,
+  getCustomPhotosForUser,
+  upsertCustomPhoto,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -138,6 +140,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Errore upload foto:", error);
       return res.status(500).json({ message: "Errore upload" });
+    }
+  });
+
+  app.get("/api/custom-photos", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const photos = await getCustomPhotosForUser(userId);
+      const photoMap: Record<string, string> = {};
+      for (const p of photos) {
+        photoMap[p.childId] = p.photoUrl;
+      }
+      return res.json(photoMap);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore caricamento foto personalizzate" });
+    }
+  });
+
+  app.post("/api/custom-photos/:childId", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const userId = req.session.userId!;
+      const childId = req.params.childId as string;
+      const { photoUrl } = req.body;
+      if (!photoUrl) {
+        return res.status(400).json({ message: "photoUrl richiesto" });
+      }
+      const result = await upsertCustomPhoto(userId, childId, photoUrl);
+      return res.json(result);
+    } catch (error) {
+      console.error("Errore salvataggio foto personalizzata:", error);
+      return res.status(500).json({ message: "Errore salvataggio foto personalizzata" });
     }
   });
 
