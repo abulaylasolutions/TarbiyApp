@@ -326,10 +326,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/notes/:id/archive", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { archived } = req.body;
-      const result = await archiveNote(req.params.id as string, archived !== false);
+      const archived = req.body?.archived;
+      const shouldArchive = archived !== false;
+      console.log(`Archiviando nota ${req.params.id}, archived=${shouldArchive}, body=`, req.body);
+      const result = await archiveNote(req.params.id as string, shouldArchive);
+      console.log(`Nota ${req.params.id} archiviata:`, result?.archived);
       return res.json(result);
     } catch (error) {
+      console.error(`Errore archiviazione nota ${req.params.id}:`, error);
       return res.status(500).json({ message: "Errore del server" });
     }
   });

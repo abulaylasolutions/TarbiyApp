@@ -248,12 +248,17 @@ export default function BachecaScreen() {
   };
 
   const archiveNote = async (noteId: string) => {
+    console.log("Archiviando nota", noteId);
     try {
-      await apiRequest('POST', `/api/notes/${noteId}/archive`);
+      const res = await apiRequest('POST', `/api/notes/${noteId}/archive`);
+      const data = await res.json();
+      console.log("Risposta archivio:", data);
       await refreshNotes();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       showSnackbar(noteId, t('noteArchived'));
-    } catch {}
+    } catch (err) {
+      console.error("Errore archiviazione nota:", err);
+    }
   };
 
   const handleUndoArchive = async (noteId: string) => {
