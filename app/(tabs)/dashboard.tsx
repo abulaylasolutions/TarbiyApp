@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, Platform, Pressable, Image,
+  View, Text, StyleSheet, ScrollView, Platform, Pressable,
   TextInput, Modal, Alert, KeyboardAvoidingView, FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -262,8 +263,13 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
         return (
           <Pressable key={child.id} onPress={() => selectChild(child.id)} style={s.selectorItem}>
             <View style={[s.selectorCircle, isSelected && { borderColor: color, borderWidth: 3 }]}>
-              {child.photoUri ? (
-                <Image source={{ uri: child.photoUri }} style={s.selectorImg} />
+              {child.photoUri && child.photoUri.startsWith('http') ? (
+                <Image
+                  source={{ uri: child.photoUri }}
+                  style={s.selectorImg}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
               ) : (
                 <Text style={s.selectorInitial}>{child.name.charAt(0).toUpperCase()}</Text>
               )}
@@ -706,8 +712,13 @@ export default function DashboardScreen() {
             style={s.headerGradient}
           >
             <View style={s.headerRow}>
-              {selectedChild.photoUri ? (
-                <Image source={{ uri: selectedChild.photoUri }} style={[s.headerPhoto, { borderColor: cardColor }]} />
+              {selectedChild.photoUri && selectedChild.photoUri.startsWith('http') ? (
+                <Image
+                  source={{ uri: selectedChild.photoUri }}
+                  style={[s.headerPhoto, { borderColor: cardColor }]}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                />
               ) : (
                 <View style={[s.headerPhotoFallback, { backgroundColor: 'rgba(255,255,255,0.7)' }]}>
                   <Text style={[s.headerPhotoInitial, { color: cardColor }]}>{selectedChild.name.charAt(0).toUpperCase()}</Text>

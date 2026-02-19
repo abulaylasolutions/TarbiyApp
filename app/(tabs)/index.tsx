@@ -9,8 +9,8 @@ import {
   TextInput,
   Modal,
   Alert,
-  Image,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -89,8 +89,14 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
         ]}
       >
         <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
-          {child.photoUri ? (
-            <Image source={{ uri: child.photoUri }} style={styles.childPhoto} />
+          {child.photoUri && child.photoUri.startsWith('http') ? (
+            <Image
+              source={{ uri: child.photoUri }}
+              style={styles.childPhoto}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              onError={(e) => console.log('Errore caricamento foto:', child.name, e.error)}
+            />
           ) : (
             <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
               <Text style={styles.childAvatarText}>
@@ -396,6 +402,7 @@ export default function HomeScreen() {
 
     if (editingChild) {
       const cogArray = [user!.id, ...form.selectedCogenitori];
+      console.log('Salvando figlio con photoUri:', form.photoUri);
       const result = await updateChild(editingChild.id, {
         name: form.name.trim(),
         birthDate,
@@ -405,6 +412,7 @@ export default function HomeScreen() {
         cogenitori: JSON.stringify(cogArray),
       });
       if (result.success) {
+        await refreshChildren();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -415,6 +423,7 @@ export default function HomeScreen() {
       const coParentName = form.selectedCogenitori.length > 0
         ? form.selectedCogenitori.map(id => getCogenitoreNameById(id)).filter(Boolean).join(', ')
         : undefined;
+      console.log('Aggiungendo figlio con photoUri:', form.photoUri);
       const result = await addChild({
         name: form.name.trim(),
         birthDate,
@@ -425,6 +434,7 @@ export default function HomeScreen() {
         selectedCogenitori: form.selectedCogenitori,
       });
       if (result.success) {
+        await refreshChildren();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -546,7 +556,7 @@ export default function HomeScreen() {
                     <Ionicons name="cloud-upload" size={28} color={Colors.primary} />
                   </View>
                 ) : form.photoUri ? (
-                  <Image source={{ uri: form.photoUri }} style={styles.photoPreview} />
+                  <Image source={{ uri: form.photoUri }} style={styles.photoPreview} contentFit="cover" />
                 ) : (
                   <View style={styles.photoPlaceholder}>
                     <Ionicons name="camera" size={28} color={Colors.textMuted} />

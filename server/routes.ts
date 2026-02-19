@@ -3,6 +3,7 @@ import { createServer, type Server } from "node:http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import multer from "multer";
+import sharp from "sharp";
 import path from "path";
 import fs from "fs";
 import { pool } from "./db";
@@ -115,14 +116,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use("/uploads", (await import("express")).default.static(uploadsDir));
 
-  app.post("/api/upload", requireAuth as any, upload.single('photo'), (req: Request, res: Response) => {
+  app.post("/api/upload", requireAuth as any, upload.single('photo'), async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "Nessun file caricato" });
       }
+      const jpegFilename = req.file.filename.replace(/\.[^.]+$/, '.jpg');
+      const jpegPath = path.join(uploadsDir, jpegFilename);
+      await sharp(req.file.path)
+        .resize(800, 800, { fit: 'cover', withoutEnlargement: true })
+        .jpeg({ quality: 85 })
+        .toFile(jpegPath);
+      if (req.file.path !== jpegPath) {
+        fs.unlinkSync(req.file.path);
+      }
       const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
       const host = req.headers['x-forwarded-host'] || req.headers.host;
-      const photoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      const photoUrl = `${protocol}://${host}/uploads/${jpegFilename}`;
       console.log(`Foto caricata: ${photoUrl}`);
       return res.json({ url: photoUrl });
     } catch (error) {

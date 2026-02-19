@@ -10,9 +10,9 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  Image,
   KeyboardAvoidingView,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,7 +23,9 @@ import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useApp, CogenitoreInfo } from '@/lib/app-context';
-import { apiRequest } from '@/lib/query-client';
+import { apiRequest, getApiUrl } from '@/lib/query-client';
+import { fetch } from 'expo/fetch';
+import { File } from 'expo-file-system';
 import { useI18n, getLanguageLabel, Language } from '@/lib/i18n';
 import Colors from '@/constants/colors';
 
@@ -314,6 +316,32 @@ export default function SettingsScreen() {
     setShowEditModal(true);
   };
 
+  const uploadPhoto = async (localUri: string): Promise<string | null> => {
+    try {
+      const baseUrl = getApiUrl();
+      const url = new URL('/api/upload', baseUrl);
+      const formData = new FormData();
+      if (Platform.OS === 'web') {
+        const response = await globalThis.fetch(localUri);
+        const blob = await response.blob();
+        formData.append('photo', blob, 'photo.jpg');
+      } else {
+        const file = new File(localUri);
+        formData.append('photo', file as any);
+      }
+      const res = await fetch(url.toString(), {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.url;
+    } catch {
+      return null;
+    }
+  };
+
   const pickProfilePhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -322,7 +350,9 @@ export default function SettingsScreen() {
       quality: 0.7,
     });
     if (!result.canceled && result.assets[0]) {
-      setEditPhotoUrl(result.assets[0].uri);
+      const localUri = result.assets[0].uri;
+      const serverUrl = await uploadPhoto(localUri);
+      setEditPhotoUrl(serverUrl || localUri);
     }
   };
 
@@ -410,8 +440,8 @@ export default function SettingsScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.profileGradient}
           >
-            {user?.photoUrl ? (
-              <Image source={{ uri: user.photoUrl }} style={styles.profilePhoto} />
+            {user?.photoUrl && user.photoUrl.startsWith('http') ? (
+              <Image source={{ uri: user.photoUrl }} style={styles.profilePhoto} contentFit="cover" cachePolicy="memory-disk" />
             ) : (
               <View style={styles.profileAvatar}>
                 <Text style={styles.profileAvatarText}>
@@ -535,7 +565,7 @@ export default function SettingsScreen() {
 
                 <Pressable onPress={pickProfilePhoto} style={styles.editPhotoWrap}>
                   {editPhotoUrl ? (
-                    <Image source={{ uri: editPhotoUrl }} style={styles.editPhotoPreview} />
+                    <Image source={{ uri: editPhotoUrl }} style={styles.editPhotoPreview} contentFit="cover" />
                   ) : (
                     <View style={styles.editPhotoPlaceholder}>
                       <Ionicons name="camera" size={28} color={Colors.textMuted} />
