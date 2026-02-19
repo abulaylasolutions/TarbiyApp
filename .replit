@@ -76,4 +76,3 @@ ensurePreviewReachable = "/status"
 [userenv]
 
 [userenv.shared]
-GOOGLE_CLIENT_SECRET = "437779111704-5romba6evpmfh1p2im3f1mj70cncilh1.apps.googleusercontent.com"
