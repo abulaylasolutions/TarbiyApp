@@ -218,7 +218,7 @@ const EMPTY_FORM: ChildFormData = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren, getChildPhoto, setCustomPhoto, refreshCustomPhotos } = useApp();
+  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren, getChildPhoto, setCustomPhoto, removeCustomPhoto, refreshCustomPhotos } = useApp();
   const { user } = useAuth();
   const { t, isRTL } = useI18n();
   const [showModal, setShowModal] = useState(false);
@@ -397,6 +397,8 @@ export default function HomeScreen() {
           if (localPath) {
             await setCustomPhoto(editingChild.id, localPath);
           }
+        } else if (getChildPhoto(editingChild.id)) {
+          await removeCustomPhoto(editingChild.id);
         }
         await refreshChildren();
         await refreshCustomPhotos();
@@ -543,20 +545,31 @@ export default function HomeScreen() {
                 </View>
               ) : null}
 
-              <Pressable onPress={uploadingPhoto ? undefined : pickImage} style={styles.photoPickerWrap}>
-                {uploadingPhoto ? (
-                  <View style={styles.photoPlaceholder}>
-                    <Ionicons name="cloud-upload" size={28} color={Colors.primary} />
-                  </View>
-                ) : form.photoUri ? (
-                  <Image key={form.photoUri} source={{ uri: form.photoUri }} style={styles.photoPreview} contentFit="cover" transition={300} />
-                ) : (
-                  <View style={styles.photoPlaceholder}>
-                    <Ionicons name="camera" size={28} color={Colors.textMuted} />
-                  </View>
-                )}
-                <Text style={styles.photoLabel}>{uploadingPhoto ? 'Caricamento...' : t('photoOptional')}</Text>
-              </Pressable>
+              <View style={{ alignItems: 'center' }}>
+                <Pressable onPress={uploadingPhoto ? undefined : pickImage} style={styles.photoPickerWrap}>
+                  {uploadingPhoto ? (
+                    <View style={styles.photoPlaceholder}>
+                      <Ionicons name="cloud-upload" size={28} color={Colors.primary} />
+                    </View>
+                  ) : form.photoUri ? (
+                    <Image key={form.photoUri} source={{ uri: form.photoUri }} style={styles.photoPreview} contentFit="cover" transition={300} />
+                  ) : (
+                    <View style={styles.photoPlaceholder}>
+                      <Ionicons name="camera" size={28} color={Colors.textMuted} />
+                    </View>
+                  )}
+                  <Text style={styles.photoLabel}>{uploadingPhoto ? 'Caricamento...' : t('photoOptional')}</Text>
+                </Pressable>
+                {form.photoUri ? (
+                  <Pressable
+                    onPress={() => setForm(prev => ({ ...prev, photoUri: '' }))}
+                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, backgroundColor: '#FFF0F0' }}
+                  >
+                    <Ionicons name="trash-outline" size={14} color={Colors.danger} />
+                    <Text style={{ color: Colors.danger, fontSize: 12, marginLeft: 4, fontFamily: 'Nunito_600SemiBold' }}>Rimuovi foto</Text>
+                  </Pressable>
+                ) : null}
+              </View>
 
               <Text style={styles.inputLabel}>{t('childName')}</Text>
               <TextInput

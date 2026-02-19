@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 import { apiRequest } from '@/lib/query-client';
@@ -68,6 +69,7 @@ interface AppContextValue {
   refreshPending: () => Promise<void>;
   refreshCustomPhotos: () => Promise<void>;
   setCustomPhoto: (childId: string, photoUrl: string) => Promise<void>;
+  removeCustomPhoto: (childId: string) => Promise<void>;
   getChildPhoto: (childId: string) => string | null;
   approvePending: (id: string) => Promise<void>;
   rejectPending: (id: string) => Promise<void>;
@@ -171,6 +173,26 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
       setCustomPhotos(prev => ({ ...prev, [childId]: localPath }));
     } catch (error) {
       console.error('Error saving local photo:', error);
+    }
+  };
+
+  const removeCustomPhotoFn = async (childId: string) => {
+    try {
+      await AsyncStorage.removeItem(`child_photo_${childId}`);
+      setCustomPhotos(prev => {
+        const next = { ...prev };
+        delete next[childId];
+        return next;
+      });
+      if (Platform.OS !== 'web') {
+        const localPath = `${FileSystem.documentDirectory}child_photos/${childId}.jpg`;
+        const info = await FileSystem.getInfoAsync(localPath);
+        if (info.exists) {
+          await FileSystem.deleteAsync(localPath, { idempotent: true });
+        }
+      }
+    } catch (error) {
+      console.error('Error removing local photo:', error);
     }
   };
 
@@ -295,6 +317,7 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     refreshPending: refreshPendingInternal,
     refreshCustomPhotos: refreshCustomPhotosInternal,
     setCustomPhoto: setCustomPhotoFn,
+    removeCustomPhoto: removeCustomPhotoFn,
     getChildPhoto,
     approvePending,
     rejectPending,

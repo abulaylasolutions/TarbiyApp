@@ -367,17 +367,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         req.session.userId!, name, birthDate, gender, photoUri, coParentName, cardColor, selectedCogenitori
       );
 
-      if (selectedCogenitori && Array.isArray(selectedCogenitori)) {
-        for (const cogId of selectedCogenitori) {
-          if (cogId !== req.session.userId) {
-            await createPendingChange(
-              req.session.userId!, cogId, child.id, "add_child",
-              JSON.stringify({ childName: name, childGender: gender })
-            );
-          }
-        }
-      }
-
       return res.status(201).json(child);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
