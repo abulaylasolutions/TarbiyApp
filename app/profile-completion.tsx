@@ -20,9 +20,8 @@ import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 
 const GENDER_OPTIONS = [
-  { value: 'maschio', label: 'Maschio', icon: 'man' as const },
-  { value: 'femmina', label: 'Femmina', icon: 'woman' as const },
-  { value: 'non_specificato', label: 'Preferisco non specificare', icon: 'person' as const },
+  { value: 'male', label: 'Uomo', icon: 'man' as const },
+  { value: 'female', label: 'Donna', icon: 'woman' as const },
 ];
 
 export default function ProfileCompletionScreen() {

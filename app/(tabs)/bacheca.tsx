@@ -221,6 +221,8 @@ export default function BachecaScreen() {
   const [sendingComment, setSendingComment] = useState(false);
   const [selectedColor, setSelectedColor] = useState(NOTE_COLORS[0]);
   const [editColor, setEditColor] = useState(NOTE_COLORS[0]);
+  const [snackbar, setSnackbar] = useState<{ visible: boolean; noteId: string; message: string } | null>(null);
+  const snackbarTimeout = React.useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
@@ -237,9 +239,28 @@ export default function BachecaScreen() {
     }
   }, []);
 
+  const showSnackbar = (noteId: string, message: string) => {
+    if (snackbarTimeout.current) clearTimeout(snackbarTimeout.current);
+    setSnackbar({ visible: true, noteId, message });
+    snackbarTimeout.current = setTimeout(() => {
+      setSnackbar(null);
+    }, 4000);
+  };
+
   const archiveNote = async (noteId: string) => {
     try {
       await apiRequest('POST', `/api/notes/${noteId}/archive`);
+      await refreshNotes();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      showSnackbar(noteId, t('noteArchived'));
+    } catch {}
+  };
+
+  const handleUndoArchive = async (noteId: string) => {
+    if (snackbarTimeout.current) clearTimeout(snackbarTimeout.current);
+    setSnackbar(null);
+    try {
+      await apiRequest('POST', `/api/notes/${noteId}/archive`, { archived: false });
       await refreshNotes();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch {}
@@ -405,76 +426,98 @@ export default function BachecaScreen() {
         <Ionicons name="add" size={28} color={Colors.white} />
       </Pressable>
 
-      <Modal visible={showAddModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
-          <Pressable style={styles.modalDismiss} onPress={() => setShowAddModal(false)} />
-          <Animated.View
-            entering={FadeIn.duration(200)}
-            exiting={FadeOut.duration(150)}
-            style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
-          >
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>{t('writeNote')}</Text>
-            <TextInput
-              style={styles.noteInput}
-              placeholder={t('writeNote')}
-              placeholderTextColor={Colors.textMuted}
-              multiline
-              value={noteText}
-              onChangeText={setNoteText}
-              autoFocus
-              maxLength={500}
-            />
+      {snackbar?.visible && (
+        <Animated.View
+          entering={FadeIn.duration(250)}
+          exiting={FadeOut.duration(200)}
+          style={[styles.snackbar, { bottom: Platform.OS === 'web' ? 34 + 16 : insets.bottom + 72 }]}
+        >
+          <Ionicons name="archive" size={18} color={Colors.white} />
+          <Text style={styles.snackbarText}>{snackbar.message}</Text>
+          <Pressable onPress={() => handleUndoArchive(snackbar.noteId)} style={styles.snackbarUndo}>
+            <Text style={styles.snackbarUndoText}>{t('undo')}</Text>
+          </Pressable>
+        </Animated.View>
+      )}
 
-            {children.length > 0 && (
-              <>
-                <Text style={styles.tagSectionTitle}>{t('tags')}</Text>
-                <View style={styles.tagContainer}>
-                  {children.map(child => (
-                    <ChildTag
-                      key={child.id}
-                      child={child}
-                      isSelected={addTags.includes(child.id)}
-                      onToggle={(id) => toggleTag(id, true)}
-                    />
+      <Modal visible={showAddModal} animationType="slide" transparent>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          <View style={styles.modalOverlay}>
+            <Pressable style={styles.modalDismiss} onPress={() => setShowAddModal(false)} />
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
+            >
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
+                <View style={styles.modalHandle} />
+                <Text style={styles.modalTitle}>{t('writeNote')}</Text>
+                <TextInput
+                  style={styles.noteInput}
+                  placeholder={t('writeNote')}
+                  placeholderTextColor={Colors.textMuted}
+                  multiline
+                  value={noteText}
+                  onChangeText={setNoteText}
+                  autoFocus
+                  maxLength={500}
+                />
+
+                {children.length > 0 && (
+                  <>
+                    <Text style={styles.tagSectionTitle}>{t('tags')}</Text>
+                    <View style={styles.tagContainer}>
+                      {children.map(child => (
+                        <ChildTag
+                          key={child.id}
+                          child={child}
+                          isSelected={addTags.includes(child.id)}
+                          onToggle={(id) => toggleTag(id, true)}
+                        />
+                      ))}
+                    </View>
+                  </>
+                )}
+
+                <Text style={styles.tagSectionTitle}>{t('noteColor')}</Text>
+                <View style={styles.colorPickerRow}>
+                  {NOTE_COLORS.map(color => (
+                    <Pressable
+                      key={color}
+                      onPress={() => setSelectedColor(color)}
+                      style={[
+                        styles.colorDot,
+                        { backgroundColor: color },
+                        selectedColor === color && styles.colorDotActive,
+                      ]}
+                    >
+                      {selectedColor === color && (
+                        <Ionicons name="checkmark" size={14} color="rgba(0,0,0,0.5)" />
+                      )}
+                    </Pressable>
                   ))}
                 </View>
-              </>
-            )}
 
-            <Text style={styles.tagSectionTitle}>{t('noteColor')}</Text>
-            <View style={styles.colorPickerRow}>
-              {NOTE_COLORS.map(color => (
-                <Pressable
-                  key={color}
-                  onPress={() => setSelectedColor(color)}
-                  style={[
-                    styles.colorDot,
-                    { backgroundColor: color },
-                    selectedColor === color && styles.colorDotActive,
-                  ]}
-                >
-                  {selectedColor === color && (
-                    <Ionicons name="checkmark" size={14} color="rgba(0,0,0,0.5)" />
-                  )}
-                </Pressable>
-              ))}
-            </View>
-
-            <View style={styles.modalActions}>
-              <Pressable onPress={() => setShowAddModal(false)} style={styles.modalCancelBtn}>
-                <Text style={styles.modalCancelText}>{t('cancel')}</Text>
-              </Pressable>
-              <Pressable
-                onPress={handleAddNote}
-                style={[styles.modalSaveBtn, !noteText.trim() && styles.modalSaveBtnDisabled]}
-                disabled={!noteText.trim()}
-              >
-                <Ionicons name="checkmark" size={22} color={Colors.white} />
-              </Pressable>
-            </View>
-          </Animated.View>
-        </View>
+                <View style={styles.modalActions}>
+                  <Pressable onPress={() => setShowAddModal(false)} style={styles.modalCancelBtn}>
+                    <Text style={styles.modalCancelText}>{t('cancel')}</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={handleAddNote}
+                    style={[styles.modalSaveBtn, !noteText.trim() && styles.modalSaveBtnDisabled]}
+                    disabled={!noteText.trim()}
+                  >
+                    <Ionicons name="checkmark" size={22} color={Colors.white} />
+                  </Pressable>
+                </View>
+              </ScrollView>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showDetailModal} animationType="slide" transparent>
@@ -948,5 +991,23 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(0,0,0,0.25)',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
+  },
+  snackbar: {
+    position: 'absolute', left: 16, right: 16,
+    backgroundColor: '#333', borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2, shadowRadius: 8, elevation: 6,
+    zIndex: 999,
+  },
+  snackbarText: {
+    fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.white, flex: 1,
+  },
+  snackbarUndo: {
+    paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+  },
+  snackbarUndoText: {
+    fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.mintGreenLight,
   },
 });

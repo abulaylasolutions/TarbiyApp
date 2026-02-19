@@ -157,8 +157,8 @@ function CogenitoriSection() {
                   <View style={styles.pairedInfo}>
                     <Text style={styles.pairedName}>{cog.name || cog.email}</Text>
                     <Text style={styles.pairedGender}>
-                      {cog.gender === 'maschio' ? t('dad') :
-                       cog.gender === 'femmina' ? t('mom') : t('coParentLabel')}
+                      {(cog.gender === 'maschio' || cog.gender === 'male') ? t('dad') :
+                       (cog.gender === 'femmina' || cog.gender === 'female') ? t('mom') : t('coParentLabel')}
                     </Text>
                   </View>
                   <Pressable
@@ -587,18 +587,18 @@ export default function SettingsScreen() {
                 <Text style={styles.editInputLabel}>Genere</Text>
                 <View style={styles.editGenderRow}>
                   <Pressable
-                    onPress={() => setEditGender('maschio')}
-                    style={[styles.editGenderBtn, editGender === 'maschio' && styles.editGenderBtnActive]}
+                    onPress={() => setEditGender('male')}
+                    style={[styles.editGenderBtn, (editGender === 'male' || editGender === 'maschio') && styles.editGenderBtnActive]}
                   >
-                    <Ionicons name="man" size={20} color={editGender === 'maschio' ? '#4A90E2' : Colors.textMuted} />
-                    <Text style={[styles.editGenderText, editGender === 'maschio' && { color: '#4A90E2' }]}>{t('male')}</Text>
+                    <Ionicons name="man" size={20} color={(editGender === 'male' || editGender === 'maschio') ? '#4A90E2' : Colors.textMuted} />
+                    <Text style={[styles.editGenderText, (editGender === 'male' || editGender === 'maschio') && { color: '#4A90E2' }]}>Uomo</Text>
                   </Pressable>
                   <Pressable
-                    onPress={() => setEditGender('femmina')}
-                    style={[styles.editGenderBtn, editGender === 'femmina' && styles.editGenderBtnFemActive]}
+                    onPress={() => setEditGender('female')}
+                    style={[styles.editGenderBtn, (editGender === 'female' || editGender === 'femmina') && styles.editGenderBtnFemActive]}
                   >
-                    <Ionicons name="woman" size={20} color={editGender === 'femmina' ? '#FF6B6B' : Colors.textMuted} />
-                    <Text style={[styles.editGenderText, editGender === 'femmina' && { color: '#FF6B6B' }]}>{t('female')}</Text>
+                    <Ionicons name="woman" size={20} color={(editGender === 'female' || editGender === 'femmina') ? '#FF6B6B' : Colors.textMuted} />
+                    <Text style={[styles.editGenderText, (editGender === 'female' || editGender === 'femmina') && { color: '#FF6B6B' }]}>Donna</Text>
                   </Pressable>
                 </View>
 
