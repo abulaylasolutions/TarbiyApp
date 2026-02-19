@@ -23,7 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest } from '@/lib/query-client';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
