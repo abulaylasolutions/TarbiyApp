@@ -862,17 +862,17 @@ export default function DashboardScreen() {
                             <Text style={s.dailySubTitle}>{t('fastingSection')}</Text>
                           </View>
                           <View style={s.fastingRow}>
-                            {(['yes', 'no', 'partial'] as const).map((status) => {
+                            {(['yes', 'no'] as const).map((status) => {
                               const isActive = fasting.status === status;
-                              const color = status === 'yes' ? Colors.mintGreen : status === 'partial' ? '#F4C430' : Colors.textMuted;
+                              const color = status === 'yes' ? Colors.mintGreen : '#E57373';
                               return (
                                 <Pressable
                                   key={status}
                                   onPress={() => updateFasting(status)}
-                                  style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }, status === 'partial' && { minWidth: 120 }]}
+                                  style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }]}
                                 >
                                   <Ionicons
-                                    name={status === 'yes' ? 'checkmark-circle' : status === 'partial' ? 'remove-circle' : 'close-circle'}
+                                    name={status === 'yes' ? 'checkmark-circle' : 'close-circle'}
                                     size={18}
                                     color={isActive ? color : Colors.textMuted}
                                   />
@@ -881,13 +881,24 @@ export default function DashboardScreen() {
                               );
                             })}
                           </View>
+                          <Pressable
+                            onPress={() => updateFasting('partial')}
+                            style={[s.fastingBtnPartial, fasting.status === 'partial' && { backgroundColor: '#F4C430' + '20', borderColor: '#F4C430' }]}
+                          >
+                            <Ionicons
+                              name="remove-circle"
+                              size={18}
+                              color={fasting.status === 'partial' ? '#F4C430' : Colors.textMuted}
+                            />
+                            <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: '#F4C430' }]}>{t('partial')}</Text>
+                          </Pressable>
                         </View>
                       )}
                       {trackQuranToday && (
                         <View style={[s.quranTodayCol, fastingEnabled && { flex: 1, borderLeftWidth: 1, borderLeftColor: Colors.creamBeige, paddingLeft: 12 }]}>
                           <View style={[s.dailySubHeader, { justifyContent: 'center' }]}>
                             <Ionicons name="book-outline" size={16} color={Colors.skyBlueDark} />
-                            <Text style={[s.dailySubTitle, { fontSize: 11 }]}>{t('quranReadingSection')}</Text>
+                            <Text style={[s.dailySubTitle, { fontSize: 11 }]}>{t('quranShort')}</Text>
                           </View>
                           <Pressable onPress={toggleQuranToday} style={s.quranTodayToggle}>
                             <View style={[s.quranTodayCircle, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
@@ -1328,8 +1339,13 @@ const s = StyleSheet.create({
   fastingRow: { flexDirection: 'row', gap: 10 },
   fastingBtn: {
     flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
-    paddingVertical: 12, borderRadius: 14, borderWidth: 2, borderColor: Colors.creamBeige,
+    paddingVertical: 10, borderRadius: 14, borderWidth: 2, borderColor: Colors.creamBeige,
     backgroundColor: Colors.creamBeige,
+  },
+  fastingBtnPartial: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    paddingVertical: 10, borderRadius: 14, borderWidth: 2, borderColor: Colors.creamBeige,
+    backgroundColor: Colors.creamBeige, marginTop: 8, minWidth: 130,
   },
   fastingBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary },
 

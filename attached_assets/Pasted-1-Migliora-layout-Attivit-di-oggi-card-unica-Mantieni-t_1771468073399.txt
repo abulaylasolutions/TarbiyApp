@@ -1,0 +1,26 @@
+1. Migliora layout "Attività di oggi" (card unica):
+   - Mantieni titolo "Attività di oggi" in alto
+   - Sottotitolo "SALAH" con le 5 icone tappabili (Fajr, Dhuhr, Asr, Maghrib, Isha) in cerchi pastello, barra progresso sotto (0/5)
+   - Sotto Salah: riga "DIGIUNO" e "LETTURA QUR'AN" affiancate (Row con Expanded)
+     - DIGIUNO (lato sinistro, più spazio ~70-75%):
+       - Label "DIGIUNO" con icona luna
+       - Sotto: pulsanti orizzontali Sì / No in una riga
+       - Sotto di essi: pulsante "Parziale" più largo (width maggiore, es. 120-140px, o Expanded flex 2)
+       - Colori: Sì verde, No rosso tenue, Parziale giallo/arancione (come nella tua immagine)
+     - LETTURA QUR'AN (lato destro, meno spazio ~25-30%):
+       - Cambia label da "LETTURA QUR'AN" a semplicemente "QUR'AN" (con icona libro aperto)
+       - Toggle Sì / No (switch o cerchio tappabile)
+   - Layout responsive: su piccoli schermi stacka verticalmente (Column invece di Row se width < 400), su grandi resta affiancata
+   - Assicura toggle salva in Firestore (children/daily/{date}/digiuno: "si"/"no"/"parziale", quranToday: bool)
+
+2. Fix dialog "Memorizzazione del Qur'an":
+   - Quando clicchi su "Sure imparate: X / 114" (o testo tappabile), apri full-page invece di dialog piccolo:
+     - Usa Navigator.push con nuova pagina (Scaffold con AppBar "Memorizzazione Qur'an" e body scrollabile)
+     - Lista verticale (ListView) con ordine decrescente 114 → 1
+     - Ogni riga: numero bold + nome (es. "114 - An-Nas"), tappabile per cambiare stato ("Da imparare" grigio, "In corso" giallo, "Imparata" verde) con icona corrispondente
+     - Aggiorna conteggio X in realtime dopo selezione
+     - Aggiungi back button in AppBar
+
+Mantieni responsive, animazioni soft (fade su full-page, check verde su toggle), sync realtime Firestore. Usa Navigator per full-page, Expanded/Flex per proporzioni 70-30 circa.
+
+Modifica dashboard_screen.dart (sezione Attività di oggi) e crea o modifica quran_memorization_page.dart per full-screen. Inizia con queste integrazioni precise!
