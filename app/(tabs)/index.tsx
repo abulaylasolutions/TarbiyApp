@@ -37,6 +37,7 @@ interface ChildCardProps {
   totalCount: number;
   cogenitori: CogenitoreInfo[];
   currentUserId: string;
+  customPhotoUrl: string | null;
   onDelete: (id: string) => void;
   onEdit: (child: Child) => void;
   onPress: (child: Child) => void;
@@ -44,7 +45,7 @@ interface ChildCardProps {
   onMove: (index: number, direction: 'up' | 'down') => void;
 }
 
-function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
+function ChildCard({ child, index, totalCount, cogenitori, currentUserId, customPhotoUrl, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
   const { t } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
@@ -89,9 +90,9 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
         ]}
       >
         <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
-          {child.photoUri && child.photoUri.startsWith('http') ? (
+          {customPhotoUrl ? (
             <Image
-              source={{ uri: child.photoUri }}
+              source={{ uri: customPhotoUrl }}
               style={styles.childPhoto}
               contentFit="cover"
               cachePolicy="memory-disk"
@@ -217,7 +218,7 @@ const EMPTY_FORM: ChildFormData = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren } = useApp();
+  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren, getChildPhoto, setCustomPhoto, refreshCustomPhotos } = useApp();
   const { user } = useAuth();
   const { t, isRTL } = useI18n();
   const [showModal, setShowModal] = useState(false);
@@ -255,13 +256,14 @@ export default function HomeScreen() {
         selectedCogs = JSON.parse(child.cogenitori).filter((id: string) => id !== user?.id);
       } catch {}
     }
+    const customPhoto = getChildPhoto(child.id);
     setForm({
       name: child.name,
       birthDay: String(birth.getDate()),
       birthMonth: String(birth.getMonth() + 1),
       birthYear: String(birth.getFullYear()),
       gender: child.gender || '',
-      photoUri: child.photoUri || '',
+      photoUri: customPhoto || '',
       selectedCogenitori: selectedCogs,
       cardColor: child.cardColor || PASTEL_COLORS[0],
     });
@@ -402,16 +404,17 @@ export default function HomeScreen() {
 
     if (editingChild) {
       const cogArray = [user!.id, ...form.selectedCogenitori];
-      console.log('Salvando figlio con photoUri:', form.photoUri);
       const result = await updateChild(editingChild.id, {
         name: form.name.trim(),
         birthDate,
         gender: form.gender,
-        photoUri: form.photoUri || undefined,
         cardColor: form.cardColor,
         cogenitori: JSON.stringify(cogArray),
       });
       if (result.success) {
+        if (form.photoUri && form.photoUri.startsWith('http')) {
+          await setCustomPhoto(editingChild.id, form.photoUri);
+        }
         await refreshChildren();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
@@ -423,18 +426,25 @@ export default function HomeScreen() {
       const coParentName = form.selectedCogenitori.length > 0
         ? form.selectedCogenitori.map(id => getCogenitoreNameById(id)).filter(Boolean).join(', ')
         : undefined;
-      console.log('Aggiungendo figlio con photoUri:', form.photoUri);
       const result = await addChild({
         name: form.name.trim(),
         birthDate,
         gender: form.gender,
-        photoUri: form.photoUri || undefined,
         coParentName,
         cardColor: form.cardColor,
         selectedCogenitori: form.selectedCogenitori,
       });
       if (result.success) {
-        await refreshChildren();
+        if (form.photoUri && form.photoUri.startsWith('http')) {
+          await refreshChildren();
+          const latestChildren = children;
+          const newChild = latestChildren.find(c => c.name === form.name.trim());
+          if (newChild) {
+            await setCustomPhoto(newChild.id, form.photoUri);
+          }
+        } else {
+          await refreshChildren();
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -500,6 +510,7 @@ export default function HomeScreen() {
                 totalCount={children.length}
                 cogenitori={cogenitori}
                 currentUserId={user?.id || ''}
+                customPhotoUrl={getChildPhoto(child.id)}
                 onDelete={removeChild}
                 onEdit={openEditModal}
                 onPress={handleChildPress}
