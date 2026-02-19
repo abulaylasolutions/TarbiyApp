@@ -256,14 +256,15 @@ export default function HomeScreen() {
         selectedCogs = JSON.parse(child.cogenitori).filter((id: string) => id !== user?.id);
       } catch {}
     }
-    const customPhoto = getChildPhoto(child.id);
+    const photoUrl = getChildPhoto(child.id);
+    console.log('[PHOTO] Apertura modifica figlio, foto attuale:', photoUrl || '(nessuna)');
     setForm({
       name: child.name,
       birthDay: String(birth.getDate()),
       birthMonth: String(birth.getMonth() + 1),
       birthYear: String(birth.getFullYear()),
       gender: child.gender || '',
-      photoUri: customPhoto || '',
+      photoUri: photoUrl || '',
       selectedCogenitori: selectedCogs,
       cardColor: child.cardColor || PASTEL_COLORS[0],
     });
@@ -404,19 +405,19 @@ export default function HomeScreen() {
 
     if (editingChild) {
       const cogArray = [user!.id, ...form.selectedCogenitori];
+      const photoToSave = (form.photoUri && form.photoUri.startsWith('http')) ? form.photoUri : undefined;
+      console.log('[PHOTO] Salvando figlio (edit), photoUri:', photoToSave || '(nessuna)');
       const result = await updateChild(editingChild.id, {
         name: form.name.trim(),
         birthDate,
         gender: form.gender,
+        photoUri: photoToSave,
         cardColor: form.cardColor,
         cogenitori: JSON.stringify(cogArray),
       });
       if (result.success) {
-        if (form.photoUri && form.photoUri.startsWith('http')) {
-          await setCustomPhoto(editingChild.id, form.photoUri);
-        }
         await refreshChildren();
-        await refreshCustomPhotos();
+        console.log('[PHOTO] Figlio aggiornato con successo');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -427,20 +428,20 @@ export default function HomeScreen() {
       const coParentName = form.selectedCogenitori.length > 0
         ? form.selectedCogenitori.map(id => getCogenitoreNameById(id)).filter(Boolean).join(', ')
         : undefined;
+      const photoToSave = (form.photoUri && form.photoUri.startsWith('http')) ? form.photoUri : undefined;
+      console.log('[PHOTO] Aggiungendo figlio, photoUri:', photoToSave || '(nessuna)');
       const result = await addChild({
         name: form.name.trim(),
         birthDate,
         gender: form.gender,
+        photoUri: photoToSave,
         coParentName,
         cardColor: form.cardColor,
         selectedCogenitori: form.selectedCogenitori,
       });
       if (result.success) {
-        if (form.photoUri && form.photoUri.startsWith('http') && result.childId) {
-          await setCustomPhoto(result.childId, form.photoUri);
-        }
         await refreshChildren();
-        await refreshCustomPhotos();
+        console.log('[PHOTO] Figlio aggiunto con successo');
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
