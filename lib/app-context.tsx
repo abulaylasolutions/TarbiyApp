@@ -52,6 +52,7 @@ interface AppContextValue {
   notes: Note[];
   cogenitori: CogenitoreInfo[];
   pendingChanges: PendingChange[];
+  customPhotos: Record<string, string>;
   addChild: (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => Promise<{ success: boolean; message?: string }>;
   updateChild: (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string; salahEnabled?: boolean; fastingEnabled?: boolean; trackQuranToday?: boolean }) => Promise<{ success: boolean; message?: string }>;
   removeChild: (id: string) => Promise<void>;
@@ -63,6 +64,9 @@ interface AppContextValue {
   refreshNotes: () => Promise<void>;
   refreshCogenitori: () => Promise<void>;
   refreshPending: () => Promise<void>;
+  refreshCustomPhotos: () => Promise<void>;
+  setCustomPhoto: (childId: string, photoUrl: string) => Promise<void>;
+  getChildPhoto: (childId: string) => string | null;
   approvePending: (id: string) => Promise<void>;
   rejectPending: (id: string) => Promise<void>;
   getCogenitoreNameById: (uid: string) => string | null;
@@ -79,6 +83,7 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
   const [notesList, setNotesList] = useState<Note[]>([]);
   const [cogenitori, setCogenitori] = useState<CogenitoreInfo[]>([]);
   const [pendingList, setPendingList] = useState<PendingChange[]>([]);
+  const [customPhotos, setCustomPhotos] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -92,6 +97,7 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
         refreshNotesInternal(),
         refreshCogenitoriInternal(),
         refreshPendingInternal(),
+        refreshCustomPhotosInternal(),
       ]);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -133,6 +139,30 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
       const data = await res.json();
       setPendingList(data || []);
     } catch {}
+  };
+
+  const refreshCustomPhotosInternal = async () => {
+    try {
+      const res = await apiRequest('GET', '/api/custom-photos');
+      const data = await res.json();
+      setCustomPhotos(data || {});
+    } catch {}
+  };
+
+  const setCustomPhotoFn = async (childId: string, photoUrl: string) => {
+    try {
+      await apiRequest('POST', `/api/custom-photos/${childId}`, { photoUrl });
+      setCustomPhotos(prev => ({ ...prev, [childId]: photoUrl }));
+    } catch (error) {
+      console.error('Error setting custom photo:', error);
+    }
+  };
+
+  const getChildPhoto = (childId: string): string | null => {
+    if (customPhotos[childId]) return customPhotos[childId];
+    const child = childrenList.find(c => c.id === childId);
+    if (child?.photoUri && child.photoUri.startsWith('http')) return child.photoUri;
+    return null;
   };
 
   const addChild = async (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => {
@@ -235,6 +265,7 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     notes: notesList,
     cogenitori,
     pendingChanges: pendingList,
+    customPhotos,
     addChild,
     updateChild: updateChildFn,
     removeChild,
@@ -246,11 +277,14 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     refreshNotes: refreshNotesInternal,
     refreshCogenitori: refreshCogenitoriInternal,
     refreshPending: refreshPendingInternal,
+    refreshCustomPhotos: refreshCustomPhotosInternal,
+    setCustomPhoto: setCustomPhotoFn,
+    getChildPhoto,
     approvePending,
     rejectPending,
     getCogenitoreNameById,
     isLoading,
-  }), [childrenList, selectedChildId, notesList, cogenitori, pendingList, isLoading]);
+  }), [childrenList, selectedChildId, notesList, cogenitori, pendingList, customPhotos, isLoading]);
 
   return (
     <AppContext.Provider value={value}>
