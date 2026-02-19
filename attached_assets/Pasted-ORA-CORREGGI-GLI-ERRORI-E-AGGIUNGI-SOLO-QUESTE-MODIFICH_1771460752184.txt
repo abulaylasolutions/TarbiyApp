@@ -1,0 +1,54 @@
+ORA CORREGGI GLI ERRORI E AGGIUNGI SOLO QUESTE MODIFICHE, senza riscrivere l'intera app:
+
+CORREZIONI ERRORI:
+
+1. Lettere arabe in "Lettere imparate" sotto Arabo:
+   - Fixa click non funzionante: assicurati che tappando su lettera araba (es. "ا", "ب") toggli selezione (checkbox o chip tappabile, aggiorna array children/arabicLearnedLetters realtime)
+   - Aggiungi supporto font per arabo: usa font come "Scheherazade" o "Amiri" (aggiungi in pubspec.yaml fonts: - family: ArabicFont, fonts: [asset: fonts/Scheherazade-Regular.ttf])
+   - Applica TextStyle(fontFamily: 'ArabicFont') per lettere arabe
+
+2. Toggle Harakat, Saper leggere, Saper scrivere sotto Arabo:
+   - Fixa non funzionanti: aggiungi onChanged per SwitchListTile, salva bool in Firestore (children/hasHarakat, canReadArabic, canWriteArabic) realtime
+
+3. Numeri Surah in "Memorizzazione del Qur'an":
+   - Fixa numeri non appaiono: nel dialog/box, mostra numero surah accanto a nome (es. "114 - An-Nas"), ordine decrescente 114 → 1
+   - Assicura lista statica completa con numeri visibili (Text con numero bold)
+
+IMPLEMENTAZIONI AGGIUNTIVE:
+
+4. Modifica sezione "Akhlaq e 'Adab" in Educazione:
+   - Trasformala in ExpansionPanelList categorizzata (accordion sottosezioni tappabili)
+   - Categorie con checklist interna (checkmark tappabile + nota opzionale, salva in children/akhlaqAndAdab map o array):
+     - Mangiare (es. Dire Bismillah prima, mangiare con destra, non sprecare)
+     - Bere (es. Dire Bismillah, non soffiare nel bicchiere)
+     - Dormire e svegliarsi (es. Dua prima dormire, Tahajjud opzionale)
+     - Usare il bagno (es. Dire Ghufranaka uscendo, Istinja' corretto)
+     - Salutarsi (es. Assalamu alaikum, Wa alaikum assalam)
+     - Entrare in una casa (es. Bussare 3 volte, salam entrando)
+     - Parlare (es. Non interrompere, dire verità, non gossip)
+     - Starnutire (es. Dire Alhamdulillah, YarhamukAllah)
+     - Sbadigliare (es. Coprire bocca, dire Astaghfirullah)
+     - Viaggiare (es. Dua viaggio, non disturbare compagni)
+     - Studiare (es. Intenzione per Allah, rispetto insegnante)
+     - Il Qur’an (es. Wudu prima, rispetto mushaf)
+     - Camminare (es. Non sputare, salutare musulmani)
+     - In moschea (es. Entrare con destra, non parlare alto)
+     - Dua (es. Fare dua dopo salah, suppliche quotidiane)
+     - Vestirsi (es. Modestia, non israf)
+     - Ospitalità (es. Offrire cibo/acqua, 3 giorni max)
+     - Sedersi in un gruppo (es. Dare posto agli anziani, non separare due persone)
+     - Istinja’ (es. Usare acqua, mano sinistra)
+     - Ghusl (es. Quando obbligatorio, niyyah)
+     - Interazioni sociali (es. Visitare parenti, sorridere)
+     - Scrivere (es. Bismillah inizio, non menzogne)
+     - Siwak (es. Uso regolare, benefici)
+     - Visitare i malati (es. Dua guarigione, non stancare)
+     - Moderarsi nello spendere (es. Non israf, zakat)
+     - Importanza della donna nella società (es. Rispetto madri, diritti islamici)
+     - Adhan (es. Rispondere ad adhan, dua dopo)
+     - I due Eid (es. Salah Eid, takbir)
+     - Jumu’a (es. Ghusl prima, non parlare durante khutba)
+     - Igiene personale (es. Tagliare unghie, depilazione)
+     - Modestia nel vestirsi (es. Awrah coperta, non abiti stretti)
+     - Moderarsi (es. Controllo rabbia, pazienza)
+   - Ogni item: tappabile per check permanente + nota, sync realtime

@@ -164,7 +164,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, selectChild, cogenitori } = useApp();
+  const { children, selectedChildId, selectChild, cogenitori, refreshChildren } = useApp();
   const { user } = useAuth();
   const { t, lang, isRTL } = useI18n();
   const queryClient = useQueryClient();
@@ -190,6 +190,10 @@ export default function DashboardScreen() {
   const [quranLogs, setQuranLogs] = useState<Record<string, SurahStatus>>({});
   const [showQuranModal, setShowQuranModal] = useState(false);
   const [quranFilter, setQuranFilter] = useState<'all' | 'learned' | 'in_progress' | 'not_started'>('all');
+  const [localArabicLetters, setLocalArabicLetters] = useState<string[]>([]);
+  const [localHarakat, setLocalHarakat] = useState(false);
+  const [localCanRead, setLocalCanRead] = useState(false);
+  const [localCanWrite, setLocalCanWrite] = useState(false);
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -420,35 +424,40 @@ export default function DashboardScreen() {
     );
   };
 
-  const getArabicLearnedLetters = (): string[] => {
-    try {
-      if (selectedChild?.arabicLearnedLetters) {
-        return JSON.parse(selectedChild.arabicLearnedLetters);
-      }
-    } catch {}
-    return [];
-  };
+  useEffect(() => {
+    if (selectedChild) {
+      try {
+        setLocalArabicLetters(selectedChild.arabicLearnedLetters ? JSON.parse(selectedChild.arabicLearnedLetters) : []);
+      } catch { setLocalArabicLetters([]); }
+      setLocalHarakat(!!selectedChild.hasHarakat);
+      setLocalCanRead(!!selectedChild.canReadArabic);
+      setLocalCanWrite(!!selectedChild.canWriteArabic);
+    }
+  }, [selectedChild?.id, selectedChild?.arabicLearnedLetters, selectedChild?.hasHarakat, selectedChild?.canReadArabic, selectedChild?.canWriteArabic]);
 
   const toggleArabicLetter = async (letter: string) => {
     if (!childId) return;
-    const current = getArabicLearnedLetters();
-    const updated = current.includes(letter)
-      ? current.filter(l => l !== letter)
-      : [...current, letter];
+    const updated = localArabicLetters.includes(letter)
+      ? localArabicLetters.filter(l => l !== letter)
+      : [...localArabicLetters, letter];
+    setLocalArabicLetters(updated);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await apiRequest('PATCH', `/api/children/${childId}/settings`, { arabicLearnedLetters: JSON.stringify(updated) });
-      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      refreshChildren();
     } catch {}
   };
 
   const toggleArabicSetting = async (field: 'hasHarakat' | 'canReadArabic' | 'canWriteArabic') => {
     if (!childId) return;
-    const currentVal = !!(selectedChild as any)?.[field];
+    const setters: Record<string, (v: boolean) => void> = { hasHarakat: setLocalHarakat, canReadArabic: setLocalCanRead, canWriteArabic: setLocalCanWrite };
+    const currentVals: Record<string, boolean> = { hasHarakat: localHarakat, canReadArabic: localCanRead, canWriteArabic: localCanWrite };
+    const newVal = !currentVals[field];
+    setters[field](newVal);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await apiRequest('PATCH', `/api/children/${childId}/settings`, { [field]: !currentVal });
-      queryClient.invalidateQueries({ queryKey: ['/api/children'] });
+      await apiRequest('PATCH', `/api/children/${childId}/settings`, { [field]: newVal });
+      refreshChildren();
     } catch {}
   };
 
@@ -684,10 +693,10 @@ export default function DashboardScreen() {
                     </Pressable>
                     {isExpanded && subject.key === 'arabo' && (
                       <View style={s.subjectContent}>
-                        <Text style={s.arabicCountLabel}>{t('learnedLetters')}: {getArabicLearnedLetters().length} / 28</Text>
+                        <Text style={s.arabicCountLabel}>{t('learnedLetters')}: {localArabicLetters.length} / 28</Text>
                         <View style={s.arabicLettersGrid}>
                           {ARABIC_LETTERS.map((letter) => {
-                            const isSelected = getArabicLearnedLetters().includes(letter);
+                            const isSelected = localArabicLetters.includes(letter);
                             return (
                               <Pressable
                                 key={letter}
@@ -703,10 +712,10 @@ export default function DashboardScreen() {
                           <Text style={s.arabicToggleLabel}>{t('harakat')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('hasHarakat')}
-                            style={[s.arabicPill, selectedChild?.hasHarakat && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                            style={[s.arabicPill, localHarakat && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
                           >
-                            <Text style={[s.arabicPillText, selectedChild?.hasHarakat && { color: Colors.white }]}>
-                              {selectedChild?.hasHarakat ? t('yes') : t('no')}
+                            <Text style={[s.arabicPillText, localHarakat && { color: Colors.white }]}>
+                              {localHarakat ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
                         </View>
@@ -714,10 +723,10 @@ export default function DashboardScreen() {
                           <Text style={s.arabicToggleLabel}>{t('canReadArabic')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('canReadArabic')}
-                            style={[s.arabicPill, selectedChild?.canReadArabic && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                            style={[s.arabicPill, localCanRead && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
                           >
-                            <Text style={[s.arabicPillText, selectedChild?.canReadArabic && { color: Colors.white }]}>
-                              {selectedChild?.canReadArabic ? t('yes') : t('no')}
+                            <Text style={[s.arabicPillText, localCanRead && { color: Colors.white }]}>
+                              {localCanRead ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
                         </View>
@@ -725,10 +734,10 @@ export default function DashboardScreen() {
                           <Text style={s.arabicToggleLabel}>{t('canWriteArabic')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('canWriteArabic')}
-                            style={[s.arabicPill, selectedChild?.canWriteArabic && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                            style={[s.arabicPill, localCanWrite && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
                           >
-                            <Text style={[s.arabicPillText, selectedChild?.canWriteArabic && { color: Colors.white }]}>
-                              {selectedChild?.canWriteArabic ? t('yes') : t('no')}
+                            <Text style={[s.arabicPillText, localCanWrite && { color: Colors.white }]}>
+                              {localCanWrite ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
                         </View>
