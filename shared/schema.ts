@@ -151,6 +151,16 @@ export const quranLogs = pgTable("quran_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const childCustomPhotos = pgTable("child_custom_photos", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(),
+  childId: text("child_id").notNull(),
+  photoUrl: text("photo_url").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const quranDailyLogs = pgTable("quran_daily_logs", {
   id: varchar("id")
     .primaryKey()
@@ -209,4 +219,5 @@ export type PrayerLog = typeof prayerLogs.$inferSelect;
 export type FastingLog = typeof fastingLogs.$inferSelect;
 export type ActivityLog = typeof activityLogs.$inferSelect;
 export type QuranLog = typeof quranLogs.$inferSelect;
+export type ChildCustomPhoto = typeof childCustomPhotos.$inferSelect;
 export type QuranDailyLog = typeof quranDailyLogs.$inferSelect;
