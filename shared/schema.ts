@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, timestamp, boolean, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -159,7 +159,9 @@ export const childCustomPhotos = pgTable("child_custom_photos", {
   childId: text("child_id").notNull(),
   photoUrl: text("photo_url").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("child_custom_photos_user_child_idx").on(table.userId, table.childId),
+]);
 
 export const quranDailyLogs = pgTable("quran_daily_logs", {
   id: varchar("id")
