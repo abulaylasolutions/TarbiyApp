@@ -53,7 +53,7 @@ interface AppContextValue {
   cogenitori: CogenitoreInfo[];
   pendingChanges: PendingChange[];
   customPhotos: Record<string, string>;
-  addChild: (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => Promise<{ success: boolean; message?: string }>;
+  addChild: (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => Promise<{ success: boolean; message?: string; childId?: string }>;
   updateChild: (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string; salahEnabled?: boolean; fastingEnabled?: boolean; trackQuranToday?: boolean }) => Promise<{ success: boolean; message?: string }>;
   removeChild: (id: string) => Promise<void>;
   selectChild: (id: string) => void;
@@ -171,7 +171,7 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
       const newChild = await res.json();
       setChildrenList(prev => [...prev, newChild]);
       if (!selectedChildId) setSelectedChildId(newChild.id);
-      return { success: true };
+      return { success: true, childId: newChild.id };
     } catch (error: any) {
       const msg = error?.message || 'Errore';
       const cleanMsg = msg.replace(/^\d+:\s*/, '');

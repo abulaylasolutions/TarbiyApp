@@ -416,6 +416,7 @@ export default function HomeScreen() {
           await setCustomPhoto(editingChild.id, form.photoUri);
         }
         await refreshChildren();
+        await refreshCustomPhotos();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -435,16 +436,11 @@ export default function HomeScreen() {
         selectedCogenitori: form.selectedCogenitori,
       });
       if (result.success) {
-        if (form.photoUri && form.photoUri.startsWith('http')) {
-          await refreshChildren();
-          const latestChildren = children;
-          const newChild = latestChildren.find(c => c.name === form.name.trim());
-          if (newChild) {
-            await setCustomPhoto(newChild.id, form.photoUri);
-          }
-        } else {
-          await refreshChildren();
+        if (form.photoUri && form.photoUri.startsWith('http') && result.childId) {
+          await setCustomPhoto(result.childId, form.photoUri);
         }
+        await refreshChildren();
+        await refreshCustomPhotos();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
