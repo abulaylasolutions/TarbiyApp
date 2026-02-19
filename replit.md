@@ -44,6 +44,8 @@ Preferred communication style: Simple, everyday language.
   - `/api/notes/*` — CRUD for bulletin board notes
   - `/api/cogenitore/*` — pair/unpair co-parents, get co-parent info
   - `/api/premium/*` — premium subscription management
+  - `/api/custom-photos` — GET per-user custom photos map, POST `/:childId` upserts custom photo
+  - `/api/upload` — photo upload with JPEG conversion (sharp)
 - **CORS:** Dynamic CORS configuration supporting Replit dev/deployment domains and localhost
 - **Middleware:** `requireAuth` middleware protects authenticated endpoints
 
@@ -54,6 +56,7 @@ Preferred communication style: Simple, everyday language.
 - **Tables:**
   - `users` — id (UUID), email, password, name, birthDate, gender, photoUrl, personalInviteCode (unique 6-char), pairedCogenitore (foreign reference to another user), isProfileComplete, isPremium, createdAt
   - `children` — id (UUID), userId, name, birthDate, photoUri, createdAt
+  - `child_custom_photos` — id (UUID), userId, childId, photoUrl, createdAt. Unique on (userId, childId). Each parent stores their own custom photo per child.
   - `notes` — id (UUID), userId, text, color, rotation, author, createdAt
 - **Migrations:** Managed via `drizzle-kit push` (schema push approach, not migration files)
 - **Connection:** PostgreSQL via `pg` Pool, connection string from `DATABASE_URL` env var
