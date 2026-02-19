@@ -249,10 +249,11 @@ interface ActivityItem {
   createdAt: string;
 }
 
-function ChildSelector({ children: childList, selectedChildId, selectChild }: {
+function ChildSelector({ children: childList, selectedChildId, selectChild, getChildPhoto }: {
   children: any[];
   selectedChildId: string | null;
   selectChild: (id: string) => void;
+  getChildPhoto: (childId: string) => string | null;
 }) {
   if (childList.length <= 1) return null;
   return (
@@ -260,12 +261,13 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
       {childList.map((child, index) => {
         const isSelected = child.id === selectedChildId;
         const color = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
+        const photoUrl = getChildPhoto(child.id);
         return (
           <Pressable key={child.id} onPress={() => selectChild(child.id)} style={s.selectorItem}>
             <View style={[s.selectorCircle, isSelected && { borderColor: color, borderWidth: 3 }]}>
-              {child.photoUri && child.photoUri.startsWith('http') ? (
+              {photoUrl ? (
                 <Image
-                  source={{ uri: child.photoUri }}
+                  source={{ uri: photoUrl }}
                   style={s.selectorImg}
                   contentFit="cover"
                   cachePolicy="memory-disk"
@@ -286,7 +288,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, selectChild, cogenitori, refreshChildren } = useApp();
+  const { children, selectedChildId, selectChild, cogenitori, refreshChildren, getChildPhoto } = useApp();
   const { user } = useAuth();
   const { t, lang, isRTL } = useI18n();
   const queryClient = useQueryClient();
@@ -702,7 +704,7 @@ export default function DashboardScreen() {
     <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 100 }} showsVerticalScrollIndicator={false}>
         <View style={{ paddingTop: topPadding + 8 }}>
-          <ChildSelector children={children} selectedChildId={selectedChildId} selectChild={selectChild} />
+          <ChildSelector children={children} selectedChildId={selectedChildId} selectChild={selectChild} getChildPhoto={getChildPhoto} />
         </View>
 
         <Animated.View entering={FadeIn.duration(300)} style={s.headerCard}>
@@ -712,9 +714,9 @@ export default function DashboardScreen() {
             style={s.headerGradient}
           >
             <View style={s.headerRow}>
-              {selectedChild.photoUri && selectedChild.photoUri.startsWith('http') ? (
+              {getChildPhoto(selectedChild.id) ? (
                 <Image
-                  source={{ uri: selectedChild.photoUri }}
+                  source={{ uri: getChildPhoto(selectedChild.id)! }}
                   style={[s.headerPhoto, { borderColor: cardColor }]}
                   contentFit="cover"
                   cachePolicy="memory-disk"
