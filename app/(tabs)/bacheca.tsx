@@ -42,22 +42,18 @@ interface NoteCardProps {
   note: Note;
   onPress: (note: Note) => void;
   onDelete: (id: string) => void;
+  onArchive: (id: string) => void;
+  onEdit: (note: Note) => void;
 }
 
-function NoteCard({ note, onPress, onDelete }: NoteCardProps) {
+function NoteCard({ note, onPress, onDelete, onArchive, onEdit }: NoteCardProps) {
   const { t } = useI18n();
+  const [showActions, setShowActions] = useState(false);
   const rotation = parseFloat(note.rotation) || 0;
 
   const handleLongPress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert(
-      t('deleteNote'),
-      t('deleteNoteConfirm'),
-      [
-        { text: t('cancel'), style: 'cancel' },
-        { text: t('delete'), style: 'destructive', onPress: () => onDelete(note.id) },
-      ]
-    );
+    setShowActions(true);
   };
 
   const formattedDate = new Date(note.createdAt).toLocaleDateString('it-IT', {
@@ -70,33 +66,80 @@ function NoteCard({ note, onPress, onDelete }: NoteCardProps) {
   });
 
   return (
-    <Animated.View entering={ZoomIn.duration(300)} style={{ width: CARD_WIDTH }}>
-      <Pressable
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          onPress(note);
-        }}
-        onLongPress={handleLongPress}
-        style={({ pressed }) => [
-          styles.noteCard,
-          {
-            backgroundColor: note.color,
-            transform: [
-              { rotate: `${rotation}deg` },
-              { scale: pressed ? 0.96 : 1 },
-            ],
-          },
-        ]}
-      >
-        <Text style={styles.noteText} numberOfLines={6}>
-          {note.text}
-        </Text>
-        <View style={styles.noteFooter}>
-          <Text style={styles.noteAuthor}>{note.author}</Text>
-          <Text style={styles.noteDate}>{formattedDate} {formattedTime}</Text>
-        </View>
-      </Pressable>
-    </Animated.View>
+    <>
+      <Animated.View entering={ZoomIn.duration(300)} style={{ width: CARD_WIDTH }}>
+        <Pressable
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            onPress(note);
+          }}
+          onLongPress={handleLongPress}
+          style={({ pressed }) => [
+            styles.noteCard,
+            {
+              backgroundColor: note.color,
+              transform: [
+                { rotate: `${rotation}deg` },
+                { scale: pressed ? 0.96 : 1 },
+              ],
+            },
+          ]}
+        >
+          <Text style={styles.noteText} numberOfLines={6}>
+            {note.text}
+          </Text>
+          <View style={styles.noteFooter}>
+            <Text style={styles.noteAuthor}>{note.author}</Text>
+            <Text style={styles.noteDate}>{formattedDate} {formattedTime}</Text>
+          </View>
+        </Pressable>
+      </Animated.View>
+
+      <Modal visible={showActions} transparent animationType="fade">
+        <Pressable style={styles.actionSheetOverlay} onPress={() => setShowActions(false)}>
+          <Animated.View entering={FadeInDown.duration(200)} style={styles.actionSheet}>
+            <View style={styles.actionSheetHandle} />
+            <Pressable
+              onPress={() => { setShowActions(false); onEdit(note); }}
+              style={styles.actionSheetItem}
+            >
+              <View style={[styles.actionSheetIcon, { backgroundColor: '#A8E6CF' }]}>
+                <Ionicons name="create-outline" size={20} color="#2D7D5F" />
+              </View>
+              <Text style={styles.actionSheetText}>{t('editNote')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => { setShowActions(false); onArchive(note.id); }}
+              style={styles.actionSheetItem}
+            >
+              <View style={[styles.actionSheetIcon, { backgroundColor: '#FFF5BA' }]}>
+                <Ionicons name="archive-outline" size={20} color="#B8860B" />
+              </View>
+              <Text style={styles.actionSheetText}>{t('archive')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                setShowActions(false);
+                Alert.alert(
+                  t('deleteNote'),
+                  t('deleteNoteConfirm'),
+                  [
+                    { text: t('cancel'), style: 'cancel' },
+                    { text: t('delete'), style: 'destructive', onPress: () => onDelete(note.id) },
+                  ]
+                );
+              }}
+              style={[styles.actionSheetItem, { borderBottomWidth: 0 }]}
+            >
+              <View style={[styles.actionSheetIcon, { backgroundColor: '#FFD3D3' }]}>
+                <Ionicons name="trash-outline" size={20} color="#CC4444" />
+              </View>
+              <Text style={[styles.actionSheetText, { color: '#CC4444' }]}>{t('delete')}</Text>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+    </>
   );
 }
 
@@ -176,6 +219,8 @@ export default function BachecaScreen() {
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [sendingComment, setSendingComment] = useState(false);
+  const [selectedColor, setSelectedColor] = useState(NOTE_COLORS[0]);
+  const [editColor, setEditColor] = useState(NOTE_COLORS[0]);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
@@ -238,16 +283,18 @@ export default function BachecaScreen() {
   const handleAddNote = async () => {
     if (!noteText.trim()) return;
     const tagsStr = addTags.length > 0 ? JSON.stringify(addTags) : undefined;
-    await addNote(noteText.trim(), user?.name || 'Genitore', tagsStr);
+    await addNote(noteText.trim(), user?.name || 'Genitore', tagsStr, selectedColor);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setNoteText('');
     setAddTags([]);
+    setSelectedColor(NOTE_COLORS[0]);
     setShowAddModal(false);
   };
 
   const openDetail = (note: Note) => {
     setSelectedNote(note);
     setEditText(note.text);
+    setEditColor(note.color || NOTE_COLORS[0]);
     setNewComment('');
     setCommentsList([]);
     try {
@@ -262,7 +309,7 @@ export default function BachecaScreen() {
   const handleSaveEdit = async () => {
     if (!selectedNote || !editText.trim()) return;
     const tagsStr = editTags.length > 0 ? JSON.stringify(editTags) : undefined;
-    await updateNote(selectedNote.id, { text: editText.trim(), tags: tagsStr });
+    await updateNote(selectedNote.id, { text: editText.trim(), tags: tagsStr, color: editColor });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setShowDetailModal(false);
   };
@@ -326,12 +373,12 @@ export default function BachecaScreen() {
           <View style={styles.masonryContainer}>
             <View style={styles.column}>
               {leftColumn.map(note => (
-                <NoteCard key={note.id} note={note} onPress={openDetail} onDelete={removeNote} />
+                <NoteCard key={note.id} note={note} onPress={openDetail} onDelete={removeNote} onArchive={archiveNote} onEdit={openDetail} />
               ))}
             </View>
             <View style={styles.column}>
               {rightColumn.map(note => (
-                <NoteCard key={note.id} note={note} onPress={openDetail} onDelete={removeNote} />
+                <NoteCard key={note.id} note={note} onPress={openDetail} onDelete={removeNote} onArchive={archiveNote} onEdit={openDetail} />
               ))}
             </View>
           </View>
@@ -394,6 +441,25 @@ export default function BachecaScreen() {
                 </View>
               </>
             )}
+
+            <Text style={styles.tagSectionTitle}>{t('noteColor')}</Text>
+            <View style={styles.colorPickerRow}>
+              {NOTE_COLORS.map(color => (
+                <Pressable
+                  key={color}
+                  onPress={() => setSelectedColor(color)}
+                  style={[
+                    styles.colorDot,
+                    { backgroundColor: color },
+                    selectedColor === color && styles.colorDotActive,
+                  ]}
+                >
+                  {selectedColor === color && (
+                    <Ionicons name="checkmark" size={14} color="rgba(0,0,0,0.5)" />
+                  )}
+                </Pressable>
+              ))}
+            </View>
 
             <View style={styles.modalActions}>
               <Pressable onPress={() => setShowAddModal(false)} style={styles.modalCancelBtn}>
@@ -478,6 +544,25 @@ export default function BachecaScreen() {
                     </View>
                   </>
                 )}
+
+                <Text style={styles.tagSectionTitle}>{t('noteColor')}</Text>
+                <View style={styles.colorPickerRow}>
+                  {NOTE_COLORS.map(color => (
+                    <Pressable
+                      key={color}
+                      onPress={() => setEditColor(color)}
+                      style={[
+                        styles.colorDot,
+                        { backgroundColor: color },
+                        editColor === color && styles.colorDotActive,
+                      ]}
+                    >
+                      {editColor === color && (
+                        <Ionicons name="checkmark" size={14} color="rgba(0,0,0,0.5)" />
+                      )}
+                    </Pressable>
+                  ))}
+                </View>
 
                 <View style={styles.detailActionsRow}>
                   <Pressable
@@ -826,5 +911,42 @@ const styles = StyleSheet.create({
   },
   unarchiveBtnText: {
     fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.mintGreen,
+  },
+  actionSheetOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end',
+  },
+  actionSheet: {
+    backgroundColor: Colors.cardBackground,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingBottom: 40, paddingTop: 8,
+  },
+  actionSheetHandle: {
+    width: 40, height: 4, borderRadius: 2,
+    backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: 16,
+  },
+  actionSheetItem: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: Colors.creamBeige,
+  },
+  actionSheetIcon: {
+    width: 40, height: 40, borderRadius: 14,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionSheetText: {
+    fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textPrimary,
+  },
+  colorPickerRow: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 8,
+  },
+  colorDot: {
+    width: 34, height: 34, borderRadius: 17,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'transparent',
+  },
+  colorDotActive: {
+    borderColor: 'rgba(0,0,0,0.25)',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15, shadowRadius: 4, elevation: 3,
   },
 });

@@ -56,7 +56,7 @@ interface AppContextValue {
   updateChild: (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string; salahEnabled?: boolean; fastingEnabled?: boolean; trackQuranToday?: boolean }) => Promise<{ success: boolean; message?: string }>;
   removeChild: (id: string) => Promise<void>;
   selectChild: (id: string) => void;
-  addNote: (text: string, author: string, tags?: string) => Promise<void>;
+  addNote: (text: string, author: string, tags?: string, color?: string) => Promise<void>;
   updateNote: (id: string, data: { text?: string; color?: string; tags?: string }) => Promise<{ success: boolean; message?: string }>;
   removeNote: (id: string) => Promise<void>;
   refreshChildren: () => Promise<void>;
@@ -179,8 +179,8 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     setSelectedChildId(id);
   };
 
-  const addNote = async (text: string, author: string, tags?: string) => {
-    const color = NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
+  const addNote = async (text: string, author: string, tags?: string, chosenColor?: string) => {
+    const color = chosenColor || NOTE_COLORS[Math.floor(Math.random() * NOTE_COLORS.length)];
     const rotation = String((Math.random() - 0.5) * 6);
     try {
       const res = await apiRequest('POST', '/api/notes', { text, color, rotation, author, tags });

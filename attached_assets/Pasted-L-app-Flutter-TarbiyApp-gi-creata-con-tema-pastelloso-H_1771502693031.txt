@@ -1,0 +1,61 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Home con lista card figli, Dashboard, Bacheca con note sticky, pairing cogenitori, e altre feature.
+
+ORA CORREGGI GLI ERRORI E AGGIUNGI SOLO QUESTE MODIFICHE, senza riscrivere l'intera app:
+
+1. Fix spostamento card figli in Home:
+   - Assicura che premendo "sposta su" o "sposta giu" (o trascinando con ReorderableListView), la card si muova e salva nuovo ordine in Firestore (es. children/orderIndex int per ogni figlio, aggiorna query orderBy orderIndex)
+   - Se non funziona: verifica onReorder callback aggiorni Firestore realtime
+
+2. Fix archiviazione note in Bacheca:
+   - Assicura che trascinando nota su tasto "Archivio" (in basso sinistra) o selezionando "archivia", muovi in subcollection notes/archived o set note/archived: true
+   - Aggiorna query Bacheca per escludere archived: true, e pagina Archivio mostra solo archived (orderBy timestamp descending)
+
+3. Long-press su nota in Bacheca:
+   - Aggiungi GestureDetector o LongPressDraggable: tenendo premuto, mostra popup/bottom sheet pastello con opzioni:
+     - "Modifica" (apri editor testo/tag)
+     - "Archivia" (muovi in archived)
+     - "Elimina" (dialog conferma, rimuovi da Firestore)
+   - Opzioni in pulsanti carini arrotondati, verde menta per modifica, giallo per archivia, rosso tenue per elimina
+
+4. Colore nota in Bacheca:
+   - Nella creazione/modifica nota: aggiungi color picker pastello (palette fissa: rosa pesca #FFD3B6, verde menta #A8E6CF, azzurro #C7CEEA, lavanda #E0BBE4, ecc.)
+   - Salva in note/color (hex string), applica come backgroundColor della sticky card (opacità 0.8, ombra morbida)
+
+ORA AGGIUNGI/MODIFICA SOLO LA SEZIONE PREMIUM (nelle Impostazioni o in una nuova schermata dedicata), senza riscrivere l'intera app:
+
+Implementa sistema Premium con in_app_purchase (già aggiunto o aggiungilo se manca: in_app_purchase ^3.2.0 o ultima versione):
+
+Piani:
+- Mensile: 2.99 € / mese → ID prodotto 'premium_monthly'
+- Annuale: 24.99 € / anno → ID prodotto 'premium_yearly'
+- Lifetime (una tantum): 49.99 € → ID prodotto 'premium_lifetime' (non-consumable)
+
+Schermata Premium (es. premium_screen.dart o sezione in settings_screen.dart):
+- Titolo: "Sblocca TarbiyApp Premium"
+- Descrizione breve: "Supporta lo sviluppo e sblocca funzionalità complete per la tarbiyah della tua famiglia"
+- Mostra 3 card/piani pastello con prezzi e benefici:
+  - Mensile: 2,99 €/mese – "Prova senza impegno"
+  - Annuale: 24,99 €/anno – "Risparmia ≈30% – più scelto dalle famiglie"
+  - Lifetime: 49,99 € una tantum – "Accesso per sempre, senza rinnovi"
+- Pulsante "Acquista" per ogni piano → chiama _iap.buyNonConsumable o buySubscription
+- Mostra stato attuale: se premium attivo → "Premium attivo! 🎉" + data scadenza (se non lifetime)
+- Pulsante "Ripristina acquisti" (restorePurchases) per chi ha già pagato
+
+Feature bloccate senza Premium (controlla users/isPremium bool o expiryDate > now):
+- Bacheca: disabilita creazione/modifica note o mostra overlay "Premium richiesto"
+- Più di 1 figlio: limita a 1 figlio attivo, messaggio "Passa a Premium per figli illimitati"
+- Creazione eventi customizzati: disabilita tasto + in Dashboard
+- Sincronizzazione con genitore: disabilita pairing nuovo o sync dati
+- Sure memorizzate: disabilita salvataggio stato sure o sezione intera
+
+Dopo acquisto riuscito o restore:
+- Aggiorna Firestore users/{uid}: isPremium: true, premiumUntil: timestamp (per mensile/annuale) o isLifetime: true
+- Refresh UI globale (Provider o Riverpod per stato premium)
+- Mostra SnackBar successo: "Premium attivato! Alhamdulillah"
+
+Aggiungi error handling: se acquisto fallisce mostra SnackBar con messaggio chiaro (es. "Acquisto annullato" o "Controlla connessione")
+Aggiungi 7 giorni trial gratuito: al primo login Premium, set trialUntil: now + 7 giorni, isPremium true durante trial
+
+Mantieni responsive, UI pastello con card arrotondate, animazioni soft su pulsanti. Usa intl per formattazione prezzi/date.
+
+Modifica settings_screen.dart o crea premium_section.dart, aggiungi logica in main.dart o auth/provider per check premium. Inizia con queste integrazioni precise!
