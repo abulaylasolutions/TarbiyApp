@@ -40,6 +40,7 @@ export const children = pgTable("children", {
   hasHarakat: boolean("has_harakat").default(false),
   canReadArabic: boolean("can_read_arabic").default(false),
   canWriteArabic: boolean("can_write_arabic").default(false),
+  akhlaqAdabChecked: text("akhlaq_adab_checked"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
