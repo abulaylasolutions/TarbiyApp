@@ -161,9 +161,12 @@ export async function getChildrenForUser(userId: string): Promise<Child[]> {
   });
   const uniqueMap = new Map<string, Child>();
   for (const c of filtered) uniqueMap.set(c.id, c);
-  return Array.from(uniqueMap.values()).sort(
-    (a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-  );
+  return Array.from(uniqueMap.values()).sort((a, b) => {
+    const orderA = a.displayOrder != null ? parseInt(a.displayOrder, 10) : 999999;
+    const orderB = b.displayOrder != null ? parseInt(b.displayOrder, 10) : 999999;
+    if (orderA !== orderB) return orderA - orderB;
+    return new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime();
+  });
 }
 
 export async function addChild(

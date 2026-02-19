@@ -549,13 +549,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/children/reorder", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { orderedIds } = req.body;
+      const { orderedIds } = req.body ?? {};
       if (!Array.isArray(orderedIds)) return res.status(400).json({ message: "orderedIds richiesto" });
+      console.log(`Riordinamento figli: ${orderedIds.join(', ')}`);
       for (let i = 0; i < orderedIds.length; i++) {
         await updateChild(orderedIds[i], { displayOrder: String(i) });
       }
+      console.log(`Ordine aggiornato per ${orderedIds.length} figli`);
       return res.json({ message: "Ordine aggiornato" });
     } catch (error) {
+      console.error("Errore riordinamento figli:", error);
       return res.status(500).json({ message: "Errore del server" });
     }
   });

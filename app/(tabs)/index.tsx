@@ -314,6 +314,7 @@ export default function HomeScreen() {
   const moveChild = async (index: number, direction: 'up' | 'down') => {
     const newIndex = direction === 'up' ? index - 1 : index + 1;
     if (newIndex < 0 || newIndex >= children.length) return;
+    console.log(`Riordinato da ${index} a ${newIndex}`);
     const reordered = [...children];
     const [moved] = reordered.splice(index, 1);
     reordered.splice(newIndex, 0, moved);
@@ -322,7 +323,9 @@ export default function HomeScreen() {
     try {
       await apiRequest('POST', '/api/children/reorder', { orderedIds });
       await refreshChildren();
-    } catch {}
+    } catch (err) {
+      console.error("Errore riordinamento:", err);
+    }
   };
 
   const handleSave = async () => {
