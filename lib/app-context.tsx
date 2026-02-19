@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system/legacy';
 import { apiRequest } from '@/lib/query-client';
 
 export interface CogenitoreInfo {
@@ -144,38 +147,60 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
 
   const refreshCustomPhotosInternal = async () => {
     try {
-      const res = await apiRequest('GET', '/api/custom-photos');
-      const data = await res.json();
-      setCustomPhotos(data || {});
+      const keys = await AsyncStorage.getAllKeys();
+      const photoKeys = keys.filter(k => k.startsWith('child_photo_'));
+      if (photoKeys.length === 0) {
+        setCustomPhotos({});
+        return;
+      }
+      const pairs = await AsyncStorage.multiGet(photoKeys);
+      const map: Record<string, string> = {};
+      for (const [key, value] of pairs) {
+        if (value) {
+          const childId = key.replace('child_photo_', '');
+          map[childId] = value;
+        }
+      }
+      setCustomPhotos(map);
     } catch (error) {
-      console.error('Error loading cloud photos:', error);
+      console.error('Error loading local photos:', error);
     }
   };
 
-  const setCustomPhotoFn = async (childId: string, photoUrl: string) => {
+  const setCustomPhotoFn = async (childId: string, localPath: string) => {
     try {
-      await apiRequest('POST', `/api/custom-photos/${childId}`, { photoUrl });
-      setCustomPhotos(prev => ({ ...prev, [childId]: photoUrl }));
+      await AsyncStorage.setItem(`child_photo_${childId}`, localPath);
+      setCustomPhotos(prev => ({ ...prev, [childId]: localPath }));
     } catch (error) {
-      console.error('Error saving cloud photo:', error);
+      console.error('Error saving local photo:', error);
     }
   };
 
   const removeCustomPhotoFn = async (childId: string) => {
     try {
-      await apiRequest('DELETE', `/api/custom-photos/${childId}`);
+      await AsyncStorage.removeItem(`child_photo_${childId}`);
       setCustomPhotos(prev => {
         const next = { ...prev };
         delete next[childId];
         return next;
       });
+      if (Platform.OS !== 'web') {
+        const localPath = `${FileSystem.documentDirectory}child_photos/${childId}.jpg`;
+        const info = await FileSystem.getInfoAsync(localPath);
+        if (info.exists) {
+          await FileSystem.deleteAsync(localPath, { idempotent: true });
+        }
+      }
     } catch (error) {
-      console.error('Error removing cloud photo:', error);
+      console.error('Error removing local photo:', error);
     }
   };
 
   const getChildPhoto = (childId: string): string | null => {
-    return customPhotos[childId] || null;
+    if (customPhotos[childId]) {
+      return customPhotos[childId];
+    }
+    return null;
   };
 
   const addChild = async (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => {

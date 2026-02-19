@@ -22,7 +22,8 @@ import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
-import { apiRequest, getApiUrl } from '@/lib/query-client';
+import { apiRequest } from '@/lib/query-client';
+import * as FileSystem from 'expo-file-system/legacy';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
@@ -303,32 +304,23 @@ export default function HomeScreen() {
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const uploadPhotoToCloud = async (sourceUri: string): Promise<string | null> => {
+  const savePhotoLocally = async (sourceUri: string, childId: string): Promise<string | null> => {
     try {
       setUploadingPhoto(true);
-      const formData = new FormData();
       if (Platform.OS === 'web') {
-        const response = await globalThis.fetch(sourceUri);
-        const blob = await response.blob();
-        formData.append('photo', blob, 'photo.jpg');
-      } else {
-        const { File } = require('expo-file-system');
-        const file = new File(sourceUri);
-        formData.append('photo', file);
+        return sourceUri;
       }
-      const baseUrl = getApiUrl();
-      const uploadRes = await globalThis.fetch(`${baseUrl}/api/upload`, {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      if (!uploadRes.ok) throw new Error('Upload failed');
-      const data = await uploadRes.json();
-      console.log(`debugPrint: Foto caricata in cloud: ${data.url}`);
-      return data.url;
+      const dir = `${FileSystem.documentDirectory}child_photos/`;
+      const dirInfo = await FileSystem.getInfoAsync(dir);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
+      }
+      const localPath = `${dir}${childId}.jpg`;
+      await FileSystem.copyAsync({ from: sourceUri, to: localPath });
+      return localPath;
     } catch (err) {
-      console.error('Errore upload foto cloud:', err);
-      return null;
+      console.error('Errore salvataggio foto locale:', err);
+      return sourceUri;
     } finally {
       setUploadingPhoto(false);
     }
@@ -401,12 +393,9 @@ export default function HomeScreen() {
       });
       if (result.success) {
         if (form.photoUri) {
-          const existingPhoto = getChildPhoto(editingChild.id);
-          if (form.photoUri !== existingPhoto) {
-            const cloudUrl = await uploadPhotoToCloud(form.photoUri);
-            if (cloudUrl) {
-              await setCustomPhoto(editingChild.id, cloudUrl);
-            }
+          const localPath = await savePhotoLocally(form.photoUri, editingChild.id);
+          if (localPath) {
+            await setCustomPhoto(editingChild.id, localPath);
           }
         } else if (getChildPhoto(editingChild.id)) {
           await removeCustomPhoto(editingChild.id);
@@ -433,9 +422,9 @@ export default function HomeScreen() {
       });
       if (result.success) {
         if (form.photoUri && result.childId) {
-          const cloudUrl = await uploadPhotoToCloud(form.photoUri);
-          if (cloudUrl) {
-            await setCustomPhoto(result.childId, cloudUrl);
+          const localPath = await savePhotoLocally(form.photoUri, result.childId);
+          if (localPath) {
+            await setCustomPhoto(result.childId, localPath);
           }
         }
         await refreshChildren();

@@ -53,7 +53,6 @@ import {
   archiveNote,
   getCustomPhotosForUser,
   upsertCustomPhoto,
-  deleteCustomPhoto,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -171,18 +170,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Errore salvataggio foto personalizzata:", error);
       return res.status(500).json({ message: "Errore salvataggio foto personalizzata" });
-    }
-  });
-
-  app.delete("/api/custom-photos/:childId", requireAuth as any, async (req: Request, res: Response) => {
-    try {
-      const userId = req.session.userId!;
-      const childId = req.params.childId as string;
-      await deleteCustomPhoto(userId, childId);
-      return res.json({ success: true });
-    } catch (error) {
-      console.error("Errore rimozione foto personalizzata:", error);
-      return res.status(500).json({ message: "Errore rimozione foto personalizzata" });
     }
   });
 

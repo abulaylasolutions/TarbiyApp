@@ -512,9 +512,3 @@ export async function getCustomPhoto(userId: string, childId: string): Promise<C
   );
   return result[0] || null;
 }
-
-export async function deleteCustomPhoto(userId: string, childId: string): Promise<void> {
-  await db.delete(childCustomPhotos).where(
-    and(eq(childCustomPhotos.userId, userId), eq(childCustomPhotos.childId, childId))
-  );
-}
