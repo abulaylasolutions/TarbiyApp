@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, Platform, Pressable,
   TextInput, Modal, Alert, KeyboardAvoidingView, FlatList,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -248,10 +249,11 @@ interface ActivityItem {
   createdAt: string;
 }
 
-function ChildSelector({ children: childList, selectedChildId, selectChild }: {
+function ChildSelector({ children: childList, selectedChildId, selectChild, getChildPhoto }: {
   children: any[];
   selectedChildId: string | null;
   selectChild: (id: string) => void;
+  getChildPhoto: (childId: string) => string | null;
 }) {
   if (childList.length <= 1) return null;
   return (
@@ -259,10 +261,22 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
       {childList.map((child, index) => {
         const isSelected = child.id === selectedChildId;
         const color = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
+        const photoUrl = getChildPhoto(child.id);
         return (
           <Pressable key={child.id} onPress={() => selectChild(child.id)} style={s.selectorItem}>
             <View style={[s.selectorCircle, isSelected && { borderColor: color, borderWidth: 3 }]}>
-              <Text style={s.selectorInitial}>{child.name.charAt(0).toUpperCase()}</Text>
+              {photoUrl ? (
+                <Image
+                  key={photoUrl}
+                  source={{ uri: photoUrl }}
+                  style={s.selectorImg}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={300}
+                />
+              ) : (
+                <Text style={s.selectorInitial}>{child.name.charAt(0).toUpperCase()}</Text>
+              )}
             </View>
             <Text style={[s.selectorName, isSelected && { color: Colors.textPrimary, fontFamily: 'Nunito_700Bold' }]} numberOfLines={1}>
               {child.name}
@@ -276,7 +290,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
 
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, selectChild, cogenitori, refreshChildren } = useApp();
+  const { children, selectedChildId, selectChild, cogenitori, refreshChildren, getChildPhoto } = useApp();
   const { user } = useAuth();
   const { t, lang, isRTL } = useI18n();
   const queryClient = useQueryClient();
@@ -692,7 +706,7 @@ export default function DashboardScreen() {
     <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 100 }} showsVerticalScrollIndicator={false}>
         <View style={{ paddingTop: topPadding + 8 }}>
-          <ChildSelector children={children} selectedChildId={selectedChildId} selectChild={selectChild} />
+          <ChildSelector children={children} selectedChildId={selectedChildId} selectChild={selectChild} getChildPhoto={getChildPhoto} />
         </View>
 
         <Animated.View entering={FadeIn.duration(300)} style={s.headerCard}>
@@ -702,9 +716,20 @@ export default function DashboardScreen() {
             style={s.headerGradient}
           >
             <View style={s.headerRow}>
-              <View style={[s.headerPhotoFallback, { backgroundColor: 'rgba(255,255,255,0.7)' }]}>
-                <Text style={[s.headerPhotoInitial, { color: cardColor }]}>{selectedChild.name.charAt(0).toUpperCase()}</Text>
-              </View>
+              {getChildPhoto(selectedChild.id) ? (
+                <Image
+                  key={getChildPhoto(selectedChild.id)}
+                  source={{ uri: getChildPhoto(selectedChild.id)! }}
+                  style={[s.headerPhoto, { borderColor: cardColor }]}
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={300}
+                />
+              ) : (
+                <View style={[s.headerPhotoFallback, { backgroundColor: 'rgba(255,255,255,0.7)' }]}>
+                  <Text style={[s.headerPhotoInitial, { color: cardColor }]}>{selectedChild.name.charAt(0).toUpperCase()}</Text>
+                </View>
+              )}
               <View style={s.headerInfo}>
                 <Text style={[s.headerName, { color: nameColor }]}>{selectedChild.name}</Text>
                 <Text style={s.headerAge}>{getAge(selectedChild.birthDate, t)}</Text>
@@ -1244,12 +1269,14 @@ const s = StyleSheet.create({
     backgroundColor: Colors.creamBeige, alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'transparent', overflow: 'hidden',
   },
+  selectorImg: { width: 44, height: 44, borderRadius: 22 },
   selectorInitial: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
   selectorName: { fontFamily: 'Nunito_500Medium', fontSize: 11, color: Colors.textMuted, maxWidth: 56, textAlign: 'center' },
 
   headerCard: { marginHorizontal: 16, borderRadius: 24, overflow: 'hidden', marginBottom: 4 },
   headerGradient: { padding: 20 },
   headerRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  headerPhoto: { width: 72, height: 72, borderRadius: 36, borderWidth: 3 },
   headerPhotoFallback: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   headerPhotoInitial: { fontFamily: 'Nunito_800ExtraBold', fontSize: 28 },
   headerInfo: { flex: 1 },

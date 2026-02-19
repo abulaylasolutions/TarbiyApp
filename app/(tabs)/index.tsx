@@ -10,17 +10,21 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import * as ImagePicker from 'expo-image-picker';
 import ReAnimated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
-import { apiRequest } from '@/lib/query-client';
+import { apiRequest, getApiUrl } from '@/lib/query-client';
+import { fetch } from 'expo/fetch';
+import { File } from 'expo-file-system';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
@@ -33,6 +37,7 @@ interface ChildCardProps {
   totalCount: number;
   cogenitori: CogenitoreInfo[];
   currentUserId: string;
+  photoUrl: string | null;
   onDelete: (id: string) => void;
   onEdit: (child: Child) => void;
   onPress: (child: Child) => void;
@@ -40,7 +45,7 @@ interface ChildCardProps {
   onMove: (index: number, direction: 'up' | 'down') => void;
 }
 
-function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
+function ChildCard({ child, index, totalCount, cogenitori, currentUserId, photoUrl, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
   const { t } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
@@ -85,11 +90,22 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
         ]}
       >
         <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
-          <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
-            <Text style={styles.childAvatarText}>
-              {child.name.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          {photoUrl ? (
+            <Image
+              key={photoUrl}
+              source={{ uri: photoUrl }}
+              style={styles.childPhoto}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={300}
+            />
+          ) : (
+            <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
+              <Text style={styles.childAvatarText}>
+                {child.name.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={styles.childInfo}>
             <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
             <Text style={styles.childAge}>{age}</Text>
@@ -185,6 +201,7 @@ interface ChildFormData {
   birthMonth: string;
   birthYear: string;
   gender: string;
+  photoUri: string;
   selectedCogenitori: string[];
   cardColor: string;
 }
@@ -195,13 +212,14 @@ const EMPTY_FORM: ChildFormData = {
   birthMonth: '',
   birthYear: '',
   gender: '',
+  photoUri: '',
   selectedCogenitori: [],
   cardColor: PASTEL_COLORS[0],
 };
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren } = useApp();
+  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren, getChildPhoto, setCustomPhoto, refreshCustomPhotos } = useApp();
   const { user } = useAuth();
   const { t, isRTL } = useI18n();
   const [showModal, setShowModal] = useState(false);
@@ -239,12 +257,14 @@ export default function HomeScreen() {
         selectedCogs = JSON.parse(child.cogenitori).filter((id: string) => id !== user?.id);
       } catch {}
     }
+    const existingPhoto = getChildPhoto(child.id);
     setForm({
       name: child.name,
       birthDay: String(birth.getDate()),
       birthMonth: String(birth.getMonth() + 1),
       birthYear: String(birth.getFullYear()),
       gender: child.gender || '',
+      photoUri: existingPhoto || '',
       selectedCogenitori: selectedCogs,
       cardColor: child.cardColor || PASTEL_COLORS[0],
     });
@@ -281,6 +301,60 @@ export default function HomeScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowSettings(false);
     } catch {}
+  };
+
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const uploadPhoto = async (localUri: string): Promise<string | null> => {
+    try {
+      setUploadingPhoto(true);
+      const baseUrl = getApiUrl();
+      const url = new URL('/api/upload', baseUrl);
+      const formData = new FormData();
+      if (Platform.OS === 'web') {
+        const response = await globalThis.fetch(localUri);
+        const blob = await response.blob();
+        formData.append('photo', blob, 'photo.jpg');
+      } else {
+        const file = new File(localUri);
+        formData.append('photo', file as any);
+      }
+      const res = await fetch(url.toString(), {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        console.error('Upload failed:', res.status);
+        return null;
+      }
+      const data = await res.json();
+      console.log('debugPrint: Foto personale caricata sul server:', data.url);
+      return data.url;
+    } catch (err) {
+      console.error('Errore upload foto:', err);
+      return null;
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const localUri = result.assets[0].uri;
+      const serverUrl = await uploadPhoto(localUri);
+      if (serverUrl) {
+        setForm(prev => ({ ...prev, photoUri: serverUrl }));
+      } else {
+        setForm(prev => ({ ...prev, photoUri: localUri }));
+      }
+    }
   };
 
   const selectCogenitore = (id: string) => {
@@ -336,7 +410,12 @@ export default function HomeScreen() {
         cogenitori: JSON.stringify(cogArray),
       });
       if (result.success) {
+        if (form.photoUri && form.photoUri.startsWith('http')) {
+          await setCustomPhoto(editingChild.id, form.photoUri);
+          console.log('debugPrint: Foto personale salvata:', form.photoUri);
+        }
         await refreshChildren();
+        await refreshCustomPhotos();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -356,7 +435,12 @@ export default function HomeScreen() {
         selectedCogenitori: form.selectedCogenitori,
       });
       if (result.success) {
+        if (form.photoUri && form.photoUri.startsWith('http') && result.childId) {
+          await setCustomPhoto(result.childId, form.photoUri);
+          console.log('debugPrint: Foto personale salvata:', form.photoUri);
+        }
         await refreshChildren();
+        await refreshCustomPhotos();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -422,6 +506,7 @@ export default function HomeScreen() {
                 totalCount={children.length}
                 cogenitori={cogenitori}
                 currentUserId={user?.id || ''}
+                photoUrl={getChildPhoto(child.id)}
                 onDelete={removeChild}
                 onEdit={openEditModal}
                 onPress={handleChildPress}
@@ -471,6 +556,21 @@ export default function HomeScreen() {
                   <Text style={styles.errorText}>{errorMsg}</Text>
                 </View>
               ) : null}
+
+              <Pressable onPress={uploadingPhoto ? undefined : pickImage} style={styles.photoPickerWrap}>
+                {uploadingPhoto ? (
+                  <View style={styles.photoPlaceholder}>
+                    <Ionicons name="cloud-upload" size={28} color={Colors.primary} />
+                  </View>
+                ) : form.photoUri ? (
+                  <Image key={form.photoUri} source={{ uri: form.photoUri }} style={styles.photoPreview} contentFit="cover" transition={300} />
+                ) : (
+                  <View style={styles.photoPlaceholder}>
+                    <Ionicons name="camera" size={28} color={Colors.textMuted} />
+                  </View>
+                )}
+                <Text style={styles.photoLabel}>{uploadingPhoto ? 'Caricamento...' : t('photoOptional')}</Text>
+              </Pressable>
 
               <Text style={styles.inputLabel}>{t('childName')}</Text>
               <TextInput
@@ -715,6 +815,13 @@ const styles = StyleSheet.create({
     gap: 14,
     borderRadius: 24,
   },
+  childPhoto: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.8)',
+  },
   childAvatar: {
     width: 56,
     height: 56,
@@ -792,6 +899,13 @@ const styles = StyleSheet.create({
   modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 20 },
   errorBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.dangerLight, borderRadius: 12, padding: 12, gap: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.danger, flex: 1 },
+  photoPickerWrap: { alignItems: 'center', marginBottom: 20 },
+  photoPreview: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: Colors.mintGreenLight },
+  photoPlaceholder: {
+    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.creamBeige,
+    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.textMuted, borderStyle: 'dashed',
+  },
+  photoLabel: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.textMuted, marginTop: 6 },
   inputLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8 },
   modalInput: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 14, marginBottom: 16 },
   dateRow: { flexDirection: 'row', gap: 10 },

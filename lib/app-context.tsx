@@ -160,15 +160,12 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
 
   const getChildPhoto = (childId: string): string | null => {
     if (customPhotos[childId]) {
-      console.log('[PHOTO] Foto personalizzata trovata per', childId, ':', customPhotos[childId].substring(0, 60));
       return customPhotos[childId];
     }
     const child = childrenList.find(c => c.id === childId);
     if (child?.photoUri && child.photoUri.startsWith('http')) {
-      console.log('[PHOTO] Foto condivisa trovata per', childId, ':', child.photoUri.substring(0, 60));
       return child.photoUri;
     }
-    console.log('[PHOTO] Nessuna foto per', childId, '- photoUri:', child?.photoUri || '(vuoto)');
     return null;
   };
 
