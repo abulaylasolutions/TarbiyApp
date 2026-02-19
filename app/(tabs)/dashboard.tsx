@@ -625,31 +625,31 @@ export default function DashboardScreen() {
   const akhlaqCheckedCount = localAkhlaqChecked.length;
   const akhlaqTotalItems = AKHLAQ_CATEGORIES.reduce((sum, cat) => sum + cat.items.length, 0);
 
-  const buildTodayActivityFeed = (): { icon: string; iconColor: string; text: string; time: string; author: string; }[] => {
-    const feed: { icon: string; iconColor: string; text: string; time: string; author: string; sortTime: number }[] = [];
-    const authorName = user?.name || (isFemale ? t('mom') : t('dad'));
+  const buildTodayActivityFeed = (): { icon: string; iconColor: string; text: string; time: string; }[] => {
+    const feed: { icon: string; iconColor: string; text: string; time: string; sortTime: number }[] = [];
 
     PRAYER_NAMES.forEach(p => {
       if (prayers[p]) {
-        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: `${t(p)} ${lang === 'it' ? 'fatta' : lang === 'ar' ? 'تمت' : 'done'}`, time: '', author: authorName, sortTime: Date.now() });
+        const prayerKey = `prayed${p.charAt(0).toUpperCase() + p.slice(1)}` as string;
+        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: t(prayerKey), time: '', sortTime: Date.now() });
       }
     });
 
     if (fasting.status === 'yes') {
-      feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: lang === 'it' ? 'Digiuno completo' : lang === 'ar' ? 'صيام كامل' : 'Full fasting', time: '', author: authorName, sortTime: Date.now() });
+      feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: lang === 'it' ? 'Digiuno completo' : lang === 'ar' ? 'صيام كامل' : 'Full fasting', time: '', sortTime: Date.now() });
     } else if (fasting.status === 'partial') {
-      feed.push({ icon: 'remove-circle', iconColor: '#F4C430', text: lang === 'it' ? 'Digiuno parziale' : lang === 'ar' ? 'صيام جزئي' : 'Partial fasting', time: '', author: authorName, sortTime: Date.now() });
+      feed.push({ icon: 'remove-circle', iconColor: '#F4C430', text: lang === 'it' ? 'Digiuno parziale' : lang === 'ar' ? 'صيام جزئي' : 'Partial fasting', time: '', sortTime: Date.now() });
     }
 
     if (quranToday) {
-      feed.push({ icon: 'book', iconColor: Colors.peachPink, text: lang === 'it' ? "Qur'an letto oggi" : lang === 'ar' ? 'قرأ القرآن اليوم' : "Qur'an read today", time: '', author: authorName, sortTime: Date.now() });
+      feed.push({ icon: 'book', iconColor: Colors.peachPink, text: lang === 'it' ? "Qur'an letto oggi" : lang === 'ar' ? 'قرأ القرآن اليوم' : "Qur'an read today", time: '', sortTime: Date.now() });
     }
 
     Object.entries(quranLogs).forEach(([num, status]) => {
       if (status === 'learned') {
         const idx = parseInt(num) - 1;
         const name = SURAH_NAMES[idx] || num;
-        feed.push({ icon: 'star', iconColor: '#F4C430', text: `${lang === 'it' ? 'Surah' : lang === 'ar' ? 'سورة' : 'Surah'} ${num} - ${name} ${lang === 'it' ? 'imparata' : lang === 'ar' ? 'محفوظة' : 'learned'}`, time: '', author: authorName, sortTime: Date.now() });
+        feed.push({ icon: 'star', iconColor: '#F4C430', text: `${lang === 'it' ? 'Surah' : lang === 'ar' ? 'سورة' : 'Surah'} ${num} - ${name} ${lang === 'it' ? 'imparata' : lang === 'ar' ? 'محفوظة' : 'learned'}`, time: '', sortTime: Date.now() });
       }
     });
 
@@ -657,23 +657,23 @@ export default function DashboardScreen() {
       const allItems = AKHLAQ_CATEGORIES.flatMap(c => c.items);
       const item = allItems.find(i => i.key === itemKey);
       if (item) {
-        feed.push({ icon: 'heart', iconColor: Colors.peachPink, text: `${lang === 'it' ? 'Akhlaq' : lang === 'ar' ? 'أخلاق' : 'Akhlaq'}: ${getAkhlaqLabel(item)}`, time: '', author: authorName, sortTime: Date.now() });
+        feed.push({ icon: 'heart', iconColor: Colors.peachPink, text: `${lang === 'it' ? 'Akhlaq' : lang === 'ar' ? 'أخلاق' : 'Akhlaq'}: ${getAkhlaqLabel(item)}`, time: '', sortTime: Date.now() });
       }
     });
 
     todayTasks.forEach(task => {
       const comp = completions[task.id];
       if (comp?.completed) {
-        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: `${task.name} ${lang === 'it' ? 'completato' : lang === 'ar' ? 'مكتمل' : 'completed'}`, time: task.time || '', author: authorName, sortTime: Date.now() });
+        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: `${task.name} ${lang === 'it' ? 'completato' : lang === 'ar' ? 'مكتمل' : 'completed'}`, time: task.time || '', sortTime: Date.now() });
       }
     });
 
     activities.filter(a => a.date === dateStr).forEach(act => {
-      feed.push({ icon: 'time', iconColor: cardColor, text: act.text, time: act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', author: act.authorName, sortTime: new Date(act.createdAt || 0).getTime() });
+      feed.push({ icon: 'time', iconColor: cardColor, text: act.text, time: act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', sortTime: new Date(act.createdAt || 0).getTime() });
     });
 
     feed.sort((a, b) => b.sortTime - a.sortTime);
-    return feed.slice(0, 20).map(({ sortTime, ...rest }) => rest);
+    return feed.slice(0, 5).map(({ sortTime, ...rest }) => rest);
   };
 
   const todayFeed = buildTodayActivityFeed();
@@ -1049,9 +1049,9 @@ export default function DashboardScreen() {
                     <Ionicons name={item.icon as any} size={18} color={item.iconColor} />
                     <View style={s.activityInfo}>
                       <Text style={s.activityText}>{item.text}</Text>
-                      <Text style={s.activityMeta}>
-                        {item.author}{item.time ? ` — ${item.time}` : ''}
-                      </Text>
+                      {item.time ? (
+                        <Text style={s.activityMeta}>{item.time}</Text>
+                      ) : null}
                     </View>
                   </View>
                 ))}

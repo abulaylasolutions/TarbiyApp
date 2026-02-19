@@ -64,6 +64,10 @@ function NoteCard({ note, onPress, onDelete }: NoteCardProps) {
     day: 'numeric',
     month: 'short',
   });
+  const formattedTime = new Date(note.createdAt).toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 
   return (
     <Animated.View entering={ZoomIn.duration(300)} style={{ width: CARD_WIDTH }}>
@@ -89,7 +93,7 @@ function NoteCard({ note, onPress, onDelete }: NoteCardProps) {
         </Text>
         <View style={styles.noteFooter}>
           <Text style={styles.noteAuthor}>{note.author}</Text>
-          <Text style={styles.noteDate}>{formattedDate}</Text>
+          <Text style={styles.noteDate}>{formattedDate} {formattedTime}</Text>
         </View>
       </Pressable>
     </Animated.View>
@@ -156,10 +160,13 @@ function CommentBubble({ comment, isMine, index }: CommentBubbleProps) {
 export default function BachecaScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useI18n();
-  const { notes, children, addNote, updateNote, removeNote } = useApp();
+  const { notes, children, addNote, updateNote, removeNote, refreshNotes } = useApp();
   const { user } = useAuth();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showArchive, setShowArchive] = useState(false);
+  const [archivedNotes, setArchivedNotes] = useState<Note[]>([]);
+  const [loadingArchive, setLoadingArchive] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [editText, setEditText] = useState('');
@@ -171,6 +178,36 @@ export default function BachecaScreen() {
   const [sendingComment, setSendingComment] = useState(false);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
+
+  const loadArchivedNotes = useCallback(async () => {
+    setLoadingArchive(true);
+    try {
+      const res = await apiRequest('GET', '/api/notes?archived=true');
+      const data = await res.json();
+      setArchivedNotes(data);
+    } catch {
+      setArchivedNotes([]);
+    } finally {
+      setLoadingArchive(false);
+    }
+  }, []);
+
+  const archiveNote = async (noteId: string) => {
+    try {
+      await apiRequest('POST', `/api/notes/${noteId}/archive`);
+      await refreshNotes();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {}
+  };
+
+  const unarchiveNote = async (noteId: string) => {
+    try {
+      await apiRequest('POST', `/api/notes/${noteId}/archive`, { archived: false });
+      await refreshNotes();
+      await loadArchivedNotes();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {}
+  };
 
   const loadComments = useCallback(async (noteId: string) => {
     setLoadingComments(true);
@@ -268,6 +305,15 @@ export default function BachecaScreen() {
             <Text style={styles.headerTitle}>{t('bacheca_title')}</Text>
             <Text style={styles.headerSubtitle}>Note condivise tra genitori</Text>
           </View>
+          <Pressable
+            onPress={() => {
+              loadArchivedNotes();
+              setShowArchive(true);
+            }}
+            style={styles.archiveBtn}
+          >
+            <Ionicons name="archive-outline" size={20} color={Colors.textSecondary} />
+          </Pressable>
         </View>
 
         {notes.length === 0 ? (
@@ -394,7 +440,7 @@ export default function BachecaScreen() {
                         day: 'numeric',
                         month: 'long',
                         year: 'numeric',
-                      })}
+                      })} {new Date(selectedNote.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </Text>
                     {getTaggedChildNames(selectedNote).length > 0 && (
                       <View style={styles.detailTagsPreview}>
@@ -433,14 +479,27 @@ export default function BachecaScreen() {
                   </>
                 )}
 
-                <Pressable
-                  onPress={handleSaveEdit}
-                  style={[styles.saveEditBtn, !editText.trim() && { opacity: 0.5 }]}
-                  disabled={!editText.trim()}
-                >
-                  <Ionicons name="save" size={20} color={Colors.white} />
-                  <Text style={styles.saveEditText}>{t('save')}</Text>
-                </Pressable>
+                <View style={styles.detailActionsRow}>
+                  <Pressable
+                    onPress={handleSaveEdit}
+                    style={[styles.saveEditBtn, { flex: 1 }, !editText.trim() && { opacity: 0.5 }]}
+                    disabled={!editText.trim()}
+                  >
+                    <Ionicons name="save" size={20} color={Colors.white} />
+                    <Text style={styles.saveEditText}>{t('save')}</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => {
+                      if (selectedNote) {
+                        archiveNote(selectedNote.id);
+                        setShowDetailModal(false);
+                      }
+                    }}
+                    style={styles.archiveActionBtn}
+                  >
+                    <Ionicons name="archive-outline" size={20} color={Colors.textSecondary} />
+                  </Pressable>
+                </View>
 
                 <View style={styles.commentsSeparator}>
                   <View style={styles.separatorLine} />
@@ -497,6 +556,52 @@ export default function BachecaScreen() {
             </Animated.View>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={showArchive} animationType="slide" transparent={false}>
+        <View style={[styles.archiveFullPage, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
+          <View style={styles.archiveAppBar}>
+            <Pressable onPress={() => setShowArchive(false)} style={styles.archiveBackBtn}>
+              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+            </Pressable>
+            <Text style={styles.archiveAppBarTitle}>{t('archivedNotes')}</Text>
+            <View style={{ width: 40 }} />
+          </View>
+          {loadingArchive ? (
+            <ActivityIndicator size="large" color={Colors.mintGreen} style={{ marginTop: 40 }} />
+          ) : archivedNotes.length === 0 ? (
+            <View style={styles.archiveEmpty}>
+              <Ionicons name="archive-outline" size={48} color={Colors.textMuted} />
+              <Text style={styles.archiveEmptyText}>{t('noArchivedNotes')}</Text>
+            </View>
+          ) : (
+            <ScrollView contentContainerStyle={styles.archiveList} showsVerticalScrollIndicator={false}>
+              {archivedNotes.map((note) => {
+                const noteDate = new Date(note.createdAt);
+                const dateStr = noteDate.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+                const timeStr = noteDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                return (
+                  <Animated.View key={note.id} entering={FadeInDown.duration(300)}>
+                    <View style={[styles.archivedCard, { backgroundColor: note.color }]}>
+                      <Text style={styles.archivedCardText} numberOfLines={4}>{note.text}</Text>
+                      <View style={styles.archivedCardFooter}>
+                        <Text style={styles.archivedCardMeta}>{note.author} - {dateStr} {timeStr}</Text>
+                        <Pressable
+                          onPress={() => unarchiveNote(note.id)}
+                          style={styles.unarchiveBtn}
+                        >
+                          <Ionicons name="arrow-undo-outline" size={18} color={Colors.mintGreen} />
+                          <Text style={styles.unarchiveBtnText}>{t('unarchive')}</Text>
+                        </Pressable>
+                      </View>
+                    </View>
+                  </Animated.View>
+                );
+              })}
+              <View style={{ height: insets.bottom + 24 }} />
+            </ScrollView>
+          )}
+        </View>
       </Modal>
     </View>
   );
@@ -663,5 +768,63 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: Colors.mintGreen,
     alignItems: 'center', justifyContent: 'center',
+  },
+  archiveBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: Colors.creamBeige,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  detailActionsRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16,
+  },
+  archiveActionBtn: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: Colors.creamBeige,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  archiveFullPage: {
+    flex: 1, backgroundColor: Colors.background,
+  },
+  archiveAppBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12,
+  },
+  archiveBackBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  archiveAppBarTitle: {
+    fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary,
+  },
+  archiveEmpty: {
+    alignItems: 'center', justifyContent: 'center', paddingVertical: 80, gap: 12,
+  },
+  archiveEmptyText: {
+    fontFamily: 'Nunito_500Medium', fontSize: 16, color: Colors.textMuted,
+  },
+  archiveList: {
+    paddingHorizontal: 16, paddingTop: 8, gap: 12,
+  },
+  archivedCard: {
+    borderRadius: 16, padding: 16,
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06, shadowRadius: 6, elevation: 2,
+  },
+  archivedCardText: {
+    fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textPrimary, lineHeight: 20, marginBottom: 10,
+  },
+  archivedCardFooter: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+  },
+  archivedCardMeta: {
+    fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textSecondary, flex: 1,
+  },
+  unarchiveBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  unarchiveBtnText: {
+    fontFamily: 'Nunito_600SemiBold', fontSize: 12, color: Colors.mintGreen,
   },
 });

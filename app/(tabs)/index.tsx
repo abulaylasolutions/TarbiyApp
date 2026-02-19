@@ -32,15 +32,17 @@ const PASTEL_COLORS = [
 interface ChildCardProps {
   child: Child;
   index: number;
+  totalCount: number;
   cogenitori: CogenitoreInfo[];
   currentUserId: string;
   onDelete: (id: string) => void;
   onEdit: (child: Child) => void;
   onPress: (child: Child) => void;
   onSettings: (child: Child) => void;
+  onMove: (index: number, direction: 'up' | 'down') => void;
 }
 
-function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, onPress, onSettings }: ChildCardProps) {
+function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
   const { t } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
@@ -113,6 +115,30 @@ function ChildCard({ child, index, cogenitori, currentUserId, onDelete, onEdit, 
       <Modal visible={showMenu} transparent animationType="fade">
         <Pressable style={styles.popupOverlay} onPress={() => setShowMenu(false)}>
           <View style={styles.popupMenu}>
+            {index > 0 && (
+              <>
+                <Pressable
+                  onPress={() => { setShowMenu(false); onMove(index, 'up'); }}
+                  style={styles.popupItem}
+                >
+                  <Ionicons name="arrow-up" size={20} color={Colors.textPrimary} />
+                  <Text style={styles.popupItemText}>{t('moveUp')}</Text>
+                </Pressable>
+                <View style={styles.popupDivider} />
+              </>
+            )}
+            {index < totalCount - 1 && (
+              <>
+                <Pressable
+                  onPress={() => { setShowMenu(false); onMove(index, 'down'); }}
+                  style={styles.popupItem}
+                >
+                  <Ionicons name="arrow-down" size={20} color={Colors.textPrimary} />
+                  <Text style={styles.popupItemText}>{t('moveDown')}</Text>
+                </Pressable>
+                <View style={styles.popupDivider} />
+              </>
+            )}
             <Pressable
               onPress={() => {
                 setShowMenu(false);
@@ -183,7 +209,7 @@ const EMPTY_FORM: ChildFormData = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById } = useApp();
+  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren } = useApp();
   const { user } = useAuth();
   const { t, isRTL } = useI18n();
   const [showModal, setShowModal] = useState(false);
@@ -278,13 +304,25 @@ export default function HomeScreen() {
     }
   };
 
-  const toggleCogenitore = (id: string) => {
+  const selectCogenitore = (id: string) => {
     setForm(prev => ({
       ...prev,
-      selectedCogenitori: prev.selectedCogenitori.includes(id)
-        ? prev.selectedCogenitori.filter(c => c !== id)
-        : [...prev.selectedCogenitori, id],
+      selectedCogenitori: prev.selectedCogenitori.includes(id) ? [] : [id],
     }));
+  };
+
+  const moveChild = async (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= children.length) return;
+    const reordered = [...children];
+    const [moved] = reordered.splice(index, 1);
+    reordered.splice(newIndex, 0, moved);
+    const orderedIds = reordered.map(c => c.id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('POST', '/api/children/reorder', { orderedIds });
+      await refreshChildren();
+    } catch {}
   };
 
   const handleSave = async () => {
@@ -399,12 +437,14 @@ export default function HomeScreen() {
                 key={child.id}
                 child={child}
                 index={index}
+                totalCount={children.length}
                 cogenitori={cogenitori}
                 currentUserId={user?.id || ''}
                 onDelete={removeChild}
                 onEdit={openEditModal}
                 onPress={handleChildPress}
                 onSettings={openSettings}
+                onMove={moveChild}
               />
             ))}
           </View>
@@ -527,7 +567,7 @@ export default function HomeScreen() {
                     return (
                       <Pressable
                         key={cog.id}
-                        onPress={() => toggleCogenitore(cog.id)}
+                        onPress={() => selectCogenitore(cog.id)}
                         style={[styles.cogChip, isSelected && styles.cogChipSelected]}
                       >
                         <View style={styles.cogChipAvatar}>
