@@ -12,20 +12,16 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import * as Clipboard from 'expo-clipboard';
-import * as ImagePicker from 'expo-image-picker';
 import Animated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import { useApp, CogenitoreInfo } from '@/lib/app-context';
-import { apiRequest, getApiUrl } from '@/lib/query-client';
-import { fetch } from 'expo/fetch';
-import { File } from 'expo-file-system';
+import { apiRequest } from '@/lib/query-client';
 import { useI18n, getLanguageLabel, Language } from '@/lib/i18n';
 import Colors from '@/constants/colors';
 
@@ -292,7 +288,6 @@ export default function SettingsScreen() {
   const [editBirthMonth, setEditBirthMonth] = useState('');
   const [editBirthYear, setEditBirthYear] = useState('');
   const [editGender, setEditGender] = useState('');
-  const [editPhotoUrl, setEditPhotoUrl] = useState('');
   const [editError, setEditError] = useState('');
   const [editSaving, setEditSaving] = useState(false);
 
@@ -311,49 +306,8 @@ export default function SettingsScreen() {
       setEditBirthYear('');
     }
     setEditGender(user?.gender || '');
-    setEditPhotoUrl(user?.photoUrl || '');
     setEditError('');
     setShowEditModal(true);
-  };
-
-  const uploadPhoto = async (localUri: string): Promise<string | null> => {
-    try {
-      const baseUrl = getApiUrl();
-      const url = new URL('/api/upload', baseUrl);
-      const formData = new FormData();
-      if (Platform.OS === 'web') {
-        const response = await globalThis.fetch(localUri);
-        const blob = await response.blob();
-        formData.append('photo', blob, 'photo.jpg');
-      } else {
-        const file = new File(localUri);
-        formData.append('photo', file as any);
-      }
-      const res = await fetch(url.toString(), {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data.url;
-    } catch {
-      return null;
-    }
-  };
-
-  const pickProfilePhoto = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled && result.assets[0]) {
-      const localUri = result.assets[0].uri;
-      const serverUrl = await uploadPhoto(localUri);
-      setEditPhotoUrl(serverUrl || localUri);
-    }
   };
 
   const handleSaveProfile = async () => {
@@ -379,7 +333,6 @@ export default function SettingsScreen() {
       name: editName.trim(),
       birthDate,
       gender: editGender,
-      photoUrl: editPhotoUrl || undefined,
     });
     setEditSaving(false);
     if (result.success) {
@@ -440,15 +393,11 @@ export default function SettingsScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.profileGradient}
           >
-            {user?.photoUrl && user.photoUrl.startsWith('http') ? (
-              <Image source={{ uri: user.photoUrl }} style={styles.profilePhoto} contentFit="cover" cachePolicy="memory-disk" />
-            ) : (
-              <View style={styles.profileAvatar}>
-                <Text style={styles.profileAvatarText}>
-                  {(user?.name || user?.email || 'G').charAt(0).toUpperCase()}
-                </Text>
-              </View>
-            )}
+            <View style={styles.profileAvatar}>
+              <Text style={styles.profileAvatarText}>
+                {(user?.name || user?.email || 'G').charAt(0).toUpperCase()}
+              </Text>
+            </View>
             <View style={styles.profileInfo}>
               <Text style={styles.profileName}>{user?.name || 'Genitore'}</Text>
               <Text style={styles.profileSub}>{user?.email}</Text>
@@ -562,17 +511,6 @@ export default function SettingsScreen() {
                     <Text style={styles.errorBoxText}>{editError}</Text>
                   </View>
                 ) : null}
-
-                <Pressable onPress={pickProfilePhoto} style={styles.editPhotoWrap}>
-                  {editPhotoUrl ? (
-                    <Image source={{ uri: editPhotoUrl }} style={styles.editPhotoPreview} contentFit="cover" />
-                  ) : (
-                    <View style={styles.editPhotoPlaceholder}>
-                      <Ionicons name="camera" size={28} color={Colors.textMuted} />
-                    </View>
-                  )}
-                  <Text style={styles.editPhotoLabel}>{t('changPhoto')}</Text>
-                </Pressable>
 
                 <Text style={styles.editInputLabel}>{t('name')}</Text>
                 <TextInput
@@ -937,7 +875,6 @@ const styles = StyleSheet.create({
   restoreText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.mintGreenDark },
   premiumCloseBtn: { paddingVertical: 8 },
   premiumCloseText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textMuted },
-  profilePhoto: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)' },
   editModalContent: {
     backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
@@ -946,13 +883,6 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
   },
   editModalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 20 },
-  editPhotoWrap: { alignItems: 'center', marginBottom: 20 },
-  editPhotoPreview: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: Colors.mintGreenLight },
-  editPhotoPlaceholder: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.creamBeige,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.textMuted, borderStyle: 'dashed',
-  },
-  editPhotoLabel: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.mintGreenDark, marginTop: 6 },
   editInputLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8 },
   editInput: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 14, marginBottom: 16 },
   editDateRow: { flexDirection: 'row', gap: 10 },
