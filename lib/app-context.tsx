@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as FileSystem from 'expo-file-system';
 import { apiRequest } from '@/lib/query-client';
 
 export interface CogenitoreInfo {
@@ -143,28 +145,38 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
 
   const refreshCustomPhotosInternal = async () => {
     try {
-      const res = await apiRequest('GET', '/api/custom-photos');
-      const data = await res.json();
-      setCustomPhotos(data || {});
-    } catch {}
+      const keys = await AsyncStorage.getAllKeys();
+      const photoKeys = keys.filter(k => k.startsWith('child_photo_'));
+      if (photoKeys.length === 0) {
+        setCustomPhotos({});
+        return;
+      }
+      const pairs = await AsyncStorage.multiGet(photoKeys);
+      const map: Record<string, string> = {};
+      for (const [key, value] of pairs) {
+        if (value) {
+          const childId = key.replace('child_photo_', '');
+          map[childId] = value;
+        }
+      }
+      setCustomPhotos(map);
+    } catch (error) {
+      console.error('Error loading local photos:', error);
+    }
   };
 
-  const setCustomPhotoFn = async (childId: string, photoUrl: string) => {
+  const setCustomPhotoFn = async (childId: string, localPath: string) => {
     try {
-      await apiRequest('POST', `/api/custom-photos/${childId}`, { photoUrl });
-      setCustomPhotos(prev => ({ ...prev, [childId]: photoUrl }));
+      await AsyncStorage.setItem(`child_photo_${childId}`, localPath);
+      setCustomPhotos(prev => ({ ...prev, [childId]: localPath }));
     } catch (error) {
-      console.error('Error setting custom photo:', error);
+      console.error('Error saving local photo:', error);
     }
   };
 
   const getChildPhoto = (childId: string): string | null => {
     if (customPhotos[childId]) {
       return customPhotos[childId];
-    }
-    const child = childrenList.find(c => c.id === childId);
-    if (child?.photoUri && child.photoUri.startsWith('http')) {
-      return child.photoUri;
     }
     return null;
   };

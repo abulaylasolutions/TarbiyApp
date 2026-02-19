@@ -22,9 +22,8 @@ import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
-import { apiRequest, getApiUrl } from '@/lib/query-client';
-import { fetch } from 'expo/fetch';
-import { File } from 'expo-file-system';
+import { apiRequest } from '@/lib/query-client';
+import * as FileSystem from 'expo-file-system';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
@@ -305,35 +304,23 @@ export default function HomeScreen() {
 
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
-  const uploadPhoto = async (localUri: string): Promise<string | null> => {
+  const savePhotoLocally = async (sourceUri: string, childId: string): Promise<string | null> => {
     try {
       setUploadingPhoto(true);
-      const baseUrl = getApiUrl();
-      const url = new URL('/api/upload', baseUrl);
-      const formData = new FormData();
       if (Platform.OS === 'web') {
-        const response = await globalThis.fetch(localUri);
-        const blob = await response.blob();
-        formData.append('photo', blob, 'photo.jpg');
-      } else {
-        const file = new File(localUri);
-        formData.append('photo', file as any);
+        return sourceUri;
       }
-      const res = await fetch(url.toString(), {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-      if (!res.ok) {
-        console.error('Upload failed:', res.status);
-        return null;
+      const dir = `${FileSystem.documentDirectory}child_photos/`;
+      const dirInfo = await FileSystem.getInfoAsync(dir);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
       }
-      const data = await res.json();
-      console.log('debugPrint: Foto personale caricata sul server:', data.url);
-      return data.url;
+      const localPath = `${dir}${childId}.jpg`;
+      await FileSystem.copyAsync({ from: sourceUri, to: localPath });
+      return localPath;
     } catch (err) {
-      console.error('Errore upload foto:', err);
-      return null;
+      console.error('Errore salvataggio foto locale:', err);
+      return sourceUri;
     } finally {
       setUploadingPhoto(false);
     }
@@ -348,12 +335,7 @@ export default function HomeScreen() {
     });
     if (!result.canceled && result.assets[0]) {
       const localUri = result.assets[0].uri;
-      const serverUrl = await uploadPhoto(localUri);
-      if (serverUrl) {
-        setForm(prev => ({ ...prev, photoUri: serverUrl }));
-      } else {
-        setForm(prev => ({ ...prev, photoUri: localUri }));
-      }
+      setForm(prev => ({ ...prev, photoUri: localUri }));
     }
   };
 
@@ -410,9 +392,11 @@ export default function HomeScreen() {
         cogenitori: JSON.stringify(cogArray),
       });
       if (result.success) {
-        if (form.photoUri && form.photoUri.startsWith('http')) {
-          await setCustomPhoto(editingChild.id, form.photoUri);
-          console.log('debugPrint: Foto personale salvata:', form.photoUri);
+        if (form.photoUri) {
+          const localPath = await savePhotoLocally(form.photoUri, editingChild.id);
+          if (localPath) {
+            await setCustomPhoto(editingChild.id, localPath);
+          }
         }
         await refreshChildren();
         await refreshCustomPhotos();
@@ -435,9 +419,11 @@ export default function HomeScreen() {
         selectedCogenitori: form.selectedCogenitori,
       });
       if (result.success) {
-        if (form.photoUri && form.photoUri.startsWith('http') && result.childId) {
-          await setCustomPhoto(result.childId, form.photoUri);
-          console.log('debugPrint: Foto personale salvata:', form.photoUri);
+        if (form.photoUri && result.childId) {
+          const localPath = await savePhotoLocally(form.photoUri, result.childId);
+          if (localPath) {
+            await setCustomPhoto(result.childId, localPath);
+          }
         }
         await refreshChildren();
         await refreshCustomPhotos();
