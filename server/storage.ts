@@ -214,6 +214,7 @@ export async function updateChild(
     hasHarakat?: boolean;
     canReadArabic?: boolean;
     canWriteArabic?: boolean;
+    displayOrder?: string;
   }
 ): Promise<Child> {
   const result = await db
@@ -228,11 +229,14 @@ export async function removeChild(id: string): Promise<void> {
   await db.delete(children).where(eq(children.id, id));
 }
 
-export async function getNotesForUser(userId: string): Promise<Note[]> {
+export async function getNotesForUser(userId: string, archived = false): Promise<Note[]> {
   const user = await getUserById(userId);
   if (!user) return [];
   const pairedIds = getPairedArray(user);
   const allUserIds = [userId, ...pairedIds];
+
+  const userChildren = await getChildrenForUser(userId);
+  const userChildIds = new Set(userChildren.map(c => c.id));
 
   const allNotes: Note[] = [];
   for (const uid of allUserIds) {
@@ -240,10 +244,34 @@ export async function getNotesForUser(userId: string): Promise<Note[]> {
     allNotes.push(...result);
   }
   const uniqueMap = new Map<string, Note>();
-  for (const n of allNotes) uniqueMap.set(n.id, n);
+  for (const n of allNotes) {
+    const isArchived = !!n.archived;
+    if (isArchived !== archived) continue;
+
+    if (n.tags && n.userId !== userId) {
+      try {
+        const tagIds: string[] = JSON.parse(n.tags);
+        if (tagIds.length > 0) {
+          const hasSharedChild = tagIds.some(tid => userChildIds.has(tid));
+          if (!hasSharedChild) continue;
+        }
+      } catch {}
+    }
+
+    uniqueMap.set(n.id, n);
+  }
   return Array.from(uniqueMap.values()).sort(
     (a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
   );
+}
+
+export async function archiveNote(id: string, archived: boolean): Promise<Note> {
+  const result = await db
+    .update(notes)
+    .set({ archived })
+    .where(eq(notes.id, id))
+    .returning();
+  return result[0];
 }
 
 export async function addNote(

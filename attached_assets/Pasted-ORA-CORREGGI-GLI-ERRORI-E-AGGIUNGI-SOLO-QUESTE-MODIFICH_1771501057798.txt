@@ -1,0 +1,42 @@
+ORA CORREGGI GLI ERRORI E AGGIUNGI SOLO QUESTE MODIFICHE PRECISE, senza toccare parti non menzionate:
+
+1. Home – ordinamento card figli:
+   - Rendi le card riordinabili: usa ReorderableListView (o package reorderables se necessario) per tenere premuto e trascinare le card (salva nuovo ordine in Firestore o localmente con shared_preferences)
+   - Aggiorna lista in realtime dopo reorder
+
+2. Creazione figlio – selezione cogenitore:
+   - Nella schermata aggiungi/modifica figlio: se utente ha più cogenitori (pairedCogenitori array >1), mostra dropdown o chips per selezionare **solo uno** cogenitore per quel figlio
+   - Salva in children/cogenitoreUid (single uid, non array) – il creatore può cambiare dopo con pending approval
+
+3. Attività recenti in Dashboard:
+   - Limita massimo 5 attività visibili (prendi ultime 5 da query orderBy timestamp descending)
+   - Rimuovi nome genitore/autore da ogni riga (solo descrizione evento)
+
+4. Attività recenti – fix ordine e raggruppamento:
+   - Assicura ordine sempre decrescente (più recente in alto): usa orderBy('timestamp', descending: true) in query Firestore
+   - Non raggruppare per categoria: mostra flat list cronologica (es. prima Salah fatta, poi surah imparata, poi adab check – sempre newest first)
+   - Salva ogni completamento (toggle, surah status change, akhlaq check) come nuovo log in children/activityLog con timestamp
+
+5. Testo attività recenti per Salah:
+   - Invece di "Fajr fatta" ecc., usa frasi complete: "Ha pregato Salat Al-Fajr", "Ha pregato Salat Ad-Dhuhr", ecc. (adatta per ogni preghiera)
+
+6. Bacheca – miglioramenti:
+   - Aggiungi orario creazione nota (HH:MM) sotto testo o in angolo (usa DateFormat('HH:mm') da intl)
+   - Note riordinabili: usa ReorderableListView o draggable su sticky notes (salva ordine in note/order o array)
+   - Tasto "Archivio" in basso a sinistra (icona cartella o box), tasto + resta in basso a destra
+   - Trascina nota su "Archivio" → archivia (muovi in subcollection notes/archived o flag archived: true)
+   - In alto: pulsante "Vedi Archivio" → apri pagina/lista archiviate (order newest first, con possibilità unarchive)
+
+7. Bacheca – visibilità note per tag figlio:
+   - Nota visibile solo ai cogenitori che hanno in comune almeno un figlio taggato nella nota (tags array di childId)
+   - Query Firestore: filtra note dove tags contiene almeno un childId del current user (prendi children dove uid in cogenitori)
+   - Creator nota: chiunque dei cogenitori pairati può creare, ma visibilità limitata ai genitori condivisi del figlio taggato
+
+8. Fix foto figlio non visibile per cogenitori:
+   - Assicura photoUrl in children sia pubblico/leggibile da tutti pairati
+   - Usa CachedNetworkImage con placeholder pastello in Home e Dashboard
+   - Aggiungi errorBuilder se foto non carica (mostra icona placeholder)
+
+Mantieni responsive, sync realtime Firestore (StreamBuilder dove necessario), animazioni soft (fade, drag smooth). Aggiungi intl per formattazione orario se manca.
+
+Modifica home_screen.dart (ReorderableListView), dashboard_screen.dart (Attività recenti fix), bacheca_screen.dart (ordine, archivio, visibilità tag), add_child_screen.dart (single cogenitore selector), e crea widget necessari (es. archive_page.dart). Inizia con queste correzioni e aggiunte precise!

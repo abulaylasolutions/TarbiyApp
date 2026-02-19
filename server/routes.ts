@@ -46,6 +46,7 @@ import {
   upsertQuranLog,
   getQuranDailyLog,
   upsertQuranDailyLog,
+  archiveNote,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -315,7 +316,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/notes", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const result = await getNotesForUser(req.session.userId!);
+      const archived = req.query.archived === 'true';
+      const result = await getNotesForUser(req.session.userId!, archived);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/notes/:id/archive", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { archived } = req.body;
+      const result = await archiveNote(req.params.id as string, archived !== false);
       return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
@@ -531,7 +543,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Child settings (salah/fasting toggle + arabic education)
+  app.post("/api/children/reorder", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { orderedIds } = req.body;
+      if (!Array.isArray(orderedIds)) return res.status(400).json({ message: "orderedIds richiesto" });
+      for (let i = 0; i < orderedIds.length; i++) {
+        await updateChild(orderedIds[i], { displayOrder: String(i) });
+      }
+      return res.json({ message: "Ordine aggiornato" });
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
   app.patch("/api/children/:childId/settings", requireAuth as any, async (req: Request, res: Response) => {
     try {
       const { salahEnabled, fastingEnabled, arabicLearnedLetters, hasHarakat, canReadArabic, canWriteArabic, akhlaqAdabChecked, trackQuranToday } = req.body;

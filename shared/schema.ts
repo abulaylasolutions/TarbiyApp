@@ -42,6 +42,7 @@ export const children = pgTable("children", {
   canWriteArabic: boolean("can_write_arabic").default(false),
   akhlaqAdabChecked: text("akhlaq_adab_checked"),
   trackQuranToday: boolean("track_quran_today").default(true),
+  displayOrder: text("display_order"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -55,6 +56,8 @@ export const notes = pgTable("notes", {
   rotation: text("rotation").notNull(),
   author: text("author").notNull(),
   tags: text("tags"),
+  archived: boolean("archived").default(false),
+  displayOrder: text("display_order"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
