@@ -1066,54 +1066,63 @@ export default function DashboardScreen() {
         </View>
       </ScrollView>
 
-      <Modal visible={showQuranModal} animationType="slide" transparent>
-        <View style={s.modalOverlay}>
-          <Pressable style={s.modalDismiss} onPress={() => setShowQuranModal(false)} />
-          <View style={[s.quranModalContent, { paddingBottom: insets.bottom + 16 }]}>
-            <View style={s.modalHandle} />
-            <Text style={s.modalTitle}>{t('quranMemorization')}</Text>
-            <View style={s.quranFilterRow}>
-              {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
-                const isActive = quranFilter === f;
-                const filterColor = f === 'learned' ? Colors.mintGreen : f === 'in_progress' ? '#F4C430' : f === 'not_started' ? Colors.textMuted : cardColor;
-                return (
-                  <Pressable
-                    key={f}
-                    onPress={() => setQuranFilter(f)}
-                    style={[s.quranFilterBtn, isActive && { backgroundColor: filterColor + '20', borderColor: filterColor }]}
-                  >
-                    <Text style={[s.quranFilterText, isActive && { color: filterColor }]}>
-                      {f === 'all' ? (lang === 'ar' ? 'الكل' : lang === 'en' ? 'All' : 'Tutte') : t(f === 'learned' ? 'surahLearned' : f === 'in_progress' ? 'surahInProgress' : 'surahNotStarted')}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <FlatList
-              data={filteredSurahs}
-              keyExtractor={(item) => String(item.number)}
-              showsVerticalScrollIndicator={false}
-              style={s.quranList}
-              renderItem={({ item }) => {
-                const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
-                const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
-                const badgeBg = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
-                return (
-                  <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
-                    <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
-                      <Text style={s.surahNum}>{item.number}</Text>
-                    </View>
-                    <View style={s.surahNameCol}>
-                      <Text style={s.surahArabicName}>{item.arabicName}</Text>
-                      <Text style={s.surahLatinName}>{item.number} - {item.name}</Text>
-                    </View>
-                    <Ionicons name={statusIcon as any} size={24} color={statusColor} />
-                  </Pressable>
-                );
-              }}
-              ItemSeparatorComponent={() => <View style={s.taskRowBorder} />}
-            />
+      <Modal visible={showQuranModal} animationType="slide" transparent={false}>
+        <View style={[s.quranFullPage, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
+          <View style={s.quranAppBar}>
+            <Pressable onPress={() => setShowQuranModal(false)} style={s.quranBackBtn}>
+              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+            </Pressable>
+            <Text style={s.quranAppBarTitle}>{t('quranMemorization')}</Text>
+            <View style={{ width: 40 }} />
           </View>
+          <View style={s.quranLearnedSummary}>
+            <Text style={s.quranLearnedText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
+            <View style={s.quranLearnedBar}>
+              <View style={[s.quranLearnedBarFill, { width: `${(learnedCount / 114) * 100}%`, backgroundColor: cardColor }]} />
+            </View>
+          </View>
+          <View style={s.quranFilterRow}>
+            {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
+              const isActive = quranFilter === f;
+              const filterColor = f === 'learned' ? Colors.mintGreen : f === 'in_progress' ? '#F4C430' : f === 'not_started' ? Colors.textMuted : cardColor;
+              return (
+                <Pressable
+                  key={f}
+                  onPress={() => setQuranFilter(f)}
+                  style={[s.quranFilterBtn, isActive && { backgroundColor: filterColor + '20', borderColor: filterColor }]}
+                >
+                  <Text style={[s.quranFilterText, isActive && { color: filterColor }]}>
+                    {f === 'all' ? (lang === 'ar' ? 'الكل' : lang === 'en' ? 'All' : 'Tutte') : t(f === 'learned' ? 'surahLearned' : f === 'in_progress' ? 'surahInProgress' : 'surahNotStarted')}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <FlatList
+            data={filteredSurahs}
+            keyExtractor={(item) => String(item.number)}
+            showsVerticalScrollIndicator={false}
+            style={s.quranList}
+            contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+            renderItem={({ item }) => {
+              const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
+              const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
+              const badgeBg = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
+              return (
+                <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
+                  <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
+                    <Text style={s.surahNum}>{item.number}</Text>
+                  </View>
+                  <View style={s.surahNameCol}>
+                    <Text style={s.surahArabicName}>{item.arabicName}</Text>
+                    <Text style={s.surahLatinName}>{item.number} - {item.name}</Text>
+                  </View>
+                  <Ionicons name={statusIcon as any} size={24} color={statusColor} />
+                </Pressable>
+              );
+            }}
+            ItemSeparatorComponent={() => <View style={s.taskRowBorder} />}
+          />
         </View>
       </Modal>
 
@@ -1351,18 +1360,28 @@ const s = StyleSheet.create({
 
   quranTapRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   quranTapText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary, flex: 1 },
-  quranModalContent: {
-    backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 24, maxHeight: '85%',
+  quranFullPage: {
+    flex: 1, backgroundColor: Colors.background,
   },
-  quranFilterRow: { flexDirection: 'row', gap: 8, marginBottom: 16, flexWrap: 'wrap' },
+  quranAppBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.creamBeige,
+    backgroundColor: Colors.cardBackground,
+  },
+  quranBackBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
+  quranAppBarTitle: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary, flex: 1, textAlign: 'center' },
+  quranLearnedSummary: { paddingHorizontal: 20, paddingVertical: 14, backgroundColor: Colors.cardBackground, borderBottomWidth: 1, borderBottomColor: Colors.creamBeige },
+  quranLearnedText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8 },
+  quranLearnedBar: { height: 6, borderRadius: 3, backgroundColor: Colors.creamBeige },
+  quranLearnedBarFill: { height: 6, borderRadius: 3 },
+  quranFilterRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 20, paddingVertical: 12, flexWrap: 'wrap' },
   quranFilterBtn: {
     paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
     borderWidth: 2, borderColor: Colors.creamBeige, backgroundColor: Colors.creamBeige,
   },
   quranFilterText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
-  quranList: { flex: 1 },
-  surahRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 10 },
+  quranList: { flex: 1, paddingHorizontal: 20 },
+  surahRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, gap: 12 },
   surahNumBadge: {
     width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
     backgroundColor: Colors.mintGreen,
