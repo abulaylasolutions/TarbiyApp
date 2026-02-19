@@ -631,32 +631,49 @@ export default function SettingsScreen() {
             style={[styles.premiumModalContent, { paddingBottom: insets.bottom + 16 }]}
           >
             <View style={styles.modalHandle} />
-            <MaterialCommunityIcons name="crown" size={48} color={Colors.goldAccent} style={{ alignSelf: 'center' }} />
+            <LinearGradient
+              colors={['#FFD700', '#FFA500']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.premiumCrownCircle}
+            >
+              <MaterialCommunityIcons name="crown" size={36} color={Colors.white} />
+            </LinearGradient>
             <Text style={styles.premiumModalTitle}>TarbiyApp Premium</Text>
-            <Text style={styles.premiumModalSub}>Sblocca tutte le funzionalita</Text>
+            <Text style={styles.premiumModalSub}>{t('premiumUnlock')}</Text>
+
+            <Text style={styles.premiumTrialNote}>{t('premiumTrial')}</Text>
 
             <View style={styles.premiumFeatures}>
-              {['Figli illimitati', 'Dashboard dettagliata', 'Sincronizzazione tra genitori', 'Funzioni extra future'].map(f => (
-                <View key={f} style={styles.premiumFeatureRow}>
-                  <Ionicons name="checkmark-circle" size={20} color={Colors.mintGreen} />
-                  <Text style={styles.premiumFeatureText}>{f}</Text>
+              {[
+                { icon: 'people', text: t('premiumFeat1') },
+                { icon: 'bar-chart', text: t('premiumFeat2') },
+                { icon: 'sync', text: t('premiumFeat3') },
+                { icon: 'color-palette', text: t('premiumFeat4') },
+                { icon: 'sparkles', text: t('premiumFeat5') },
+              ].map(f => (
+                <View key={f.text} style={styles.premiumFeatureRow}>
+                  <View style={styles.premiumFeatureIcon}>
+                    <Ionicons name={f.icon as any} size={18} color={Colors.mintGreenDark} />
+                  </View>
+                  <Text style={styles.premiumFeatureText}>{f.text}</Text>
                 </View>
               ))}
             </View>
 
-            <View style={styles.pricingCards}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pricingScroll} contentContainerStyle={styles.pricingScrollContent}>
               <Pressable
                 onPress={async () => {
                   await updatePremium(true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setShowPremiumModal(false);
-                  Alert.alert('Premium attivato!', 'Grazie per aver scelto Premium (demo).');
+                  Alert.alert(t('premiumActivated'), t('premiumMonthlyMsg'));
                 }}
                 style={({ pressed }) => [styles.pricingCard, pressed && { opacity: 0.9 }]}
               >
-                <Text style={styles.pricingPeriod}>Mensile</Text>
-                <Text style={styles.pricingPrice}>2</Text>
-                <Text style={styles.pricingDetail}>/mese</Text>
+                <Text style={styles.pricingPeriod}>{t('monthly')}</Text>
+                <Text style={styles.pricingPrice}>€2.99</Text>
+                <Text style={styles.pricingDetail}>/{t('month')}</Text>
               </Pressable>
 
               <Pressable
@@ -664,21 +681,49 @@ export default function SettingsScreen() {
                   await updatePremium(true);
                   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
                   setShowPremiumModal(false);
-                  Alert.alert('Premium attivato!', 'Risparmi 4 con il piano annuale (demo).');
+                  Alert.alert(t('premiumActivated'), t('premiumAnnualMsg'));
                 }}
                 style={({ pressed }) => [styles.pricingCard, styles.pricingCardBest, pressed && { opacity: 0.9 }]}
               >
                 <View style={styles.bestValueBadge}>
-                  <Text style={styles.bestValueText}>-17%</Text>
+                  <Text style={styles.bestValueText}>{t('save17')}</Text>
                 </View>
-                <Text style={styles.pricingPeriod}>Annuale</Text>
-                <Text style={styles.pricingPrice}>20</Text>
-                <Text style={styles.pricingDetail}>/anno</Text>
+                <Text style={styles.pricingPeriod}>{t('annual')}</Text>
+                <Text style={styles.pricingPrice}>€24.99</Text>
+                <Text style={styles.pricingDetail}>/{t('year')}</Text>
               </Pressable>
-            </View>
+
+              <Pressable
+                onPress={async () => {
+                  await updatePremium(true);
+                  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                  setShowPremiumModal(false);
+                  Alert.alert(t('premiumActivated'), t('premiumLifetimeMsg'));
+                }}
+                style={({ pressed }) => [styles.pricingCard, styles.pricingCardLifetime, pressed && { opacity: 0.9 }]}
+              >
+                <View style={styles.lifetimeBadge}>
+                  <Ionicons name="infinite" size={14} color={Colors.white} />
+                </View>
+                <Text style={styles.pricingPeriod}>{t('lifetime')}</Text>
+                <Text style={styles.pricingPrice}>€49.99</Text>
+                <Text style={styles.pricingDetail}>{t('oneTime')}</Text>
+              </Pressable>
+            </ScrollView>
+
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                Alert.alert(t('restoreTitle'), t('restoreMsg'));
+              }}
+              style={styles.restoreBtn}
+            >
+              <Ionicons name="refresh" size={16} color={Colors.mintGreenDark} />
+              <Text style={styles.restoreText}>{t('restorePurchases')}</Text>
+            </Pressable>
 
             <Pressable onPress={() => setShowPremiumModal(false)} style={styles.premiumCloseBtn}>
-              <Text style={styles.premiumCloseText}>Magari dopo</Text>
+              <Text style={styles.premiumCloseText}>{t('maybeLater')}</Text>
             </Pressable>
           </Animated.View>
         </View>
@@ -839,20 +884,28 @@ const styles = StyleSheet.create({
   modalDismiss: { flex: 1 },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: 20 },
   premiumModalContent: { backgroundColor: Colors.cardBackground, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, alignItems: 'center' },
-  premiumModalTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 24, color: Colors.textPrimary, marginTop: 12 },
-  premiumModalSub: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textSecondary, marginTop: 4, marginBottom: 20 },
-  premiumFeatures: { width: '100%', gap: 12, marginBottom: 24 },
-  premiumFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  premiumFeatureText: { fontFamily: 'Nunito_500Medium', fontSize: 15, color: Colors.textPrimary },
-  pricingCards: { flexDirection: 'row', gap: 12, width: '100%', marginBottom: 16 },
-  pricingCard: { flex: 1, backgroundColor: Colors.creamBeige, borderRadius: 20, padding: 20, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  premiumCrownCircle: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  premiumModalTitle: { fontFamily: 'Nunito_800ExtraBold', fontSize: 24, color: Colors.textPrimary, marginTop: 8 },
+  premiumModalSub: { fontFamily: 'Nunito_400Regular', fontSize: 14, color: Colors.textSecondary, marginTop: 4, marginBottom: 8 },
+  premiumTrialNote: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.mintGreenDark, backgroundColor: Colors.mintGreenLight, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 12, overflow: 'hidden', marginBottom: 16 },
+  premiumFeatures: { width: '100%', gap: 10, marginBottom: 20 },
+  premiumFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  premiumFeatureIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center' },
+  premiumFeatureText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textPrimary, flex: 1 },
+  pricingScroll: { width: '100%', marginBottom: 12 },
+  pricingScrollContent: { gap: 10, paddingHorizontal: 2, paddingTop: 12 },
+  pricingCard: { width: 120, backgroundColor: Colors.creamBeige, borderRadius: 20, padding: 16, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
   pricingCardBest: { borderColor: Colors.goldAccent, backgroundColor: '#FFF9E6' },
+  pricingCardLifetime: { borderColor: '#B39DDB', backgroundColor: '#F3E5F5' },
   bestValueBadge: { backgroundColor: Colors.goldAccent, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, position: 'absolute', top: -10 },
   bestValueText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: Colors.white },
-  pricingPeriod: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 4 },
-  pricingPrice: { fontFamily: 'Nunito_800ExtraBold', fontSize: 32, color: Colors.textPrimary },
-  pricingDetail: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textMuted },
-  premiumCloseBtn: { paddingVertical: 12 },
+  lifetimeBadge: { backgroundColor: '#9C27B0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, position: 'absolute', top: -10 },
+  pricingPeriod: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary, marginBottom: 4 },
+  pricingPrice: { fontFamily: 'Nunito_800ExtraBold', fontSize: 24, color: Colors.textPrimary },
+  pricingDetail: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  restoreBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10 },
+  restoreText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.mintGreenDark },
+  premiumCloseBtn: { paddingVertical: 8 },
   premiumCloseText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textMuted },
   profilePhoto: { width: 56, height: 56, borderRadius: 28, borderWidth: 2, borderColor: 'rgba(255,255,255,0.8)' },
   editModalContent: {
