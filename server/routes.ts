@@ -2,6 +2,9 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "node:http";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
 import { pool } from "./db";
 import bcrypt from "bcryptjs";
 import {
@@ -63,6 +66,32 @@ function requireAuth(req: Request, res: Response, next: Function) {
   next();
 }
 
+const uploadsDir = path.resolve(process.cwd(), "uploads");
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const storage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, uploadsDir),
+  filename: (_req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = path.extname(file.originalname) || '.jpg';
+    cb(null, uniqueSuffix + ext);
+  },
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo immagini consentite'));
+    }
+  },
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const PgStore = connectPgSimple(session);
 
@@ -83,6 +112,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       },
     })
   );
+
+  app.use("/uploads", (await import("express")).default.static(uploadsDir));
+
+  app.post("/api/upload", requireAuth as any, upload.single('photo'), (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "Nessun file caricato" });
+      }
+      const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'https';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const photoUrl = `${protocol}://${host}/uploads/${req.file.filename}`;
+      console.log(`Foto caricata: ${photoUrl}`);
+      return res.json({ url: photoUrl });
+    } catch (error) {
+      console.error("Errore upload foto:", error);
+      return res.status(500).json({ message: "Errore upload" });
+    }
+  });
 
   app.post("/api/auth/register", async (req: Request, res: Response) => {
     try {

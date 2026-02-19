@@ -22,7 +22,9 @@ import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
-import { apiRequest } from '@/lib/query-client';
+import { apiRequest, getApiUrl } from '@/lib/query-client';
+import { fetch } from 'expo/fetch';
+import { File } from 'expo-file-system';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
@@ -292,6 +294,45 @@ export default function HomeScreen() {
     } catch {}
   };
 
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+  const uploadPhoto = async (localUri: string): Promise<string | null> => {
+    try {
+      setUploadingPhoto(true);
+      const baseUrl = getApiUrl();
+      const url = new URL('/api/upload', baseUrl);
+      const formData = new FormData();
+
+      if (Platform.OS === 'web') {
+        const response = await globalThis.fetch(localUri);
+        const blob = await response.blob();
+        formData.append('photo', blob, 'photo.jpg');
+      } else {
+        const file = new File(localUri);
+        formData.append('photo', file as any);
+      }
+
+      const res = await fetch(url.toString(), {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        console.error('Upload failed:', res.status);
+        return null;
+      }
+      const data = await res.json();
+      console.log('Foto caricata sul server:', data.url);
+      return data.url;
+    } catch (err) {
+      console.error('Errore upload foto:', err);
+      return null;
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -300,7 +341,13 @@ export default function HomeScreen() {
       quality: 0.7,
     });
     if (!result.canceled && result.assets[0]) {
-      setForm(prev => ({ ...prev, photoUri: result.assets[0].uri }));
+      const localUri = result.assets[0].uri;
+      const serverUrl = await uploadPhoto(localUri);
+      if (serverUrl) {
+        setForm(prev => ({ ...prev, photoUri: serverUrl }));
+      } else {
+        setForm(prev => ({ ...prev, photoUri: localUri }));
+      }
     }
   };
 
@@ -493,15 +540,19 @@ export default function HomeScreen() {
                 </View>
               ) : null}
 
-              <Pressable onPress={pickImage} style={styles.photoPickerWrap}>
-                {form.photoUri ? (
+              <Pressable onPress={uploadingPhoto ? undefined : pickImage} style={styles.photoPickerWrap}>
+                {uploadingPhoto ? (
+                  <View style={styles.photoPlaceholder}>
+                    <Ionicons name="cloud-upload" size={28} color={Colors.primary} />
+                  </View>
+                ) : form.photoUri ? (
                   <Image source={{ uri: form.photoUri }} style={styles.photoPreview} />
                 ) : (
                   <View style={styles.photoPlaceholder}>
                     <Ionicons name="camera" size={28} color={Colors.textMuted} />
                   </View>
                 )}
-                <Text style={styles.photoLabel}>{t('photoOptional')}</Text>
+                <Text style={styles.photoLabel}>{uploadingPhoto ? 'Caricamento...' : t('photoOptional')}</Text>
               </Pressable>
 
               <Text style={styles.inputLabel}>{t('childName')}</Text>
