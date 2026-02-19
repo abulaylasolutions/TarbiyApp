@@ -1,0 +1,25 @@
+ORA CORREGGI GLI ERRORI E AGGIUNGI SOLO QUESTE MODIFICHE, senza riscrivere l'intera app:
+
+CORREZIONI ERRORI:
+
+1. Fix sezione "Memorizzazione del Qur'an":
+   - Assicura che le 114 sure siano tappabili/selezionabili: ogni riga surah (numero + nome arabo/italiano) su tap apre picker stato ("Da imparare" icona grigio, "In corso" giallo, "Imparata" verde) o toggle ciclico
+   - Aggiorna conteggio "Sure imparate: X / 114" realtime
+   - Ordine decrescente (114 An-Nas prima, 1 Al-Fatiha ultima) con numeri visibili (es. Text("114 - An-Nas"))
+
+2. Fix sezione "Akhlaq e 'Adab":
+   - Assicura che le categorie appaiano (Mangiare, Bere, Dormire e svegliarsi, Usare il bagno, ecc. fino a Moderarsi) come ExpansionTile sottosezioni tappabili o ListView categorizzata
+   - Ogni categoria: mostra checklist con voci esempio (es. Mangiare: Dire Bismillah prima, mangiare con destra) tappabili per check permanente + nota
+   - Se non appare, crea ExpansionPanelList con categorie hard-coded, salva stati in children/akhlaqAndAdab map (categoria: {item1: bool, note: string})
+
+IMPLEMENTAZIONI AGGIUNTIVE:
+
+3. Modifica "Attività recenti" in fondo alla Dashboard:
+   - Mostra ogni singolo evento/toggle premuto della giornata (es. "Fajr fatta", "Digiuno parziale", "Evento Scuola Arabo completato", "Surah 114 imparata", "Akhlaq: Bismillah detto")
+   - Ordine cronologico decrescente (più recenti sopra), max 20 visibili (limita query o lista)
+   - Ogni riga: icona evento (check verde o stella), descrizione breve, timestamp, autore (babbo/mamma con colore)
+   - Sync realtime da subcollection children/activityLog/{date} o log globale filtrato per currentDate (usa StreamBuilder con limit 20)
+
+Mantieni responsive, font arabo supportato, animazioni soft (fade su dialog, check verde). Usa Provider per stato.
+
+Modifica dashboard_screen.dart (sezioni Memorizzazione Qur'an, Akhlaq e 'Adab, Attività recenti) e widget relativi (es. quran_dialog.dart, adab_category.dart). Inizia con queste correzioni e aggiunte precise!

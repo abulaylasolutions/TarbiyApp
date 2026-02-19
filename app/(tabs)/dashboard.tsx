@@ -65,6 +65,122 @@ const ARABIC_LETTERS = ['ا','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','
 
 type SurahStatus = 'not_started' | 'in_progress' | 'learned';
 
+interface AkhlaqItem { key: string; it: string; en: string; ar: string; }
+interface AkhlaqCategory { key: string; it: string; en: string; ar: string; icon: string; items: AkhlaqItem[]; }
+
+const AKHLAQ_CATEGORIES: AkhlaqCategory[] = [
+  { key: 'eating', it: 'Mangiare', en: 'Eating', ar: 'الأكل', icon: 'restaurant-outline', items: [
+    { key: 'eating_bismillah', it: 'Dire Bismillah prima di mangiare', en: 'Say Bismillah before eating', ar: 'قول بسم الله قبل الأكل' },
+    { key: 'eating_right_hand', it: 'Mangiare con la mano destra', en: 'Eat with the right hand', ar: 'الأكل باليد اليمنى' },
+    { key: 'eating_nearby', it: 'Mangiare dal piatto piu vicino', en: 'Eat from the nearest part', ar: 'الأكل مما يليه' },
+    { key: 'eating_alhamdulillah', it: 'Dire Alhamdulillah dopo', en: 'Say Alhamdulillah after', ar: 'قول الحمد لله بعد الأكل' },
+    { key: 'eating_no_waste', it: 'Non sprecare il cibo', en: 'Do not waste food', ar: 'عدم تبذير الطعام' },
+  ]},
+  { key: 'drinking', it: 'Bere', en: 'Drinking', ar: 'الشرب', icon: 'water-outline', items: [
+    { key: 'drinking_bismillah', it: 'Dire Bismillah prima di bere', en: 'Say Bismillah before drinking', ar: 'قول بسم الله قبل الشرب' },
+    { key: 'drinking_sitting', it: 'Bere da seduti', en: 'Drink while sitting', ar: 'الشرب جالسًا' },
+    { key: 'drinking_right', it: 'Bere con la mano destra', en: 'Drink with right hand', ar: 'الشرب باليمنى' },
+    { key: 'drinking_three_sips', it: 'Bere in tre sorsi', en: 'Drink in three sips', ar: 'الشرب على ثلاث' },
+  ]},
+  { key: 'sleeping', it: 'Dormire e svegliarsi', en: 'Sleeping & waking', ar: 'النوم والاستيقاظ', icon: 'moon-outline', items: [
+    { key: 'sleep_wudu', it: 'Fare il wudu prima di dormire', en: 'Perform wudu before sleeping', ar: 'الوضوء قبل النوم' },
+    { key: 'sleep_right_side', it: 'Dormire sul fianco destro', en: 'Sleep on right side', ar: 'النوم على الجنب الأيمن' },
+    { key: 'sleep_dua', it: 'Recitare la dua prima di dormire', en: 'Recite dua before sleeping', ar: 'دعاء النوم' },
+    { key: 'wake_dua', it: 'Recitare la dua al risveglio', en: 'Recite dua upon waking', ar: 'دعاء الاستيقاظ' },
+  ]},
+  { key: 'bathroom', it: 'Usare il bagno', en: 'Using the bathroom', ar: 'دخول الخلاء', icon: 'water', items: [
+    { key: 'bathroom_left_foot', it: 'Entrare con il piede sinistro', en: 'Enter with left foot', ar: 'الدخول بالرجل اليسرى' },
+    { key: 'bathroom_dua_enter', it: 'Dire la dua entrando', en: 'Say dua upon entering', ar: 'دعاء الدخول' },
+    { key: 'bathroom_dua_exit', it: 'Dire la dua uscendo', en: 'Say dua upon exiting', ar: 'دعاء الخروج' },
+    { key: 'bathroom_right_exit', it: 'Uscire con il piede destro', en: 'Exit with right foot', ar: 'الخروج بالرجل اليمنى' },
+  ]},
+  { key: 'greeting', it: 'Saluto (Salam)', en: 'Greeting (Salam)', ar: 'السلام', icon: 'hand-left-outline', items: [
+    { key: 'greeting_salam', it: 'Dire Assalamu Alaykum', en: 'Say Assalamu Alaykum', ar: 'قول السلام عليكم' },
+    { key: 'greeting_reply', it: 'Rispondere al salam', en: 'Reply to salam', ar: 'رد السلام' },
+    { key: 'greeting_smile', it: 'Sorridere incontrando gli altri', en: 'Smile when meeting others', ar: 'الابتسامة عند اللقاء' },
+  ]},
+  { key: 'parents', it: 'Rispetto dei genitori', en: 'Respecting parents', ar: 'بر الوالدين', icon: 'people-outline', items: [
+    { key: 'parents_obey', it: 'Obbedire ai genitori', en: 'Obey parents', ar: 'طاعة الوالدين' },
+    { key: 'parents_kind_words', it: 'Parlare con gentilezza', en: 'Speak kindly to them', ar: 'الكلام الطيب لهما' },
+    { key: 'parents_help', it: 'Aiutare in casa', en: 'Help at home', ar: 'المساعدة في البيت' },
+    { key: 'parents_dua', it: 'Fare dua per i genitori', en: 'Make dua for parents', ar: 'الدعاء للوالدين' },
+  ]},
+  { key: 'mosque', it: 'Andare in moschea', en: 'Going to the mosque', ar: 'الذهاب للمسجد', icon: 'business-outline', items: [
+    { key: 'mosque_right_foot', it: 'Entrare con il piede destro', en: 'Enter with right foot', ar: 'الدخول بالرجل اليمنى' },
+    { key: 'mosque_dua', it: 'Dire la dua entrando', en: 'Say dua upon entering', ar: 'دعاء الدخول' },
+    { key: 'mosque_quiet', it: 'Stare in silenzio nella moschea', en: 'Be quiet in the mosque', ar: 'الهدوء في المسجد' },
+    { key: 'mosque_tahiyya', it: 'Pregare la tahiyyat al-masjid', en: 'Pray tahiyyat al-masjid', ar: 'صلاة تحية المسجد' },
+  ]},
+  { key: 'honesty', it: 'Onesta e sincerita', en: 'Honesty & sincerity', ar: 'الصدق والإخلاص', icon: 'shield-checkmark-outline', items: [
+    { key: 'honesty_truth', it: 'Dire sempre la verita', en: 'Always tell the truth', ar: 'قول الصدق دائمًا' },
+    { key: 'honesty_promise', it: 'Mantenere le promesse', en: 'Keep promises', ar: 'الوفاء بالعهد' },
+    { key: 'honesty_no_cheat', it: 'Non imbrogliare', en: 'Do not cheat', ar: 'عدم الغش' },
+  ]},
+  { key: 'kindness', it: 'Gentilezza e generosita', en: 'Kindness & generosity', ar: 'اللطف والكرم', icon: 'heart-outline', items: [
+    { key: 'kindness_share', it: 'Condividere con gli altri', en: 'Share with others', ar: 'المشاركة مع الآخرين' },
+    { key: 'kindness_help_others', it: 'Aiutare chi ha bisogno', en: 'Help those in need', ar: 'مساعدة المحتاجين' },
+    { key: 'kindness_animals', it: 'Essere gentili con gli animali', en: 'Be kind to animals', ar: 'الرفق بالحيوانات' },
+  ]},
+  { key: 'patience', it: 'Pazienza (Sabr)', en: 'Patience (Sabr)', ar: 'الصبر', icon: 'timer-outline', items: [
+    { key: 'patience_anger', it: 'Controllare la rabbia', en: 'Control anger', ar: 'التحكم في الغضب' },
+    { key: 'patience_wait', it: 'Aspettare il proprio turno', en: 'Wait for your turn', ar: 'انتظار الدور' },
+    { key: 'patience_difficulty', it: 'Avere pazienza nelle difficolta', en: 'Be patient in difficulty', ar: 'الصبر على المصائب' },
+  ]},
+  { key: 'cleanliness', it: 'Pulizia e igiene', en: 'Cleanliness & hygiene', ar: 'النظافة', icon: 'sparkles-outline', items: [
+    { key: 'clean_hands', it: 'Lavarsi le mani spesso', en: 'Wash hands often', ar: 'غسل اليدين كثيرًا' },
+    { key: 'clean_clothes', it: 'Vestiti puliti e ordinati', en: 'Clean and tidy clothes', ar: 'الملابس النظيفة' },
+    { key: 'clean_room', it: 'Tenere la stanza in ordine', en: 'Keep room tidy', ar: 'ترتيب الغرفة' },
+    { key: 'clean_teeth', it: 'Usare il miswak / lavarsi i denti', en: 'Use miswak / brush teeth', ar: 'استخدام السواك' },
+  ]},
+  { key: 'dua', it: 'Adhkar e dua quotidiane', en: 'Daily adhkar & dua', ar: 'الأذكار والأدعية', icon: 'book-outline', items: [
+    { key: 'dua_morning', it: 'Adhkar del mattino', en: 'Morning adhkar', ar: 'أذكار الصباح' },
+    { key: 'dua_evening', it: 'Adhkar della sera', en: 'Evening adhkar', ar: 'أذكار المساء' },
+    { key: 'dua_travel', it: 'Dua per il viaggio', en: 'Dua for travel', ar: 'دعاء السفر' },
+    { key: 'dua_sneezing', it: 'Dire Alhamdulillah dopo starnuto', en: 'Say Alhamdulillah after sneezing', ar: 'الحمد لله عند العطاس' },
+  ]},
+  { key: 'siblings', it: 'Rapporto con fratelli', en: 'Relations with siblings', ar: 'العلاقة مع الإخوة', icon: 'people-circle-outline', items: [
+    { key: 'siblings_share', it: 'Condividere giocattoli e cibo', en: 'Share toys and food', ar: 'مشاركة الألعاب والطعام' },
+    { key: 'siblings_no_fight', it: 'Non litigare con fratelli', en: 'Do not fight with siblings', ar: 'عدم المشاجرة مع الإخوة' },
+    { key: 'siblings_forgive', it: 'Perdonare e chiedere scusa', en: 'Forgive and apologize', ar: 'التسامح والاعتذار' },
+  ]},
+  { key: 'elders', it: 'Rispetto per gli anziani', en: 'Respecting elders', ar: 'احترام الكبار', icon: 'accessibility-outline', items: [
+    { key: 'elders_stand', it: 'Alzarsi per gli anziani', en: 'Stand up for elders', ar: 'القيام للكبار' },
+    { key: 'elders_listen', it: 'Ascoltare con rispetto', en: 'Listen with respect', ar: 'الإنصات باحترام' },
+    { key: 'elders_help', it: 'Aiutare gli anziani', en: 'Help the elderly', ar: 'مساعدة كبار السن' },
+  ]},
+  { key: 'speech', it: 'Parola buona', en: 'Good speech', ar: 'الكلمة الطيبة', icon: 'chatbubble-ellipses-outline', items: [
+    { key: 'speech_no_bad', it: 'Non dire parolacce', en: 'No bad language', ar: 'عدم السب والشتم' },
+    { key: 'speech_no_lie', it: 'Non mentire', en: 'Do not lie', ar: 'عدم الكذب' },
+    { key: 'speech_no_gossip', it: 'Non fare pettegolezzi', en: 'No gossip', ar: 'عدم الغيبة والنميمة' },
+    { key: 'speech_kind', it: 'Parlare con dolcezza', en: 'Speak kindly', ar: 'الكلام بلطف' },
+  ]},
+  { key: 'guests', it: 'Ospitalita', en: 'Hospitality', ar: 'الضيافة', icon: 'home-outline', items: [
+    { key: 'guests_welcome', it: 'Accogliere gli ospiti', en: 'Welcome guests', ar: 'استقبال الضيوف' },
+    { key: 'guests_serve', it: 'Offrire da bere e mangiare', en: 'Offer food and drink', ar: 'تقديم الطعام والشراب' },
+    { key: 'guests_farewell', it: 'Accompagnare alla porta', en: 'See guests to the door', ar: 'توديع الضيف' },
+  ]},
+  { key: 'clothing', it: 'Vestirsi con modestia', en: 'Modest dressing', ar: 'اللباس بحشمة', icon: 'shirt-outline', items: [
+    { key: 'clothing_right_first', it: 'Iniziare con il lato destro', en: 'Start with right side', ar: 'البدء باليمين' },
+    { key: 'clothing_dua', it: 'Dire la dua vestendosi', en: 'Say dua when dressing', ar: 'دعاء اللبس' },
+    { key: 'clothing_modest', it: 'Vestirsi con modestia', en: 'Dress modestly', ar: 'الاحتشام في اللباس' },
+  ]},
+  { key: 'gratitude', it: 'Gratitudine (Shukr)', en: 'Gratitude (Shukr)', ar: 'الشكر', icon: 'gift-outline', items: [
+    { key: 'gratitude_thank_allah', it: 'Ringraziare Allah sempre', en: 'Thank Allah always', ar: 'شكر الله دائمًا' },
+    { key: 'gratitude_thank_people', it: 'Ringraziare le persone', en: 'Thank people', ar: 'شكر الناس' },
+    { key: 'gratitude_content', it: 'Essere contenti di cio che si ha', en: 'Be content with what you have', ar: 'الرضا بما عندك' },
+  ]},
+  { key: 'humility', it: 'Umilta (Tawadu)', en: 'Humility (Tawadu)', ar: 'التواضع', icon: 'trending-down-outline', items: [
+    { key: 'humility_no_boast', it: 'Non vantarsi', en: 'Do not boast', ar: 'عدم التفاخر' },
+    { key: 'humility_accept_advice', it: 'Accettare i consigli', en: 'Accept advice', ar: 'قبول النصيحة' },
+    { key: 'humility_admit_mistake', it: 'Ammettere gli errori', en: 'Admit mistakes', ar: 'الاعتراف بالخطأ' },
+  ]},
+  { key: 'moderation', it: 'Moderarsi', en: 'Moderation', ar: 'الاعتدال', icon: 'options-outline', items: [
+    { key: 'moderation_food', it: 'Non mangiare troppo', en: 'Do not overeat', ar: 'عدم الإسراف في الأكل' },
+    { key: 'moderation_play', it: 'Non esagerare nel gioco', en: 'Do not over-play', ar: 'عدم الإسراف في اللعب' },
+    { key: 'moderation_screen', it: 'Limitare tempo davanti allo schermo', en: 'Limit screen time', ar: 'تقليل وقت الشاشة' },
+  ]},
+];
+
 function formatDate(d: Date): string {
   return d.toISOString().split('T')[0];
 }
@@ -194,6 +310,8 @@ export default function DashboardScreen() {
   const [localHarakat, setLocalHarakat] = useState(false);
   const [localCanRead, setLocalCanRead] = useState(false);
   const [localCanWrite, setLocalCanWrite] = useState(false);
+  const [localAkhlaqChecked, setLocalAkhlaqChecked] = useState<string[]>([]);
+  const [expandedAkhlaqCats, setExpandedAkhlaqCats] = useState<string[]>([]);
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -432,8 +550,11 @@ export default function DashboardScreen() {
       setLocalHarakat(!!selectedChild.hasHarakat);
       setLocalCanRead(!!selectedChild.canReadArabic);
       setLocalCanWrite(!!selectedChild.canWriteArabic);
+      try {
+        setLocalAkhlaqChecked(selectedChild.akhlaqAdabChecked ? JSON.parse(selectedChild.akhlaqAdabChecked) : []);
+      } catch { setLocalAkhlaqChecked([]); }
     }
-  }, [selectedChild?.id, selectedChild?.arabicLearnedLetters, selectedChild?.hasHarakat, selectedChild?.canReadArabic, selectedChild?.canWriteArabic]);
+  }, [selectedChild?.id, selectedChild?.arabicLearnedLetters, selectedChild?.hasHarakat, selectedChild?.canReadArabic, selectedChild?.canWriteArabic, selectedChild?.akhlaqAdabChecked]);
 
   const toggleArabicLetter = async (letter: string) => {
     if (!childId) return;
@@ -460,6 +581,100 @@ export default function DashboardScreen() {
       refreshChildren();
     } catch {}
   };
+
+  const toggleAkhlaqItem = async (itemKey: string) => {
+    if (!childId) return;
+    const updated = localAkhlaqChecked.includes(itemKey)
+      ? localAkhlaqChecked.filter(k => k !== itemKey)
+      : [...localAkhlaqChecked, itemKey];
+    setLocalAkhlaqChecked(updated);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('PATCH', `/api/children/${childId}/settings`, { akhlaqAdabChecked: JSON.stringify(updated) });
+      refreshChildren();
+    } catch {}
+  };
+
+  const toggleAkhlaqCategory = (catKey: string) => {
+    setExpandedAkhlaqCats(prev =>
+      prev.includes(catKey) ? prev.filter(k => k !== catKey) : [...prev, catKey]
+    );
+  };
+
+  const cycleSurahStatus = async (surahNumber: number) => {
+    if (!childId) return;
+    const key = String(surahNumber);
+    const current = quranLogs[key] || 'not_started';
+    const next: SurahStatus = current === 'not_started' ? 'in_progress' : current === 'in_progress' ? 'learned' : 'not_started';
+    setQuranLogs(prev => ({ ...prev, [key]: next }));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      await apiRequest('POST', `/api/children/${childId}/quran`, { surahNumber: key, status: next });
+    } catch {}
+  };
+
+  const getAkhlaqLabel = (item: AkhlaqItem) => {
+    return lang === 'ar' ? item.ar : lang === 'en' ? item.en : item.it;
+  };
+
+  const getCatLabel = (cat: AkhlaqCategory) => {
+    return lang === 'ar' ? cat.ar : lang === 'en' ? cat.en : cat.it;
+  };
+
+  const akhlaqCheckedCount = localAkhlaqChecked.length;
+  const akhlaqTotalItems = AKHLAQ_CATEGORIES.reduce((sum, cat) => sum + cat.items.length, 0);
+
+  const buildTodayActivityFeed = (): { icon: string; iconColor: string; text: string; time: string; author: string; }[] => {
+    const feed: { icon: string; iconColor: string; text: string; time: string; author: string; sortTime: number }[] = [];
+    const authorName = user?.name || (isFemale ? t('mom') : t('dad'));
+
+    PRAYER_NAMES.forEach(p => {
+      if (prayers[p]) {
+        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: `${t(p)} ${lang === 'it' ? 'fatta' : lang === 'ar' ? 'تمت' : 'done'}`, time: '', author: authorName, sortTime: Date.now() });
+      }
+    });
+
+    if (fasting.status === 'yes') {
+      feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: lang === 'it' ? 'Digiuno completo' : lang === 'ar' ? 'صيام كامل' : 'Full fasting', time: '', author: authorName, sortTime: Date.now() });
+    } else if (fasting.status === 'partial') {
+      feed.push({ icon: 'remove-circle', iconColor: '#F4C430', text: lang === 'it' ? 'Digiuno parziale' : lang === 'ar' ? 'صيام جزئي' : 'Partial fasting', time: '', author: authorName, sortTime: Date.now() });
+    }
+
+    if (quranToday) {
+      feed.push({ icon: 'book', iconColor: Colors.peachPink, text: lang === 'it' ? "Qur'an letto oggi" : lang === 'ar' ? 'قرأ القرآن اليوم' : "Qur'an read today", time: '', author: authorName, sortTime: Date.now() });
+    }
+
+    Object.entries(quranLogs).forEach(([num, status]) => {
+      if (status === 'learned') {
+        const idx = parseInt(num) - 1;
+        const name = SURAH_NAMES[idx] || num;
+        feed.push({ icon: 'star', iconColor: '#F4C430', text: `${lang === 'it' ? 'Surah' : lang === 'ar' ? 'سورة' : 'Surah'} ${num} - ${name} ${lang === 'it' ? 'imparata' : lang === 'ar' ? 'محفوظة' : 'learned'}`, time: '', author: authorName, sortTime: Date.now() });
+      }
+    });
+
+    localAkhlaqChecked.forEach(itemKey => {
+      const allItems = AKHLAQ_CATEGORIES.flatMap(c => c.items);
+      const item = allItems.find(i => i.key === itemKey);
+      if (item) {
+        feed.push({ icon: 'heart', iconColor: Colors.peachPink, text: `${lang === 'it' ? 'Akhlaq' : lang === 'ar' ? 'أخلاق' : 'Akhlaq'}: ${getAkhlaqLabel(item)}`, time: '', author: authorName, sortTime: Date.now() });
+      }
+    });
+
+    todayTasks.forEach(task => {
+      const comp = completions[task.id];
+      if (comp?.completed) {
+        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: `${task.name} ${lang === 'it' ? 'completato' : lang === 'ar' ? 'مكتمل' : 'completed'}`, time: task.time || '', author: authorName, sortTime: Date.now() });
+      }
+    });
+
+    activities.filter(a => a.date === dateStr).forEach(act => {
+      feed.push({ icon: 'time', iconColor: cardColor, text: act.text, time: act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', author: act.authorName, sortTime: new Date(act.createdAt || 0).getTime() });
+    });
+
+    return feed.slice(0, 20).map(({ sortTime, ...rest }) => rest);
+  };
+
+  const todayFeed = buildTodayActivityFeed();
 
   if (!selectedChild) {
     return (
@@ -743,7 +958,37 @@ export default function DashboardScreen() {
                         </View>
                       </View>
                     )}
-                    {isExpanded && subject.key !== 'arabo' && (
+                    {isExpanded && subject.key === 'akhlaq' && (
+                      <View style={s.subjectContent}>
+                        <Text style={s.arabicCountLabel}>{lang === 'it' ? 'Completati' : lang === 'ar' ? 'مكتمل' : 'Completed'}: {akhlaqCheckedCount} / {akhlaqTotalItems}</Text>
+                        {AKHLAQ_CATEGORIES.map((cat) => {
+                          const isCatExpanded = expandedAkhlaqCats.includes(cat.key);
+                          const catChecked = cat.items.filter(i => localAkhlaqChecked.includes(i.key)).length;
+                          return (
+                            <View key={cat.key}>
+                              <Pressable onPress={() => toggleAkhlaqCategory(cat.key)} style={s.akhlaqCatRow}>
+                                <Ionicons name={cat.icon as any} size={18} color={cardColor} />
+                                <Text style={s.akhlaqCatName}>{getCatLabel(cat)}</Text>
+                                <Text style={s.akhlaqCatCount}>{catChecked}/{cat.items.length}</Text>
+                                <Ionicons name={isCatExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+                              </Pressable>
+                              {isCatExpanded && cat.items.map((item) => {
+                                const isChecked = localAkhlaqChecked.includes(item.key);
+                                return (
+                                  <Pressable key={item.key} onPress={() => toggleAkhlaqItem(item.key)} style={s.akhlaqItemRow}>
+                                    <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                                      {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                                    </View>
+                                    <Text style={[s.akhlaqItemText, isChecked && { color: Colors.textMuted, textDecorationLine: 'line-through' as const }]}>{getAkhlaqLabel(item)}</Text>
+                                  </Pressable>
+                                );
+                              })}
+                            </View>
+                          );
+                        })}
+                      </View>
+                    )}
+                    {isExpanded && subject.key === 'aqidah' && (
                       <View style={s.subjectContent}>
                         <Text style={s.subjectPlaceholder}>{t('noActivity')}</Text>
                       </View>
@@ -767,15 +1012,15 @@ export default function DashboardScreen() {
 
           <Animated.View entering={FadeInDown.delay(700).duration(300)}>
             <Text style={s.sectionTitle}>{t('recentActivityLog')}</Text>
-            {activities.length > 0 ? (
+            {todayFeed.length > 0 ? (
               <View style={s.card}>
-                {activities.slice(0, 10).map((act, i) => (
-                  <View key={act.id} style={[s.activityRow, i > 0 && s.taskRowBorder]}>
-                    <View style={[s.activityDot, { backgroundColor: cardColor }]} />
+                {todayFeed.map((item, i) => (
+                  <View key={`feed-${i}`} style={[s.activityRow, i > 0 && s.taskRowBorder]}>
+                    <Ionicons name={item.icon as any} size={18} color={item.iconColor} />
                     <View style={s.activityInfo}>
-                      <Text style={s.activityText}>{act.text}</Text>
+                      <Text style={s.activityText}>{item.text}</Text>
                       <Text style={s.activityMeta}>
-                        {act.authorName} — {act.date}
+                        {item.author}{item.time ? ` — ${item.time}` : ''}
                       </Text>
                     </View>
                   </View>
@@ -819,37 +1064,23 @@ export default function DashboardScreen() {
               keyExtractor={(item) => String(item.number)}
               showsVerticalScrollIndicator={false}
               style={s.quranList}
-              renderItem={({ item }) => (
-                <View style={s.surahRow}>
-                  <View style={s.surahNumBadge}>
-                    <Text style={s.surahNum}>{item.number}</Text>
-                  </View>
-                  <View style={s.surahNameCol}>
-                    <Text style={s.surahArabicName}>{item.arabicName}</Text>
-                    <Text style={s.surahLatinName}>{item.name}</Text>
-                  </View>
-                  <View style={s.surahStatusBtns}>
-                    <Pressable
-                      onPress={() => updateSurahStatus(item.number, 'not_started')}
-                      style={[s.surahStatusBtn, item.status === 'not_started' && { backgroundColor: '#999' + '30' }]}
-                    >
-                      <Ionicons name="book-outline" size={16} color={item.status === 'not_started' ? '#999' : '#ccc'} />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => updateSurahStatus(item.number, 'in_progress')}
-                      style={[s.surahStatusBtn, item.status === 'in_progress' && { backgroundColor: '#F4C430' + '30' }]}
-                    >
-                      <Ionicons name="book" size={16} color={item.status === 'in_progress' ? '#F4C430' : '#ccc'} />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => updateSurahStatus(item.number, 'learned')}
-                      style={[s.surahStatusBtn, item.status === 'learned' && { backgroundColor: Colors.mintGreen + '30' }]}
-                    >
-                      <Ionicons name="checkmark-circle" size={16} color={item.status === 'learned' ? Colors.mintGreen : '#ccc'} />
-                    </Pressable>
-                  </View>
-                </View>
-              )}
+              renderItem={({ item }) => {
+                const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
+                const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
+                const badgeBg = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
+                return (
+                  <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
+                    <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
+                      <Text style={s.surahNum}>{item.number}</Text>
+                    </View>
+                    <View style={s.surahNameCol}>
+                      <Text style={s.surahArabicName}>{item.arabicName}</Text>
+                      <Text style={s.surahLatinName}>{item.number} - {item.name}</Text>
+                    </View>
+                    <Ionicons name={statusIcon as any} size={24} color={statusColor} />
+                  </Pressable>
+                );
+              }}
               ItemSeparatorComponent={() => <View style={s.taskRowBorder} />}
             />
           </View>
@@ -1120,8 +1351,22 @@ const s = StyleSheet.create({
   },
   arabicPillText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
 
+  akhlaqCatRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 10, gap: 8,
+    borderBottomWidth: 1, borderBottomColor: Colors.creamBeige,
+  },
+  akhlaqCatName: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textPrimary, flex: 1 },
+  akhlaqCatCount: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.textMuted, marginRight: 4 },
+  akhlaqItemRow: {
+    flexDirection: 'row', alignItems: 'center', paddingVertical: 8, paddingLeft: 28, gap: 10,
+  },
+  akhlaqCheckBox: {
+    width: 20, height: 20, borderRadius: 6, borderWidth: 2, borderColor: Colors.textMuted,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  akhlaqItemText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textPrimary, flex: 1 },
+
   activityRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
-  activityDot: { width: 10, height: 10, borderRadius: 5, marginTop: 5 },
   activityInfo: { flex: 1 },
   activityText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textPrimary },
   activityMeta: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted, marginTop: 2 },
