@@ -812,85 +812,100 @@ export default function DashboardScreen() {
             )}
           </Animated.View>
 
-          {salahEnabled && (
+          {(salahEnabled || fastingEnabled || trackQuranToday) && (
             <Animated.View entering={FadeInDown.delay(300).duration(300)}>
-              <Text style={s.sectionTitle}>{t('salahToday')}</Text>
-              <View style={s.card}>
-                <View style={s.prayerGrid}>
-                  {PRAYER_NAMES.map((prayer) => {
-                    const done = prayers[prayer];
-                    return (
-                      <Pressable key={prayer} onPress={() => togglePrayer(prayer)} style={s.prayerItem}>
-                        <View style={[s.prayerCircle, done && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
-                          {done ? (
-                            <Ionicons name="checkmark" size={20} color={Colors.white} />
-                          ) : (
-                            <MaterialCommunityIcons name="mosque" size={18} color={Colors.textMuted} />
-                          )}
-                        </View>
-                        <Text style={[s.prayerLabel, done && s.prayerLabelDone]}>{t(prayer)}</Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                <View style={s.prayerSummary}>
-                  <View style={[s.prayerBar, { width: '100%' }]}>
-                    <View style={[s.prayerBarFill, { width: `${(prayerCount / 5) * 100}%`, backgroundColor: cardColor }]} />
-                  </View>
-                  <Text style={s.prayerCountText}>{prayerCount}/5</Text>
-                </View>
-              </View>
-            </Animated.View>
-          )}
-
-          {(fastingEnabled || trackQuranToday) && (
-            <Animated.View entering={FadeInDown.delay(400).duration(300)}>
-              <Text style={s.sectionTitle}>{fastingEnabled ? t('fastingToday') : t('quranToday')}</Text>
-              <View style={s.card}>
-                <View style={s.fastingQuranRow}>
-                  {fastingEnabled && (
-                    <View style={[s.fastingCol, trackQuranToday && { flex: 3 }]}>
-                      <Text style={s.fastingColLabel}>{t('fastingToday')}</Text>
-                      <View style={s.fastingRow}>
-                        {(['yes', 'no', 'partial'] as const).map((status) => {
-                          const isActive = fasting.status === status;
-                          const color = status === 'yes' ? Colors.mintGreen : status === 'partial' ? '#F4C430' : Colors.textMuted;
-                          return (
-                            <Pressable
-                              key={status}
-                              onPress={() => updateFasting(status)}
-                              style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }]}
-                            >
-                              <Ionicons
-                                name={status === 'yes' ? 'checkmark-circle' : status === 'partial' ? 'remove-circle' : 'close-circle'}
-                                size={20}
-                                color={isActive ? color : Colors.textMuted}
-                              />
-                              <Text style={[s.fastingBtnText, isActive && { color }]}>{t(status)}</Text>
-                            </Pressable>
-                          );
-                        })}
+              <Text style={s.sectionTitle}>{t('todayActivities')}</Text>
+              <View style={s.dailyCard}>
+                {salahEnabled && (
+                  <View style={s.dailySubsection}>
+                    <View style={s.dailySubHeader}>
+                      <MaterialCommunityIcons name="mosque" size={18} color={Colors.mintGreenDark} />
+                      <Text style={s.dailySubTitle}>{t('salahSection')}</Text>
+                    </View>
+                    <View style={s.prayerGrid}>
+                      {PRAYER_NAMES.map((prayer) => {
+                        const done = prayers[prayer];
+                        return (
+                          <Pressable key={prayer} onPress={() => togglePrayer(prayer)} style={s.prayerItem}>
+                            <View style={[s.prayerCircle, done && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                              {done ? (
+                                <Ionicons name="checkmark" size={20} color={Colors.white} />
+                              ) : (
+                                <MaterialCommunityIcons name="mosque" size={18} color={Colors.textMuted} />
+                              )}
+                            </View>
+                            <Text style={[s.prayerLabel, done && s.prayerLabelDone]}>{t(prayer)}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                    <View style={s.prayerSummary}>
+                      <View style={[s.prayerBar, { width: '100%' }]}>
+                        <View style={[s.prayerBarFill, { width: `${(prayerCount / 5) * 100}%`, backgroundColor: cardColor }]} />
                       </View>
+                      <Text style={s.prayerCountText}>{prayerCount}/5</Text>
                     </View>
-                  )}
-                  {trackQuranToday && (
-                    <View style={[s.quranTodayCol, fastingEnabled && { flex: 1, borderLeftWidth: 1, borderLeftColor: Colors.creamBeige, paddingLeft: 12 }]}>
-                      <Text style={s.fastingColLabel}>{t('quranToday')}</Text>
-                      <Pressable onPress={toggleQuranToday} style={s.quranTodayToggle}>
-                        <View style={[s.quranTodayCircle, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
-                          {quranToday ? (
-                            <Ionicons name="checkmark" size={20} color={Colors.white} />
-                          ) : (
-                            <Ionicons name="book-outline" size={16} color={Colors.textMuted} />
-                          )}
+                  </View>
+                )}
+
+                {(fastingEnabled || trackQuranToday) && salahEnabled && (
+                  <View style={s.dailyDivider} />
+                )}
+
+                {(fastingEnabled || trackQuranToday) && (
+                  <View style={s.dailySubsection}>
+                    <View style={s.fastingQuranRow}>
+                      {fastingEnabled && (
+                        <View style={[s.fastingCol, trackQuranToday && { flex: 3 }]}>
+                          <View style={s.dailySubHeader}>
+                            <Ionicons name="moon-outline" size={16} color="#D4A03C" />
+                            <Text style={s.dailySubTitle}>{t('fastingSection')}</Text>
+                          </View>
+                          <View style={s.fastingRow}>
+                            {(['yes', 'no', 'partial'] as const).map((status) => {
+                              const isActive = fasting.status === status;
+                              const color = status === 'yes' ? Colors.mintGreen : status === 'partial' ? '#F4C430' : Colors.textMuted;
+                              return (
+                                <Pressable
+                                  key={status}
+                                  onPress={() => updateFasting(status)}
+                                  style={[s.fastingBtn, isActive && { backgroundColor: color + '20', borderColor: color }, status === 'partial' && { minWidth: 120 }]}
+                                >
+                                  <Ionicons
+                                    name={status === 'yes' ? 'checkmark-circle' : status === 'partial' ? 'remove-circle' : 'close-circle'}
+                                    size={18}
+                                    color={isActive ? color : Colors.textMuted}
+                                  />
+                                  <Text style={[s.fastingBtnText, isActive && { color }]}>{t(status)}</Text>
+                                </Pressable>
+                              );
+                            })}
+                          </View>
                         </View>
-                        <Text style={[s.quranTodayStatus, quranToday && { color: Colors.mintGreen }]}>
-                          {quranToday ? t('yes') : t('no')}
-                        </Text>
-                      </Pressable>
+                      )}
+                      {trackQuranToday && (
+                        <View style={[s.quranTodayCol, fastingEnabled && { flex: 1, borderLeftWidth: 1, borderLeftColor: Colors.creamBeige, paddingLeft: 12 }]}>
+                          <View style={[s.dailySubHeader, { justifyContent: 'center' }]}>
+                            <Ionicons name="book-outline" size={16} color={Colors.skyBlueDark} />
+                            <Text style={[s.dailySubTitle, { fontSize: 11 }]}>{t('quranReadingSection')}</Text>
+                          </View>
+                          <Pressable onPress={toggleQuranToday} style={s.quranTodayToggle}>
+                            <View style={[s.quranTodayCircle, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                              {quranToday ? (
+                                <Ionicons name="checkmark" size={20} color={Colors.white} />
+                              ) : (
+                                <Ionicons name="book-outline" size={16} color={Colors.textMuted} />
+                              )}
+                            </View>
+                            <Text style={[s.quranTodayStatus, quranToday && { color: Colors.mintGreen }]}>
+                              {quranToday ? t('yes') : t('no')}
+                            </Text>
+                          </Pressable>
+                        </View>
+                      )}
                     </View>
-                  )}
-                </View>
+                  </View>
+                )}
               </View>
             </Animated.View>
           )}
@@ -1258,6 +1273,14 @@ const s = StyleSheet.create({
     backgroundColor: Colors.cardBackground, borderRadius: 20, padding: 16,
     shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
   },
+  dailyCard: {
+    backgroundColor: Colors.cardBackground, borderRadius: 24, padding: 20,
+    shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.08, shadowRadius: 12, elevation: 3,
+  },
+  dailySubsection: { paddingVertical: 4 },
+  dailySubHeader: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10 },
+  dailySubTitle: { fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textSecondary, textTransform: 'uppercase' as const, letterSpacing: 0.8 },
+  dailyDivider: { height: 1, backgroundColor: Colors.creamBeige, marginVertical: 14 },
   emptyCard: {
     backgroundColor: Colors.cardBackground, borderRadius: 20, padding: 24,
     alignItems: 'center', gap: 8,
