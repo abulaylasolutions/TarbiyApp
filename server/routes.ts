@@ -53,6 +53,8 @@ import {
   archiveNote,
   getCustomPhotosForUser,
   upsertCustomPhoto,
+  getAqidahProgress,
+  upsertAqidahProgress,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -696,6 +698,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { date, completed, note } = req.body;
       if (!date) return res.status(400).json({ message: "date richiesto" });
       const result = await upsertQuranDailyLog(req.params.childId as string, date, completed, note);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.get("/api/children/:childId/aqidah", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const progress = await getAqidahProgress(req.params.childId as string);
+      return res.json(progress);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/aqidah", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { itemKey, checked, note } = req.body;
+      if (!itemKey) return res.status(400).json({ message: "itemKey richiesto" });
+      const result = await upsertAqidahProgress(req.params.childId as string, itemKey, checked, note);
       return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });

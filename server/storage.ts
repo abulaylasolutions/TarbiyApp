@@ -1,7 +1,7 @@
 import { eq, or, and, inArray, sql, desc } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs, childCustomPhotos } from "@shared/schema";
-import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog, ChildCustomPhoto } from "@shared/schema";
+import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs, childCustomPhotos, aqidahProgress } from "@shared/schema";
+import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog, ChildCustomPhoto, AqidahProgress } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -511,4 +511,22 @@ export async function getCustomPhoto(userId: string, childId: string): Promise<C
     and(eq(childCustomPhotos.userId, userId), eq(childCustomPhotos.childId, childId))
   );
   return result[0] || null;
+}
+
+export async function getAqidahProgress(childId: string): Promise<AqidahProgress[]> {
+  return db.select().from(aqidahProgress).where(eq(aqidahProgress.childId, childId));
+}
+
+export async function upsertAqidahProgress(childId: string, itemKey: string, checked: boolean, note?: string): Promise<AqidahProgress> {
+  const existing = await db.select().from(aqidahProgress).where(
+    and(eq(aqidahProgress.childId, childId), eq(aqidahProgress.itemKey, itemKey))
+  );
+  if (existing.length > 0) {
+    const updateData: any = { checked };
+    if (note !== undefined) updateData.note = note;
+    const result = await db.update(aqidahProgress).set(updateData).where(eq(aqidahProgress.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(aqidahProgress).values({ childId, itemKey, checked, note: note || null }).returning();
+  return result[0];
 }

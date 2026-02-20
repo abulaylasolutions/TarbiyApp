@@ -174,6 +174,19 @@ export const quranDailyLogs = pgTable("quran_daily_logs", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const aqidahProgress = pgTable("aqidah_progress", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  itemKey: text("item_key").notNull(),
+  checked: boolean("checked").default(false),
+  note: text("note"),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("aqidah_progress_child_item_idx").on(table.childId, table.itemKey),
+]);
+
 export const activityLogs = pgTable("activity_logs", {
   id: varchar("id")
     .primaryKey()
@@ -223,3 +236,4 @@ export type ActivityLog = typeof activityLogs.$inferSelect;
 export type QuranLog = typeof quranLogs.$inferSelect;
 export type ChildCustomPhoto = typeof childCustomPhotos.$inferSelect;
 export type QuranDailyLog = typeof quranDailyLogs.$inferSelect;
+export type AqidahProgress = typeof aqidahProgress.$inferSelect;
