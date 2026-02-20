@@ -29,6 +29,7 @@ const SUBJECTS = [
   { key: 'arabo', icon: 'book-outline' as const },
   { key: 'akhlaq', icon: 'heart-outline' as const },
   { key: 'aqidah', icon: 'star-outline' as const },
+  { key: 'quran', icon: 'library-outline' as const },
 ];
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -1206,6 +1207,15 @@ export default function DashboardScreen() {
                         })}
                       </View>
                     )}
+                    {isExpanded && subject.key === 'quran' && (
+                      <View style={s.subjectContent}>
+                        <Pressable onPress={() => setShowQuranModal(true)} style={s.quranInlineRow}>
+                          <Ionicons name="library-outline" size={20} color={cardColor} />
+                          <Text style={s.quranTapText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
+                          <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                        </Pressable>
+                      </View>
+                    )}
                   </View>
                 );
               })}
@@ -1213,17 +1223,6 @@ export default function DashboardScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(600).duration(300)}>
-            <Text style={s.sectionTitle}>{t('quranMemorization')}</Text>
-            <Pressable onPress={() => setShowQuranModal(true)} style={s.card}>
-              <View style={s.quranTapRow}>
-                <Ionicons name="book-outline" size={20} color={cardColor} />
-                <Text style={s.quranTapText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
-                <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-              </View>
-            </Pressable>
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.delay(700).duration(300)}>
             <Text style={s.sectionTitle}>{t('recentActivityLog')}</Text>
             {todayFeed.length > 0 ? (
               <View style={s.card}>
@@ -1562,6 +1561,7 @@ const s = StyleSheet.create({
 
   quranTapRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   quranTapText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary, flex: 1 },
+  quranInlineRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4 },
   quranFullPage: {
     flex: 1, backgroundColor: Colors.background,
   },
