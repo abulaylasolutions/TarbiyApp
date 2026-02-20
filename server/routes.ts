@@ -55,6 +55,7 @@ import {
   upsertCustomPhoto,
   getAqidahProgress,
   upsertAqidahProgress,
+  getEducationFeed,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -645,6 +646,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.patch("/api/children/:childId/settings", requireAuth as any, async (req: Request, res: Response) => {
     try {
+      const childId = req.params.childId as string;
       const { salahEnabled, fastingEnabled, arabicLearnedLetters, hasHarakat, canReadArabic, canWriteArabic, akhlaqAdabChecked, trackQuranToday } = req.body;
       const data: any = {};
       if (typeof salahEnabled === "boolean") data.salahEnabled = salahEnabled;
@@ -655,8 +657,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof canWriteArabic === "boolean") data.canWriteArabic = canWriteArabic;
       if (typeof akhlaqAdabChecked === "string") data.akhlaqAdabChecked = akhlaqAdabChecked;
       if (typeof trackQuranToday === "boolean") data.trackQuranToday = trackQuranToday;
-      const result = await updateChild(req.params.childId as string, data);
+
+      const existingChildren = await getChildrenForUser(req.session.userId!);
+      const existingChild = existingChildren.find(c => c.id === childId);
+
+      if (typeof akhlaqAdabChecked === "string" && existingChild) {
+        try {
+          const newChecked: string[] = JSON.parse(akhlaqAdabChecked);
+          const oldChecked: string[] = existingChild.akhlaqAdabChecked ? JSON.parse(existingChild.akhlaqAdabChecked) : [];
+          const newlyAdded = newChecked.filter(item => !oldChecked.includes(item));
+          if (newlyAdded.length > 0) {
+            const user = await getUserById(req.session.userId!);
+            const authorName = user?.name || "Genitore";
+            const today = new Date().toISOString().split("T")[0];
+            for (const item of newlyAdded) {
+              await addActivityLog(childId, req.session.userId!, authorName, item, 'akhlaq', today);
+            }
+          }
+        } catch {}
+      }
+
+      if (typeof arabicLearnedLetters === "string" && existingChild) {
+        try {
+          const newLetters: string[] = JSON.parse(arabicLearnedLetters);
+          const oldLetters: string[] = existingChild.arabicLearnedLetters ? JSON.parse(existingChild.arabicLearnedLetters) : [];
+          const newlyAdded = newLetters.filter(item => !oldLetters.includes(item));
+          if (newlyAdded.length > 0) {
+            const user = await getUserById(req.session.userId!);
+            const authorName = user?.name || "Genitore";
+            const today = new Date().toISOString().split("T")[0];
+            for (const item of newlyAdded) {
+              await addActivityLog(childId, req.session.userId!, authorName, item, 'arabo', today);
+            }
+          }
+        } catch {}
+      }
+
+      const result = await updateChild(childId, data);
       return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.get("/api/children/:childId/education-feed", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const feed = await getEducationFeed(req.params.childId as string);
+      return res.json(feed);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }

@@ -522,11 +522,60 @@ export async function upsertAqidahProgress(childId: string, itemKey: string, che
     and(eq(aqidahProgress.childId, childId), eq(aqidahProgress.itemKey, itemKey))
   );
   if (existing.length > 0) {
-    const updateData: any = { checked };
+    const updateData: any = { checked, updatedAt: new Date() };
     if (note !== undefined) updateData.note = note;
     const result = await db.update(aqidahProgress).set(updateData).where(eq(aqidahProgress.id, existing[0].id)).returning();
     return result[0];
   }
-  const result = await db.insert(aqidahProgress).values({ childId, itemKey, checked, note: note || null }).returning();
+  const result = await db.insert(aqidahProgress).values({ childId, itemKey, checked, note: note || null, updatedAt: new Date() }).returning();
   return result[0];
+}
+
+export async function getEducationFeed(childId: string): Promise<Array<{ type: string; key: string; label: string; timestamp: string }>> {
+  const aqidahItems = await db.select().from(aqidahProgress)
+    .where(and(eq(aqidahProgress.childId, childId), eq(aqidahProgress.checked, true)))
+    .orderBy(desc(aqidahProgress.updatedAt))
+    .limit(5);
+
+  const quranItems = await db.select().from(quranLogs)
+    .where(and(eq(quranLogs.childId, childId), eq(quranLogs.status, 'learned')))
+    .orderBy(desc(quranLogs.createdAt))
+    .limit(5);
+
+  const activityItems = await db.select().from(activityLogs)
+    .where(and(eq(activityLogs.childId, childId), inArray(activityLogs.category, ['akhlaq', 'arabo'])))
+    .orderBy(desc(activityLogs.createdAt))
+    .limit(5);
+
+  const combined: Array<{ type: string; key: string; label: string; timestamp: string }> = [];
+
+  for (const item of aqidahItems) {
+    combined.push({
+      type: 'aqidah',
+      key: item.itemKey,
+      label: item.itemKey,
+      timestamp: (item.updatedAt ?? item.createdAt ?? new Date()).toISOString(),
+    });
+  }
+
+  for (const item of quranItems) {
+    combined.push({
+      type: 'quran',
+      key: item.surahNumber,
+      label: item.surahNumber,
+      timestamp: (item.createdAt ?? new Date()).toISOString(),
+    });
+  }
+
+  for (const item of activityItems) {
+    combined.push({
+      type: item.category as string,
+      key: item.text,
+      label: item.text,
+      timestamp: (item.createdAt ?? new Date()).toISOString(),
+    });
+  }
+
+  combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return combined.slice(0, 5);
 }

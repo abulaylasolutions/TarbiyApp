@@ -183,6 +183,7 @@ export const aqidahProgress = pgTable("aqidah_progress", {
   checked: boolean("checked").default(false),
   note: text("note"),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
   uniqueIndex("aqidah_progress_child_item_idx").on(table.childId, table.itemKey),
 ]);

@@ -584,6 +584,57 @@ export default function DashboardScreen() {
     }
   }, [selectedChild?.id, selectedChild?.arabicLearnedLetters, selectedChild?.hasHarakat, selectedChild?.canReadArabic, selectedChild?.canWriteArabic, selectedChild?.akhlaqAdabChecked]);
 
+  const [educationFeed, setEducationFeed] = useState<{ icon: string; iconColor: string; text: string; dateTime: string }[]>([]);
+
+  const fetchEducationFeed = useCallback(async () => {
+    if (!childId) return;
+    try {
+      const base = getApiUrl();
+      const res = await fetch(new URL(`/api/children/${childId}/education-feed`, base).toString(), { credentials: 'include' });
+      const data = await res.json();
+      if (!Array.isArray(data)) return;
+
+      const allAkhlaqItems = AKHLAQ_CATEGORIES.flatMap(c => c.items);
+      const allAqidahItems = getAllAqidahLeafItems();
+
+      const items = data.map((entry: any) => {
+        let icon = 'school-outline';
+        let iconColor = '#A8E6CF';
+        let text = entry.label || entry.key;
+        const ts = entry.timestamp ? new Date(entry.timestamp) : null;
+        const dateTime = ts ? `${ts.toLocaleDateString(lang === 'ar' ? 'ar' : lang === 'en' ? 'en' : 'it', { day: '2-digit', month: 'short' })} ${ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : '';
+
+        if (entry.type === 'aqidah') {
+          icon = 'star';
+          iconColor = '#C7CEEA';
+          const aqItem = allAqidahItems.find(i => i.key === entry.key);
+          text = `Aqidah: ${aqItem ? getLabel(aqItem, lang) : entry.key}`;
+        } else if (entry.type === 'quran') {
+          icon = 'library-outline';
+          iconColor = '#E0BBE4';
+          const idx = parseInt(entry.key) - 1;
+          const name = SURAH_NAMES[idx] || entry.key;
+          text = `${lang === 'it' ? 'Surah' : lang === 'ar' ? 'سورة' : 'Surah'} ${entry.key} - ${name}`;
+        } else if (entry.type === 'akhlaq') {
+          icon = 'heart';
+          iconColor = '#FFD3B6';
+          const akItem = allAkhlaqItems.find(i => i.key === entry.key);
+          text = `Akhlaq: ${akItem ? getAkhlaqLabel(akItem) : entry.label}`;
+        } else if (entry.type === 'arabo') {
+          icon = 'text';
+          iconColor = '#A8E6CF';
+          text = `${lang === 'it' ? 'Arabo' : lang === 'ar' ? 'العربية' : 'Arabic'}: ${entry.label}`;
+        }
+
+        return { icon, iconColor, text, dateTime };
+      });
+
+      setEducationFeed(items);
+    } catch {}
+  }, [childId, lang]);
+
+  useEffect(() => { fetchEducationFeed(); }, [fetchEducationFeed]);
+
   const toggleArabicLetter = async (letter: string) => {
     if (!childId) return;
     const updated = localArabicLetters.includes(letter)
@@ -594,6 +645,7 @@ export default function DashboardScreen() {
     try {
       await apiRequest('PATCH', `/api/children/${childId}/settings`, { arabicLearnedLetters: JSON.stringify(updated) });
       refreshChildren();
+      fetchEducationFeed();
     } catch {}
   };
 
@@ -607,6 +659,7 @@ export default function DashboardScreen() {
     try {
       await apiRequest('PATCH', `/api/children/${childId}/settings`, { [field]: newVal });
       refreshChildren();
+      fetchEducationFeed();
     } catch {}
   };
 
@@ -620,6 +673,7 @@ export default function DashboardScreen() {
     try {
       await apiRequest('PATCH', `/api/children/${childId}/settings`, { akhlaqAdabChecked: JSON.stringify(updated) });
       refreshChildren();
+      fetchEducationFeed();
     } catch {}
   };
 
@@ -643,6 +697,7 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
       await apiRequest('POST', `/api/children/${childId}/aqidah`, { itemKey, checked: newChecked, note: current?.note || '' });
+      fetchEducationFeed();
     } catch {}
   };
 
@@ -674,6 +729,7 @@ export default function DashboardScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       await apiRequest('POST', `/api/children/${childId}/quran`, { surahNumber: key, status: next });
+      fetchEducationFeed();
     } catch {}
   };
 
@@ -687,69 +743,6 @@ export default function DashboardScreen() {
 
   const akhlaqCheckedCount = localAkhlaqChecked.length;
   const akhlaqTotalItems = AKHLAQ_CATEGORIES.reduce((sum, cat) => sum + cat.items.length, 0);
-
-  const buildTodayActivityFeed = (): { icon: string; iconColor: string; text: string; time: string; }[] => {
-    const feed: { icon: string; iconColor: string; text: string; time: string; sortTime: number }[] = [];
-
-    PRAYER_NAMES.forEach(p => {
-      if (prayers[p]) {
-        const prayerKey = `prayed${p.charAt(0).toUpperCase() + p.slice(1)}` as string;
-        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: t(prayerKey), time: '', sortTime: Date.now() });
-      }
-    });
-
-    if (fasting.status === 'yes') {
-      feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: lang === 'it' ? 'Digiuno completo' : lang === 'ar' ? 'صيام كامل' : 'Full fasting', time: '', sortTime: Date.now() });
-    } else if (fasting.status === 'partial') {
-      feed.push({ icon: 'remove-circle', iconColor: '#F4C430', text: lang === 'it' ? 'Digiuno parziale' : lang === 'ar' ? 'صيام جزئي' : 'Partial fasting', time: '', sortTime: Date.now() });
-    }
-
-    if (quranToday) {
-      feed.push({ icon: 'book', iconColor: Colors.peachPink, text: lang === 'it' ? "Qur'an letto oggi" : lang === 'ar' ? 'قرأ القرآن اليوم' : "Qur'an read today", time: '', sortTime: Date.now() });
-    }
-
-    Object.entries(quranLogs).forEach(([num, status]) => {
-      if (status === 'learned') {
-        const idx = parseInt(num) - 1;
-        const name = SURAH_NAMES[idx] || num;
-        feed.push({ icon: 'star', iconColor: '#F4C430', text: `${lang === 'it' ? 'Surah' : lang === 'ar' ? 'سورة' : 'Surah'} ${num} - ${name} ${lang === 'it' ? 'imparata' : lang === 'ar' ? 'محفوظة' : 'learned'}`, time: '', sortTime: Date.now() });
-      }
-    });
-
-    localAkhlaqChecked.forEach(itemKey => {
-      const allItems = AKHLAQ_CATEGORIES.flatMap(c => c.items);
-      const item = allItems.find(i => i.key === itemKey);
-      if (item) {
-        feed.push({ icon: 'heart', iconColor: Colors.peachPink, text: `${lang === 'it' ? 'Akhlaq' : lang === 'ar' ? 'أخلاق' : 'Akhlaq'}: ${getAkhlaqLabel(item)}`, time: '', sortTime: Date.now() });
-      }
-    });
-
-    AQIDAH_LEVELS.forEach(level => {
-      level.pillars.forEach(pillar => {
-        pillar.items.forEach(item => {
-          if (aqidahItems[item.key]?.checked) {
-            feed.push({ icon: 'star', iconColor: level.iconColor, text: `${lang === 'it' ? 'Aqidah' : lang === 'ar' ? 'عقيدة' : 'Aqidah'}: ${getLabel(item, lang)}`, time: '', sortTime: Date.now() });
-          }
-        });
-      });
-    });
-
-    todayTasks.forEach(task => {
-      const comp = completions[task.id];
-      if (comp?.completed) {
-        feed.push({ icon: 'checkmark-circle', iconColor: Colors.mintGreen, text: `${task.name} ${lang === 'it' ? 'completato' : lang === 'ar' ? 'مكتمل' : 'completed'}`, time: task.time || '', sortTime: Date.now() });
-      }
-    });
-
-    activities.filter(a => a.date === dateStr).forEach(act => {
-      feed.push({ icon: 'time', iconColor: cardColor, text: act.text, time: act.createdAt ? new Date(act.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '', sortTime: new Date(act.createdAt || 0).getTime() });
-    });
-
-    feed.sort((a, b) => b.sortTime - a.sortTime);
-    return feed.slice(0, 5).map(({ sortTime, ...rest }) => rest);
-  };
-
-  const todayFeed = buildTodayActivityFeed();
 
   if (!selectedChild) {
     return (
@@ -1056,6 +1049,13 @@ export default function DashboardScreen() {
                     </Pressable>
                     {isExpanded && subject.key === 'arabo' && (
                       <View style={s.subjectContent}>
+                        <Text style={s.aqidahIntro}>
+                          {lang === 'ar'
+                            ? 'تعلم الحروف العربية هو الخطوة الأولى لقراءة القرآن الكريم. يتتبع هذا القسم الحروف الـ 28 والمهارات الأساسية.'
+                            : lang === 'en'
+                            ? 'Learning the Arabic alphabet is the first step to reading the Holy Quran. This section tracks the 28 letters and basic reading skills.'
+                            : "Imparare l'alfabeto arabo e' il primo passo per leggere il Sacro Corano. Questa sezione traccia le 28 lettere e le competenze di base."}
+                        </Text>
                         <Text style={s.arabicCountLabel}>{t('learnedLetters')}: {localArabicLetters.length} / 28</Text>
                         <View style={s.arabicLettersGrid}>
                           {ARABIC_LETTERS.map((letter) => {
@@ -1108,6 +1108,13 @@ export default function DashboardScreen() {
                     )}
                     {isExpanded && subject.key === 'akhlaq' && (
                       <View style={s.subjectContent}>
+                        <Text style={s.aqidahIntro}>
+                          {lang === 'ar'
+                            ? 'الأخلاق هي الآداب والسلوك الحسن. علّم أطفالك حسن الخلق والأدب مع الآخرين كما أمر الإسلام.'
+                            : lang === 'en'
+                            ? 'Akhlaq means good character and manners. Teach your children beautiful conduct and etiquette as Islam commands.'
+                            : "Akhlaq significa buon carattere e buone maniere. Insegna ai tuoi figli la bella condotta e l'etichetta come comanda l'Islam."}
+                        </Text>
                         <Text style={s.arabicCountLabel}>{lang === 'it' ? 'Completati' : lang === 'ar' ? 'مكتمل' : 'Completed'}: {akhlaqCheckedCount} / {akhlaqTotalItems}</Text>
                         {AKHLAQ_CATEGORIES.map((cat) => {
                           const isCatExpanded = expandedAkhlaqCats.includes(cat.key);
@@ -1247,6 +1254,13 @@ export default function DashboardScreen() {
                     )}
                     {isExpanded && subject.key === 'quran' && (
                       <View style={s.subjectContent}>
+                        <Text style={s.aqidahIntro}>
+                          {lang === 'ar'
+                            ? 'حفظ القرآن الكريم من أعظم الأعمال. تتبع تقدم طفلك في حفظ السور الـ 114.'
+                            : lang === 'en'
+                            ? 'Memorizing the Holy Quran is one of the greatest deeds. Track your child\'s progress through all 114 surahs.'
+                            : "Memorizzare il Sacro Corano e' una delle piu' grandi opere. Segui i progressi di tuo figlio attraverso tutte le 114 surah."}
+                        </Text>
                         <Pressable onPress={() => setShowQuranModal(true)} style={s.quranInlineRow}>
                           <Ionicons name="library-outline" size={20} color={cardColor} />
                           <Text style={s.quranTapText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
@@ -1262,15 +1276,15 @@ export default function DashboardScreen() {
 
           <Animated.View entering={FadeInDown.delay(600).duration(300)}>
             <Text style={s.sectionTitle}>{t('recentActivityLog')}</Text>
-            {todayFeed.length > 0 ? (
+            {educationFeed.length > 0 ? (
               <View style={s.card}>
-                {todayFeed.map((item, i) => (
+                {educationFeed.map((item, i) => (
                   <View key={`feed-${i}`} style={[s.activityRow, i > 0 && s.taskRowBorder]}>
                     <Ionicons name={item.icon as any} size={18} color={item.iconColor} />
                     <View style={s.activityInfo}>
                       <Text style={s.activityText}>{item.text}</Text>
-                      {item.time ? (
-                        <Text style={s.activityMeta}>{item.time}</Text>
+                      {item.dateTime ? (
+                        <Text style={s.activityMeta}>{item.dateTime}</Text>
                       ) : null}
                     </View>
                   </View>
