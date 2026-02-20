@@ -26,10 +26,10 @@ const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
 type PrayerName = typeof PRAYER_NAMES[number];
 
 const SUBJECTS = [
-  { key: 'arabo', icon: 'book-outline' as const },
-  { key: 'akhlaq', icon: 'heart-outline' as const },
-  { key: 'aqidah', icon: 'star-outline' as const },
-  { key: 'quran', icon: 'library-outline' as const },
+  { key: 'arabo', icon: 'book-outline' as const, color: '#A8E6CF' },
+  { key: 'akhlaq', icon: 'heart-outline' as const, color: '#FFD3B6' },
+  { key: 'aqidah', icon: 'star-outline' as const, color: '#C7CEEA' },
+  { key: 'quran', icon: 'library-outline' as const, color: '#E0BBE4' },
 ];
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
@@ -1002,7 +1002,45 @@ export default function DashboardScreen() {
           )}
 
           <Animated.View entering={FadeInDown.delay(500).duration(300)}>
-            <Text style={s.sectionTitle}>{t('subjects')}</Text>
+            {(() => {
+              const araboTotal = 31;
+              const araboChecked = localArabicLetters.length + (localHarakat ? 1 : 0) + (localCanRead ? 1 : 0) + (localCanWrite ? 1 : 0);
+              const subjectProgress: Record<string, { done: number; total: number }> = {
+                arabo: { done: araboChecked, total: araboTotal },
+                akhlaq: { done: akhlaqCheckedCount, total: akhlaqTotalItems },
+                aqidah: { done: aqidahCheckedCount, total: aqidahTotalItems },
+                quran: { done: learnedCount, total: 114 },
+              };
+              const eduTotal = Object.values(subjectProgress).reduce((s, v) => s + v.total, 0);
+              const eduDone = Object.values(subjectProgress).reduce((s, v) => s + v.done, 0);
+              const eduPct = eduTotal > 0 ? Math.round((eduDone / eduTotal) * 100) : 0;
+              return (
+                <>
+                  <View style={s.eduTitleRow}>
+                    <Text style={s.sectionTitle}>{t('subjects')}</Text>
+                    <Text style={s.eduPctText}>{eduPct}%</Text>
+                  </View>
+                  <View style={s.eduBarContainer}>
+                    {SUBJECTS.map((sub) => {
+                      const sp = subjectProgress[sub.key];
+                      const widthPct = eduTotal > 0 ? (sp.done / eduTotal) * 100 : 0;
+                      if (widthPct <= 0) return null;
+                      return (
+                        <View key={sub.key} style={[s.eduBarSegment, { width: `${widthPct}%`, backgroundColor: sub.color }]} />
+                      );
+                    })}
+                  </View>
+                  <View style={s.eduLegendRow}>
+                    {SUBJECTS.map((sub) => (
+                      <View key={sub.key} style={s.eduLegendItem}>
+                        <View style={[s.eduLegendDot, { backgroundColor: sub.color }]} />
+                        <Text style={s.eduLegendLabel}>{t(sub.key)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </>
+              );
+            })()}
             <View style={s.card}>
               {SUBJECTS.map((subject, i) => {
                 const isExpanded = expandedSubjects.includes(subject.key);
@@ -1012,7 +1050,7 @@ export default function DashboardScreen() {
                       onPress={() => toggleSubject(subject.key)}
                       style={[s.subjectRow, i > 0 && s.taskRowBorder]}
                     >
-                      <Ionicons name={subject.icon as any} size={20} color={cardColor} />
+                      <Ionicons name={subject.icon as any} size={20} color={subject.color} />
                       <Text style={s.subjectName}>{t(subject.key)}</Text>
                       <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textMuted} />
                     </Pressable>
@@ -1490,6 +1528,17 @@ const s = StyleSheet.create({
 
   sectionsWrap: { paddingHorizontal: 16, gap: 8 },
   sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary, marginTop: 12, marginBottom: 8 },
+  eduTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 4 },
+  eduPctText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textSecondary },
+  eduBarContainer: {
+    flexDirection: 'row', height: 8, borderRadius: 4, backgroundColor: 'rgba(0,0,0,0.06)',
+    overflow: 'hidden', marginBottom: 6,
+  },
+  eduBarSegment: { height: '100%' },
+  eduLegendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
+  eduLegendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  eduLegendDot: { width: 8, height: 8, borderRadius: 4 },
+  eduLegendLabel: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted },
   card: {
     backgroundColor: Colors.cardBackground, borderRadius: 20, padding: 16,
     shadowColor: Colors.shadow, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2,
