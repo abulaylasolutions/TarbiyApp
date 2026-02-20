@@ -32,6 +32,44 @@ const SUBJECTS = [
 
 const DAY_KEYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'] as const;
 
+interface AqidahSubItem { key: string; it: string; en: string; ar: string; }
+interface AqidahSection { key: string; it: string; en: string; ar: string; icon: string; iconColor: string; items: AqidahSubItem[]; }
+
+const AQIDAH_SECTIONS: AqidahSection[] = [
+  {
+    key: 'islam', it: 'Islam - I 5 Pilastri', en: 'Islam - The 5 Pillars', ar: 'الإسلام - الأركان الخمسة',
+    icon: 'hands-pray' as any, iconColor: '#A8E6CF',
+    items: [
+      { key: 'islam_shahada', it: 'Shahada: Testimoniare che non c\'e\' dio all\'infuori di Allah e Muhammad e\' il Suo messaggero', en: 'Shahada: Testify there is no god but Allah and Muhammad is His messenger', ar: 'الشهادة: أشهد أن لا إله إلا الله وأن محمداً رسول الله' },
+      { key: 'islam_salah', it: 'Salah: Pregare le 5 preghiere', en: 'Salah: Pray the 5 daily prayers', ar: 'الصلاة: أداء الصلوات الخمس' },
+      { key: 'islam_zakat', it: 'Zakat: Pagare la Zakat', en: 'Zakat: Pay the Zakat', ar: 'الزكاة: إيتاء الزكاة' },
+      { key: 'islam_sawm', it: 'Sawm Ramadan: Digiunare Ramadan', en: 'Sawm Ramadan: Fast during Ramadan', ar: 'صوم رمضان: صيام شهر رمضان' },
+      { key: 'islam_hajj', it: 'Hajj: Pellegrinaggio per chi puo\'', en: 'Hajj: Pilgrimage for those who can', ar: 'الحج: حج البيت لمن استطاع إليه سبيلاً' },
+    ],
+  },
+  {
+    key: 'iman', it: 'Iman - I 6 Pilastri', en: 'Iman - The 6 Pillars', ar: 'الإيمان - الأركان الستة',
+    icon: 'book-open-variant' as any, iconColor: '#C7CEEA',
+    items: [
+      { key: 'iman_allah', it: 'Credere in Allah', en: 'Belief in Allah', ar: 'الإيمان بالله' },
+      { key: 'iman_angels', it: 'Credere negli Angeli', en: 'Belief in Angels', ar: 'الإيمان بالملائكة' },
+      { key: 'iman_books', it: 'Credere nei Libri rivelati', en: 'Belief in the Revealed Books', ar: 'الإيمان بالكتب' },
+      { key: 'iman_messengers', it: 'Credere nei Messaggeri', en: 'Belief in the Messengers', ar: 'الإيمان بالرسل' },
+      { key: 'iman_lastday', it: 'Credere nell\'Ultimo Giorno', en: 'Belief in the Last Day', ar: 'الإيمان باليوم الآخر' },
+      { key: 'iman_qadar', it: 'Credere nel Qadar (destino, bene e male)', en: 'Belief in Qadar (destiny, good and bad)', ar: 'الإيمان بالقدر خيره وشره' },
+    ],
+  },
+  {
+    key: 'ihsan', it: 'Ihsan - Il livello di eccellenza', en: 'Ihsan - The Level of Excellence', ar: 'الإحسان - مستوى التميز',
+    icon: 'heart-outline' as any, iconColor: '#FFD3B6',
+    items: [
+      { key: 'ihsan_worship', it: 'Adorare Allah come se Lo vedessimo', en: 'Worship Allah as if you see Him', ar: 'أن تعبد الله كأنك تراه' },
+      { key: 'ihsan_sees', it: 'Egli ci vede sempre', en: 'He always sees us', ar: 'فإن لم تكن تراه فإنه يراك' },
+      { key: 'ihsan_intention', it: 'Azione con intenzione pura', en: 'Acting with pure intention', ar: 'العمل بإخلاص النية' },
+    ],
+  },
+];
+
 const SURAH_NAMES = [
   'Al-Fatiha','Al-Baqarah','Ali \'Imran','An-Nisa','Al-Ma\'idah','Al-An\'am','Al-A\'raf','Al-Anfal','At-Tawbah','Yunus',
   'Hud','Yusuf','Ar-Ra\'d','Ibrahim','Al-Hijr','An-Nahl','Al-Isra','Al-Kahf','Maryam','Taha',
@@ -323,6 +361,10 @@ export default function DashboardScreen() {
   const [localCanWrite, setLocalCanWrite] = useState(false);
   const [localAkhlaqChecked, setLocalAkhlaqChecked] = useState<string[]>([]);
   const [expandedAkhlaqCats, setExpandedAkhlaqCats] = useState<string[]>([]);
+  const [aqidahItems, setAqidahItems] = useState<Record<string, { checked: boolean; note: string }>>({});
+  const [expandedAqidahSections, setExpandedAqidahSections] = useState<string[]>([]);
+  const [editingAqidahNote, setEditingAqidahNote] = useState<string | null>(null);
+  const [aqidahNoteText, setAqidahNoteText] = useState('');
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -368,6 +410,7 @@ export default function DashboardScreen() {
       }
       fetches.push(fetch(new URL(`/api/children/${childId}/quran-daily/${dateStr}`, base).toString(), { credentials: 'include' }));
       fetches.push(fetch(new URL(`/api/children/${childId}/quran`, base).toString(), { credentials: 'include' }));
+      fetches.push(fetch(new URL(`/api/children/${childId}/aqidah`, base).toString(), { credentials: 'include' }));
 
       const results = await Promise.all(fetches);
       const [tasksData, compData, actData] = await Promise.all(results.slice(0, 3).map(r => r.json()));
@@ -402,6 +445,13 @@ export default function DashboardScreen() {
         const logsMap: Record<string, SurahStatus> = {};
         quranLogsData.forEach((log: any) => { logsMap[log.surahNumber] = log.status as SurahStatus; });
         setQuranLogs(logsMap);
+      }
+      idx++;
+      const aqidahData = await results[idx].json();
+      if (Array.isArray(aqidahData)) {
+        const aqMap: Record<string, { checked: boolean; note: string }> = {};
+        aqidahData.forEach((item: any) => { aqMap[item.itemKey] = { checked: !!item.checked, note: item.note || '' }; });
+        setAqidahItems(aqMap);
       }
     } catch {}
   }, [childId, dateStr, salahEnabled, fastingEnabled]);
@@ -606,6 +656,48 @@ export default function DashboardScreen() {
     } catch {}
   };
 
+  const toggleAqidahSection = (sectionKey: string) => {
+    setExpandedAqidahSections(prev =>
+      prev.includes(sectionKey) ? prev.filter(k => k !== sectionKey) : [...prev, sectionKey]
+    );
+  };
+
+  const toggleAqidahItem = async (itemKey: string) => {
+    if (!childId) return;
+    const current = aqidahItems[itemKey];
+    const newChecked = !(current?.checked);
+    setAqidahItems(prev => ({ ...prev, [itemKey]: { checked: newChecked, note: current?.note || '' } }));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('POST', `/api/children/${childId}/aqidah`, { itemKey, checked: newChecked, note: current?.note || '' });
+    } catch {}
+  };
+
+  const saveAqidahNote = async (itemKey: string) => {
+    if (!childId) return;
+    const current = aqidahItems[itemKey];
+    setAqidahItems(prev => ({ ...prev, [itemKey]: { checked: current?.checked || false, note: aqidahNoteText } }));
+    setEditingAqidahNote(null);
+    try {
+      await apiRequest('POST', `/api/children/${childId}/aqidah`, { itemKey, checked: current?.checked || false, note: aqidahNoteText });
+    } catch {}
+  };
+
+  const getAqidahItemLabel = (item: AqidahSubItem) => {
+    if (lang === 'ar') return item.ar;
+    if (lang === 'en') return item.en;
+    return item.it;
+  };
+
+  const getAqidahSectionLabel = (section: AqidahSection) => {
+    if (lang === 'ar') return section.ar;
+    if (lang === 'en') return section.en;
+    return section.it;
+  };
+
+  const aqidahCheckedCount = AQIDAH_SECTIONS.reduce((sum, sec) => sum + sec.items.filter(i => aqidahItems[i.key]?.checked).length, 0);
+  const aqidahTotalItems = AQIDAH_SECTIONS.reduce((sum, sec) => sum + sec.items.length, 0);
+
   const toggleAkhlaqCategory = (catKey: string) => {
     setExpandedAkhlaqCats(prev =>
       prev.includes(catKey) ? prev.filter(k => k !== catKey) : [...prev, catKey]
@@ -669,6 +761,14 @@ export default function DashboardScreen() {
       if (item) {
         feed.push({ icon: 'heart', iconColor: Colors.peachPink, text: `${lang === 'it' ? 'Akhlaq' : lang === 'ar' ? 'أخلاق' : 'Akhlaq'}: ${getAkhlaqLabel(item)}`, time: '', sortTime: Date.now() });
       }
+    });
+
+    AQIDAH_SECTIONS.forEach(section => {
+      section.items.forEach(item => {
+        if (aqidahItems[item.key]?.checked) {
+          feed.push({ icon: 'star', iconColor: section.iconColor, text: `${lang === 'it' ? 'Aqidah' : lang === 'ar' ? 'عقيدة' : 'Aqidah'}: ${getAqidahItemLabel(item)}`, time: '', sortTime: Date.now() });
+        }
+      });
     });
 
     todayTasks.forEach(task => {
@@ -1037,7 +1137,83 @@ export default function DashboardScreen() {
                     )}
                     {isExpanded && subject.key === 'aqidah' && (
                       <View style={s.subjectContent}>
-                        <Text style={s.subjectPlaceholder}>{t('noActivity')}</Text>
+                        <Text style={s.aqidahIntro}>
+                          {lang === 'ar'
+                            ? 'العقيدة هي ما نؤمن به في قلوبنا. علّمنا النبي ﷺ ثلاثة مستويات: الإسلام، الإيمان، الإحسان (من حديث جبريل).'
+                            : lang === 'en'
+                            ? "Aqidah is what we believe in our hearts. The Prophet \uFDFA taught us 3 levels: Islam, Iman, Ihsan (from the Hadith of Jibreel)."
+                            : "L'Aqidah e' cio' in cui crediamo con il cuore. Il Profeta \uFDFA ci ha insegnato 3 livelli: Islam, Iman, Ihsan (dal Hadith di Gabriele)."}
+                        </Text>
+                        <Text style={s.arabicCountLabel}>
+                          {lang === 'it' ? 'Completati' : lang === 'ar' ? 'مكتمل' : 'Completed'}: {aqidahCheckedCount} / {aqidahTotalItems}
+                        </Text>
+                        {AQIDAH_SECTIONS.map((section) => {
+                          const isSectionExpanded = expandedAqidahSections.includes(section.key);
+                          const sectionChecked = section.items.filter(i => aqidahItems[i.key]?.checked).length;
+                          return (
+                            <View key={section.key}>
+                              <Pressable onPress={() => toggleAqidahSection(section.key)} style={s.akhlaqCatRow}>
+                                <MaterialCommunityIcons name={section.icon as any} size={20} color={section.iconColor} />
+                                <Text style={s.akhlaqCatName}>{getAqidahSectionLabel(section)}</Text>
+                                <Text style={s.akhlaqCatCount}>{sectionChecked}/{section.items.length}</Text>
+                                <Ionicons name={isSectionExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+                              </Pressable>
+                              {isSectionExpanded && section.items.map((item) => {
+                                const progress = aqidahItems[item.key];
+                                const isChecked = !!progress?.checked;
+                                const hasNote = !!progress?.note;
+                                const isEditingThis = editingAqidahNote === item.key;
+                                return (
+                                  <View key={item.key} style={s.aqidahItemContainer}>
+                                    <Pressable onPress={() => toggleAqidahItem(item.key)} style={s.akhlaqItemRow}>
+                                      <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: section.iconColor, borderColor: section.iconColor }]}>
+                                        {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                                      </View>
+                                      <Text style={[s.akhlaqItemText, isChecked && { color: Colors.textMuted, textDecorationLine: 'line-through' as const }]}>
+                                        {getAqidahItemLabel(item)}
+                                      </Text>
+                                      <Pressable
+                                        onPress={() => {
+                                          if (isEditingThis) {
+                                            setEditingAqidahNote(null);
+                                          } else {
+                                            setEditingAqidahNote(item.key);
+                                            setAqidahNoteText(progress?.note || '');
+                                          }
+                                        }}
+                                        hitSlop={8}
+                                      >
+                                        <Ionicons
+                                          name={hasNote ? 'chatbubble' : 'chatbubble-outline'}
+                                          size={16}
+                                          color={hasNote ? section.iconColor : Colors.textMuted}
+                                        />
+                                      </Pressable>
+                                    </Pressable>
+                                    {isEditingThis && (
+                                      <View style={s.aqidahNoteRow}>
+                                        <TextInput
+                                          style={s.aqidahNoteInput}
+                                          value={aqidahNoteText}
+                                          onChangeText={setAqidahNoteText}
+                                          placeholder={lang === 'it' ? 'Nota del genitore...' : lang === 'ar' ? 'ملاحظة الوالد...' : 'Parent note...'}
+                                          placeholderTextColor={Colors.textMuted}
+                                          multiline
+                                        />
+                                        <Pressable onPress={() => saveAqidahNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: section.iconColor }]}>
+                                          <Ionicons name="checkmark" size={16} color={Colors.white} />
+                                        </Pressable>
+                                      </View>
+                                    )}
+                                    {!isEditingThis && hasNote && (
+                                      <Text style={s.aqidahNotePreview}>{progress?.note}</Text>
+                                    )}
+                                  </View>
+                                );
+                              })}
+                            </View>
+                          );
+                        })}
                       </View>
                     )}
                   </View>
@@ -1447,6 +1623,29 @@ const s = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   akhlaqItemText: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textPrimary, flex: 1 },
+
+  aqidahIntro: {
+    fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textSecondary,
+    lineHeight: 20, marginBottom: 12, fontStyle: 'italic' as const,
+    backgroundColor: 'rgba(200,206,234,0.15)', borderRadius: 12, padding: 12,
+  },
+  aqidahItemContainer: { marginBottom: 2 },
+  aqidahNoteRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    paddingLeft: 56, paddingRight: 4, paddingBottom: 8,
+  },
+  aqidahNoteInput: {
+    flex: 1, fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textPrimary,
+    backgroundColor: Colors.creamBeige, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8,
+    minHeight: 36,
+  },
+  aqidahNoteSaveBtn: {
+    width: 30, height: 30, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+  },
+  aqidahNotePreview: {
+    fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted,
+    paddingLeft: 56, paddingRight: 12, paddingBottom: 6, fontStyle: 'italic' as const,
+  },
 
   activityRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 10, gap: 12 },
   activityInfo: { flex: 1 },
