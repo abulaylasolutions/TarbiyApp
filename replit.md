@@ -10,7 +10,7 @@ The project is built as an Expo React Native app (targeting iOS, Android, and we
 - Email/password authentication with session-based auth
 - Profile completion flow (name, birth date, gender, photo)
 - Co-parent pairing via unique 6-character invite codes
-- Child management (add/remove children with name, birth date, photo)
+- Child management (add/remove children with name, birth date, photo, avatar selection)
 - Shared bulletin board (bacheca) for notes between parents
 - Dashboard for per-child tracking (placeholder)
 - Settings with premium subscription management
