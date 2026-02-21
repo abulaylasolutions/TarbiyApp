@@ -104,6 +104,40 @@ export async function updateUserPremium(id: string, isPremium: boolean): Promise
   return result[0];
 }
 
+export async function updateChildPremium(childId: string, plan: string, isPremium: boolean, premiumUntil: Date | null): Promise<Child> {
+  const result = await db
+    .update(children)
+    .set({ isPremium, premiumPlan: plan, premiumUntil })
+    .where(eq(children.id, childId))
+    .returning();
+  return result[0];
+}
+
+export async function setFamilyPremium(userId: string, plan: string, isPremium: boolean, premiumUntil: Date | null): Promise<void> {
+  const userChildren = await db.select().from(children).where(eq(children.userId, userId));
+  for (const child of userChildren) {
+    await db
+      .update(children)
+      .set({ isPremium, premiumPlan: plan, premiumUntil })
+      .where(eq(children.id, child.id));
+  }
+  const user = await getUserById(userId);
+  if (user?.pairedCogenitori) {
+    try {
+      const cogIds = JSON.parse(user.pairedCogenitori) as string[];
+      for (const cogId of cogIds) {
+        const cogChildren = await db.select().from(children).where(eq(children.userId, cogId));
+        for (const child of cogChildren) {
+          await db
+            .update(children)
+            .set({ isPremium, premiumPlan: plan, premiumUntil })
+            .where(eq(children.id, child.id));
+        }
+      }
+    } catch {}
+  }
+}
+
 export async function addCogenitore(uid: string, targetUid: string): Promise<void> {
   const user = await getUserById(uid);
   const target = await getUserById(targetUid);

@@ -16,6 +16,8 @@ import {
   getUsersByIds,
   updateUserProfile,
   updateUserPremium,
+  updateChildPremium,
+  setFamilyPremium,
   addCogenitore,
   removeCogenitore,
   getPairedCogenitori,
@@ -297,6 +299,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await updateUserPremium(req.session.userId!, !!isPremium);
       const { password: _, ...safeUser } = user;
       return res.json(safeUser);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/children/:childId/premium", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const childId = req.params.childId as string;
+      const { plan } = req.body;
+      let premiumUntil: Date | null = null;
+      if (plan === 'monthly_child') {
+        premiumUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+      } else if (plan === 'annual_child') {
+        premiumUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+      } else if (plan === 'trial') {
+        premiumUntil = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+      }
+      const child = await updateChildPremium(childId, plan, true, premiumUntil);
+      return res.json(child);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/premium/family", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { plan } = req.body;
+      let premiumUntil: Date | null = null;
+      if (plan === 'annual_family') {
+        premiumUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000);
+      }
+      await setFamilyPremium(req.session.userId!, plan, true, premiumUntil);
+      await updateUserPremium(req.session.userId!, true);
+      return res.json({ success: true });
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }

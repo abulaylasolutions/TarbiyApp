@@ -46,6 +46,9 @@ export const children = pgTable("children", {
   trackQuranToday: boolean("track_quran_today").default(true),
   trackRamadan: boolean("track_ramadan").default(false),
   displayOrder: text("display_order"),
+  isPremium: boolean("is_premium").default(false),
+  premiumUntil: timestamp("premium_until"),
+  premiumPlan: text("premium_plan"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
