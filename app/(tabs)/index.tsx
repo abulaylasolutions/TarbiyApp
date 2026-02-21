@@ -25,8 +25,10 @@ import { apiRequest } from '@/lib/query-client';
 import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
 const PASTEL_COLORS = [
-  '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
-  '#FFF5BA', '#FFDAC1', '#B2D8B2', '#F5C6D0',
+  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
+  '#E0BBE4', '#FFF5BA', '#FFDAC1', '#B2D8B2',
+  '#FFC1CC', '#B2F2E8', '#D7BDE2', '#FFD8A8',
+  '#AED9E0', '#8DAF8C',
 ];
 
 interface ChildCardProps {

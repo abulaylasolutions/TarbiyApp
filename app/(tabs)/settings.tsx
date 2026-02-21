@@ -11,6 +11,7 @@ import {
   Modal,
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -474,6 +475,25 @@ export default function SettingsScreen() {
             iconBg={Colors.skyBlueLight}
             label={t('version')}
             value="1.0.0"
+            isLast
+          />
+        </View>
+
+        <Text style={styles.sectionTitle}>{lang === 'it' ? 'Contatti' : lang === 'ar' ? 'اتصل بنا' : 'Contact'}</Text>
+        <View style={styles.settingsCardWrap}>
+          <SettingsRow
+            icon="logo-instagram"
+            iconColor="#E1306C"
+            iconBg="#FCE4EC"
+            label="Instagram @tarbiyapp"
+            onPress={() => Linking.openURL('https://www.instagram.com/tarbiyapp')}
+          />
+          <SettingsRow
+            icon="mail"
+            iconColor="#FF6B35"
+            iconBg="#FFF3E0"
+            label={lang === 'it' ? 'Segnala un problema' : lang === 'ar' ? 'الإبلاغ عن مشكلة' : 'Report a problem'}
+            onPress={() => Linking.openURL('mailto:abulaylasolutions@gmail.com?subject=Segnala%20un%20problema&body=Scrivi%20qui%20il%20tuo%20messaggio...')}
             isLast
           />
         </View>

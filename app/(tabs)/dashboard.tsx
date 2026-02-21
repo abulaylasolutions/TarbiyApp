@@ -19,8 +19,10 @@ import { getAvatarSource } from '@/lib/avatar-map';
 import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, type AqidahLeafItem, type AqidahPillar, type AqidahLevel } from '@/lib/aqidah-data';
 
 const PASTEL_COLORS = [
-  '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
-  '#FFF5BA', '#FFDAC1', '#B2D8B2', '#F5C6D0',
+  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
+  '#E0BBE4', '#FFF5BA', '#FFDAC1', '#B2D8B2',
+  '#FFC1CC', '#B2F2E8', '#D7BDE2', '#FFD8A8',
+  '#AED9E0', '#8DAF8C',
 ];
 
 const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
@@ -840,9 +842,6 @@ export default function DashboardScreen() {
                   <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.85)" />
                 </Pressable>
               )}
-              <Pressable onPress={() => setShowAddTask(true)} style={s.addTaskBtn}>
-                <Ionicons name="add" size={24} color={Colors.white} />
-              </Pressable>
             </View>
           </LinearGradient>
         </Animated.View>
@@ -894,7 +893,12 @@ export default function DashboardScreen() {
 
         <View style={s.sectionsWrap}>
           <Animated.View entering={FadeInDown.delay(200).duration(300)}>
-            <Text style={s.sectionTitle}>{t('todayEvents')}</Text>
+            <View style={s.sectionTitleRow}>
+              <Text style={s.sectionTitle}>{t('todayEvents')}</Text>
+              <Pressable onPress={() => setShowAddTask(true)} hitSlop={8}>
+                <Ionicons name="add-circle" size={26} color={Colors.mintGreen} />
+              </Pressable>
+            </View>
             {todayTasks.length > 0 ? (
               <View style={s.card}>
                 {todayTasks.map((task, i) => {
@@ -1636,7 +1640,8 @@ const s = StyleSheet.create({
   dateNumActive: { color: Colors.white },
 
   sectionsWrap: { paddingHorizontal: 16, gap: 8 },
-  sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary, marginTop: 12, marginBottom: 8 },
+  sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary, marginTop: 12, marginBottom: 8, flex: 1 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   eduTitleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12, marginBottom: 4 },
   eduPctText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textSecondary },
   eduBarContainer: {

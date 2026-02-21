@@ -1,0 +1,38 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Impostazioni (settings_screen.dart), Dashboard con sezione "Attività di oggi" e tasto + per eventi, e sezione selezione colore card figlio (8 colori pastellosi).
+
+ORA AGGIUNGI/MODIFICA SOLO QUESTE COSE, senza toccare altre parti:
+
+1. Nelle Impostazioni (settings_screen.dart o sezione dedicata):
+   - Aggiungi ListTile tappabile: "Instagram @tarbiyapp"
+     - Clic → apri URL https://www.instagram.com/tarbiyapp con url_launcher (aggiungi dipendenza se manca: url_launcher: ^6.3.0)
+   - Aggiungi ListTile tappabile: "Segnala un problema"
+     - Clic → apri form mailto: con mailto:abulaylasolutions@gmail.com?subject=Segnala%20un%20problema&body=Scrivi%20qui%20il%20tuo%20messaggio...
+     - Usa url_launcher per aprire client mail (precompila oggetto e body placeholder)
+
+2. Dashboard – spostamento tasto + per eventi custom:
+   - Rimuovi tasto + dalla card principale o flottante generale
+   - Metti il tasto + a destra del titolo "Eventi di oggi" (Row con Text("Eventi di oggi") Expanded + IconButton(icon: Icons.add_circle, color: verde menta))
+   - Clic → apri modale creazione evento custom (come già esiste)
+
+3. Selezione colore card figlio (in add_child_screen.dart o edit child):
+   - Aumenta da 8 a 14 colori pastellosi (palette fissa):
+     - Verde menta #A8E6CF
+     - Rosa pesca #FFD3B6
+     - Azzurro cielo #C7CEEA
+     - Beige crema #FFF5E1
+     - Lavanda tenue #E0BBE4
+     - Giallo chiaro #FFF5BA
+     - Corallo #FFDAC1
+     - Salvia #B2D8B2
+     - Rosa cipria #FFC1CC
+     - Acqua marina #B2F2E8
+     - Lilla chiaro #D7BDE2
+     - Arancione tenue #FFD8A8
+     - Blu polvere #AED9E0
+     - Verde salvia scuro #8DAF8C
+   - GridView tappabile (crossAxisCount: 3 o 4) con CircleAvatar(backgroundColor: color, radius: 30), bordo verde quando selezionato
+   - Salva hex in children/cardColor (string es. '#A8E6CF')
+
+Mantieni responsive, animazioni soft (fade su selezione colore, smooth on tap). Aggiungi url_launcher in pubspec.yaml se manca.
+
+Modifica settings_screen.dart (Instagram + Segnala problema), dashboard_screen.dart (tasto + a destra titolo Eventi), add_child_screen.dart (14 colori griglia). Inizia subito con queste integrazioni precise!
