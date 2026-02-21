@@ -19,6 +19,7 @@ export const users = pgTable("users", {
   isProfileComplete: boolean("is_profile_complete").default(false),
   isPremium: boolean("is_premium").default(false),
   preferredLanguage: text("preferred_language").default("it"),
+  preferredHijriCalendar: boolean("preferred_hijri_calendar").default(false),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -43,6 +44,7 @@ export const children = pgTable("children", {
   canWriteArabic: boolean("can_write_arabic").default(false),
   akhlaqAdabChecked: text("akhlaq_adab_checked"),
   trackQuranToday: boolean("track_quran_today").default(true),
+  trackRamadan: boolean("track_ramadan").default(false),
   displayOrder: text("display_order"),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -239,6 +241,21 @@ export type QuranLog = typeof quranLogs.$inferSelect;
 export type ChildCustomPhoto = typeof childCustomPhotos.$inferSelect;
 export type QuranDailyLog = typeof quranDailyLogs.$inferSelect;
 export type AqidahProgress = typeof aqidahProgress.$inferSelect;
+
+export const ramadanLogs = pgTable("ramadan_logs", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  ramadanYear: text("ramadan_year").notNull(),
+  day: text("day").notNull(),
+  fasted: boolean("fasted").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("ramadan_logs_child_year_day_idx").on(table.childId, table.ramadanYear, table.day),
+]);
+
+export type RamadanLog = typeof ramadanLogs.$inferSelect;
 
 export const akhlaqNotes = pgTable("akhlaq_notes", {
   id: varchar("id")

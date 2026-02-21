@@ -474,6 +474,36 @@ export default function SettingsScreen() {
             value={getLanguageLabel(lang)}
             onPress={() => setShowLangModal(true)}
           />
+          <View style={[styles.settingsRow, styles.settingsRowBorder]}>
+            <View style={[styles.settingsIcon, { backgroundColor: '#FFF5E1' }]}>
+              <Ionicons name="calendar" size={18} color="#D4A03C" />
+            </View>
+            <Text style={styles.settingsLabel}>{t('hijriCalendar')}</Text>
+            <View style={styles.settingsRight}>
+              <Text style={[styles.settingsValue, { marginRight: 8 }]}>
+                {(user as any)?.preferredHijriCalendar ? t('hijriOn') : t('hijriOff')}
+              </Text>
+              <Pressable
+                onPress={async () => {
+                  const newVal = !(user as any)?.preferredHijriCalendar;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  try {
+                    await apiRequest('PUT', '/api/auth/hijri-calendar', { preferredHijriCalendar: newVal });
+                    await refreshUser();
+                  } catch {}
+                }}
+                style={[
+                  { width: 48, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3, backgroundColor: (user as any)?.preferredHijriCalendar ? Colors.mintGreen : Colors.textMuted + '40' },
+                ]}
+              >
+                <View style={{
+                  width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.white,
+                  alignSelf: (user as any)?.preferredHijriCalendar ? 'flex-end' : 'flex-start',
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+                }} />
+              </Pressable>
+            </View>
+          </View>
           <SettingsRow
             icon="star"
             iconColor="#F4C430"

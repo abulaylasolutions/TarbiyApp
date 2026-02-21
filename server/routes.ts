@@ -60,6 +60,9 @@ import {
   getAkhlaqNotes,
   upsertAkhlaqNote,
   deleteAkhlaqNote,
+  updateUserHijriCalendar,
+  getRamadanLogs,
+  upsertRamadanLog,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -270,6 +273,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Lingua non valida" });
       }
       const user = await updateUserLanguage(req.session.userId!, language);
+      const { password: _, ...safeUser } = user;
+      return res.json(safeUser);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/auth/hijri-calendar", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { preferredHijriCalendar } = req.body;
+      const user = await updateUserHijriCalendar(req.session.userId!, !!preferredHijriCalendar);
       const { password: _, ...safeUser } = user;
       return res.json(safeUser);
     } catch (error) {
@@ -661,7 +675,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.patch("/api/children/:childId/settings", requireAuth as any, async (req: Request, res: Response) => {
     try {
       const childId = req.params.childId as string;
-      const { salahEnabled, fastingEnabled, arabicLearnedLetters, hasHarakat, canReadArabic, canWriteArabic, akhlaqAdabChecked, trackQuranToday } = req.body;
+      const { salahEnabled, fastingEnabled, arabicLearnedLetters, hasHarakat, canReadArabic, canWriteArabic, akhlaqAdabChecked, trackQuranToday, trackRamadan } = req.body;
       const data: any = {};
       if (typeof salahEnabled === "boolean") data.salahEnabled = salahEnabled;
       if (typeof fastingEnabled === "boolean") data.fastingEnabled = fastingEnabled;
@@ -671,6 +685,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (typeof canWriteArabic === "boolean") data.canWriteArabic = canWriteArabic;
       if (typeof akhlaqAdabChecked === "string") data.akhlaqAdabChecked = akhlaqAdabChecked;
       if (typeof trackQuranToday === "boolean") data.trackQuranToday = trackQuranToday;
+      if (typeof trackRamadan === "boolean") data.trackRamadan = trackRamadan;
 
       const existingChildren = await getChildrenForUser(req.session.userId!);
       const existingChild = existingChildren.find(c => c.id === childId);
@@ -803,6 +818,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ deleted: true });
       }
       const result = await upsertAkhlaqNote(req.params.childId as string, itemKey, note.trim());
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.get("/api/children/:childId/ramadan/:year", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const logs = await getRamadanLogs(req.params.childId as string, req.params.year as string);
+      return res.json(logs);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/ramadan", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { ramadanYear, day, fasted } = req.body;
+      const result = await upsertRamadanLog(req.params.childId as string, ramadanYear, String(day), !!fasted);
       return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });

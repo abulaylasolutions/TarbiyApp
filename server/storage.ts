@@ -1,7 +1,7 @@
 import { eq, or, and, inArray, sql, desc } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs, childCustomPhotos, aqidahProgress, akhlaqNotes } from "@shared/schema";
-import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog, ChildCustomPhoto, AqidahProgress, AkhlaqNote } from "@shared/schema";
+import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs, childCustomPhotos, aqidahProgress, akhlaqNotes, ramadanLogs } from "@shared/schema";
+import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog, ChildCustomPhoto, AqidahProgress, AkhlaqNote, RamadanLog } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -608,4 +608,31 @@ export async function deleteAkhlaqNote(childId: string, itemKey: string): Promis
   await db.delete(akhlaqNotes).where(
     and(eq(akhlaqNotes.childId, childId), eq(akhlaqNotes.itemKey, itemKey))
   );
+}
+
+export async function updateUserHijriCalendar(id: string, preferredHijriCalendar: boolean): Promise<User> {
+  const result = await db
+    .update(users)
+    .set({ preferredHijriCalendar })
+    .where(eq(users.id, id))
+    .returning();
+  return result[0];
+}
+
+export async function getRamadanLogs(childId: string, ramadanYear: string): Promise<RamadanLog[]> {
+  return db.select().from(ramadanLogs).where(
+    and(eq(ramadanLogs.childId, childId), eq(ramadanLogs.ramadanYear, ramadanYear))
+  );
+}
+
+export async function upsertRamadanLog(childId: string, ramadanYear: string, day: string, fasted: boolean): Promise<RamadanLog> {
+  const existing = await db.select().from(ramadanLogs).where(
+    and(eq(ramadanLogs.childId, childId), eq(ramadanLogs.ramadanYear, ramadanYear), eq(ramadanLogs.day, day))
+  );
+  if (existing.length > 0) {
+    const result = await db.update(ramadanLogs).set({ fasted }).where(eq(ramadanLogs.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(ramadanLogs).values({ childId, ramadanYear, day, fasted }).returning();
+  return result[0];
 }
