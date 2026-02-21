@@ -352,7 +352,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/children", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { name, birthDate, gender, photoUri, coParentName, cardColor, selectedCogenitori } = req.body;
+      const { name, birthDate, gender, photoUri, coParentName, cardColor, selectedCogenitori, avatarAsset } = req.body;
       if (!name || !birthDate) {
         return res.status(400).json({ message: "Nome e data di nascita richiesti" });
       }
@@ -367,7 +367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const child = await addChild(
-        req.session.userId!, name, birthDate, gender, photoUri, coParentName, cardColor, selectedCogenitori
+        req.session.userId!, name, birthDate, gender, photoUri, coParentName, cardColor, selectedCogenitori, avatarAsset
       );
 
       return res.status(201).json(child);
@@ -378,8 +378,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/children/:id", requireAuth as any, async (req: Request, res: Response) => {
     try {
-      const { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori } = req.body;
-      const child = await updateChild(req.params.id as string, { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori });
+      const { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori, avatarAsset } = req.body;
+      const child = await updateChild(req.params.id as string, { name, birthDate, gender, photoUri, coParentName, cardColor, cogenitori, avatarAsset });
       return res.json(child);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });

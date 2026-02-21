@@ -177,7 +177,8 @@ export async function addChild(
   photoUri?: string,
   coParentName?: string,
   cardColor?: string,
-  selectedCogenitori?: string[]
+  selectedCogenitori?: string[],
+  avatarAsset?: string
 ): Promise<Child> {
   const cogenitoriArray = [userId];
   if (selectedCogenitori) {
@@ -195,6 +196,7 @@ export async function addChild(
       photoUri,
       coParentName,
       cardColor,
+      avatarAsset,
       cogenitori: JSON.stringify(cogenitoriArray),
     })
     .returning();
@@ -210,6 +212,7 @@ export async function updateChild(
     photoUri?: string;
     coParentName?: string;
     cardColor?: string;
+    avatarAsset?: string;
     cogenitori?: string;
     salahEnabled?: boolean;
     fastingEnabled?: boolean;

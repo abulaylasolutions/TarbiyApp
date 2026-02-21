@@ -34,6 +34,7 @@ export const children = pgTable("children", {
   coParentName: text("co_parent_name"),
   cogenitori: text("cogenitori"),
   cardColor: text("card_color"),
+  avatarAsset: text("avatar_asset"),
   salahEnabled: boolean("salah_enabled").default(true),
   fastingEnabled: boolean("fasting_enabled").default(true),
   arabicLearnedLetters: text("arabic_learned_letters"),
