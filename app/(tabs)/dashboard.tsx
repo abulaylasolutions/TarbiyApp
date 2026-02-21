@@ -23,8 +23,8 @@ import PremiumOverlay from '@/components/PremiumOverlay';
 import { gregorianToHijri, getHijriMonthName, getCurrentHijriYear } from '@/lib/hijri';
 
 const PASTEL_COLORS = [
-  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFC1CC',
-  '#E0BBE4', '#FFDAC1', '#B2D8B2',
+  '#A8E6CF', '#C8F0E3', '#6BBF9A', '#FFD3B6', '#FFC1CC', '#C7CEEA', '#AED9E0',
+  '#E0BBE4', '#D7BDE2', '#FFF5BA', '#FFDAC1', '#B2D8B2', '#8DAF8C', '#B2F2E8',
 ];
 
 const TIME_SLOTS: string[] = [];

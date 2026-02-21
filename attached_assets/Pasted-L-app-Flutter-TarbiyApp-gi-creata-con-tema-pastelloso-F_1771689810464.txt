@@ -1,0 +1,37 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Firebase per sync, Home, Dashboard, Bacheca, Aqidah/Educazione, avatar locali, pairing cogenitori, eventi custom, sure memorizzate, e sezione Premium.
+
+ORA IMPLEMENTA IL MODELLO PREMIUM PER-FIGLIO (non per account), con sync gratuita sempre attiva tra genitori, senza riscrivere l'intera app:
+
+1. Modello Premium:
+   - Premium legato al singolo figlio (non all'account o famiglia)
+   - Piani:
+     - Mensile: 2,99 € / mese per 1 figlio (tutti i genitori pairati vedono il figlio sbloccato)
+     - Annuale: 24,99 € / anno per 1 figlio (famiglia vede sbloccato)
+     - Lifetime famiglia: 69,99 € una tantum (tutti i figli illimitati per sempre)
+   - Trial: 7 giorni gratuiti per ogni figlio sbloccato (salva premiumUntil = now + 7 giorni per quel childId)
+
+2. Blocchi nella versione gratuita (per ogni figlio):
+   - Bacheca: bloccata se figlio non premium (overlay "Sblocca questo figlio con Premium per usare la Bacheca")
+   - Eventi customizzati: tasto + disabilitato per quel figlio (overlay "Premium richiesto per eventi personalizzati")
+   - Sure memorizzate: disabilitata per quel figlio (no salvataggio stato, overlay "Sblocca per memorizzare le Sure")
+   - Più di 1 figlio: in Home, se già 1 figlio e non premium, tasto + disabilitato (overlay "Passa a Premium per figli illimitati")
+   - Pairing cogenitori: sempre gratuito (sync sempre attiva, indipendentemente da Premium)
+
+3. Implementazione:
+   - In Firestore: children/{childId}/premium: {isPremium: bool, premiumUntil: timestamp, purchasedBy: uid, plan: "monthly"/"annual"/"lifetime"}
+   - Check per feature: if (!child.premium.isPremium || child.premium.premiumUntil < now) → blocca per quel figlio
+   - Schermata Premium: mostra piani "per questo figlio" (context con childId)
+   - Overlay bloccato: Container pastello con testo chiaro ("Sblocca questo figlio con Premium") + pulsante "Scopri piani" che naviga a Premium screen
+   - Dopo acquisto/restore: aggiorna Firestore child.premium e refresh UI globale (Provider/Riverpod)
+
+4. UI Premium screen:
+   - 3 card piani in colonna:
+     - Mensile: 2,99 €/mese – "Per 1 figlio"
+     - Annuale: 24,99 €/anno – "Per 1 figlio – risparmia ~30%"
+     - Lifetime famiglia: 69,99 € una tantum – "Tutti i figli per sempre"
+   - Pulsante "Acquista" per ogni piano
+   - Stato attuale: "Questo figlio è Premium fino [data]" o "Attiva trial 7 giorni"
+
+Mantieni responsive, animazioni soft (fade su overlay, smooth su piani). Usa in_app_purchase per acquisti (già aggiunto o aggiungi). Aggiungi debugPrint("Premium check per child $childId: ${isPremium}").
+
+Modifica dashboard_screen.dart (blocchi eventi/sure), home_screen.dart (limite figli), bacheca_screen.dart (blocco Bacheca), settings_screen.dart (Premium screen), e crea premium_overlay.dart riutilizzabile. Inizia subito con queste integrazioni precise!

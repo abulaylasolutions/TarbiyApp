@@ -26,8 +26,8 @@ import { apiRequest } from '@/lib/query-client';
 import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
 const PASTEL_COLORS = [
-  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFC1CC',
-  '#E0BBE4', '#FFDAC1', '#B2D8B2',
+  '#A8E6CF', '#C8F0E3', '#6BBF9A', '#FFD3B6', '#FFC1CC', '#C7CEEA', '#AED9E0',
+  '#E0BBE4', '#D7BDE2', '#FFF5BA', '#FFDAC1', '#B2D8B2', '#8DAF8C', '#B2F2E8',
 ];
 
 interface ChildCardProps {
@@ -930,12 +930,12 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%', height: '100%', borderRadius: 38,
   },
-  colorRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 8, marginBottom: 12, justifyContent: 'center' },
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12, justifyContent: 'center' },
   colorSwatch: {
-    width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'transparent',
   },
-  colorSwatchSelected: { borderWidth: 3, borderColor: Colors.textPrimary },
+  colorSwatchSelected: { borderWidth: 3, borderColor: '#A8E6CF' },
   modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   modalCancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
   modalCancelText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textSecondary },
