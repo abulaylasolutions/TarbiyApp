@@ -584,41 +584,6 @@ export default function HomeScreen() {
                 ) : null}
               </View>
 
-              <Text style={[styles.inputLabel, { marginTop: 8 }]}>Avatar</Text>
-              {form.gender === 'maschio' || form.gender === 'femmina' ? (
-                <View style={styles.avatarGrid}>
-                  {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
-                    const isSelected = form.avatarAsset === path;
-                    return (
-                      <Pressable
-                        key={path}
-                        onPress={() => {
-                          const newVal = isSelected ? '' : path;
-                          setForm(p => ({ ...p, avatarAsset: newVal }));
-                          console.log("Avatar selezionato:", newVal || 'nessuno');
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        }}
-                        style={[styles.avatarItem, isSelected && styles.avatarItemSelected]}
-                      >
-                        <Image
-                          source={getAvatarSource(path)}
-                          style={styles.avatarImage}
-                          contentFit="cover"
-                          transition={200}
-                        />
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : (
-                <View style={styles.noCogWarn}>
-                  <Ionicons name="information-circle" size={16} color={Colors.skyBlue} />
-                  <Text style={styles.noCogWarnText}>
-                    {t('selectGender')}
-                  </Text>
-                </View>
-              )}
-
               <Text style={styles.inputLabel}>{t('childName')}</Text>
               <TextInput
                 style={styles.modalInput}
@@ -662,20 +627,50 @@ export default function HomeScreen() {
               <Text style={styles.inputLabel}>{t('gender')}</Text>
               <View style={styles.genderRow}>
                 <Pressable
-                  onPress={() => setForm(p => ({ ...p, gender: 'maschio' }))}
+                  onPress={() => setForm(p => ({ ...p, gender: 'maschio', avatarAsset: p.gender !== 'maschio' ? '' : p.avatarAsset }))}
                   style={[styles.genderBtn, form.gender === 'maschio' && styles.genderBtnActive]}
                 >
                   <Ionicons name="man" size={20} color={form.gender === 'maschio' ? '#4A90E2' : Colors.textMuted} />
                   <Text style={[styles.genderText, form.gender === 'maschio' && { color: '#4A90E2' }]}>{t('male')}</Text>
                 </Pressable>
                 <Pressable
-                  onPress={() => setForm(p => ({ ...p, gender: 'femmina' }))}
+                  onPress={() => setForm(p => ({ ...p, gender: 'femmina', avatarAsset: p.gender !== 'femmina' ? '' : p.avatarAsset }))}
                   style={[styles.genderBtn, form.gender === 'femmina' && styles.genderBtnFemActive]}
                 >
                   <Ionicons name="woman" size={20} color={form.gender === 'femmina' ? '#FF6B6B' : Colors.textMuted} />
                   <Text style={[styles.genderText, form.gender === 'femmina' && { color: '#FF6B6B' }]}>{t('female')}</Text>
                 </Pressable>
               </View>
+
+              {(form.gender === 'maschio' || form.gender === 'femmina') && (
+                <>
+                  <Text style={styles.inputLabel}>Avatar</Text>
+                  <View style={styles.avatarGrid}>
+                    {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
+                      const isSelected = form.avatarAsset === path;
+                      return (
+                        <Pressable
+                          key={path}
+                          onPress={() => {
+                            const newVal = isSelected ? '' : path;
+                            setForm(p => ({ ...p, avatarAsset: newVal }));
+                            console.log("Avatar selezionato:", newVal || 'nessuno');
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          style={[styles.avatarItem, isSelected && styles.avatarItemSelected]}
+                        >
+                          <Image
+                            source={getAvatarSource(path)}
+                            style={styles.avatarImage}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
 
               <Text style={styles.inputLabel}>{t('coParent')}</Text>
               {cogenitori.length > 0 ? (

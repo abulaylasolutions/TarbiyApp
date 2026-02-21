@@ -15,6 +15,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest, getApiUrl } from '@/lib/query-client';
 import Colors from '@/constants/colors';
+import { getAvatarSource } from '@/lib/avatar-map';
 import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, type AqidahLeafItem, type AqidahPillar, type AqidahLevel } from '@/lib/aqidah-data';
 
 const PASTEL_COLORS = [
@@ -275,6 +276,13 @@ function ChildSelector({ children: childList, selectedChildId, selectChild, getC
                   style={s.selectorImg}
                   contentFit="cover"
                   cachePolicy="memory-disk"
+                  transition={300}
+                />
+              ) : child.avatarAsset && getAvatarSource(child.avatarAsset) ? (
+                <Image
+                  source={getAvatarSource(child.avatarAsset)}
+                  style={s.selectorImg}
+                  contentFit="cover"
                   transition={300}
                 />
               ) : (
@@ -779,6 +787,13 @@ export default function DashboardScreen() {
                   style={[s.headerPhoto, { borderColor: cardColor }]}
                   contentFit="cover"
                   cachePolicy="memory-disk"
+                  transition={300}
+                />
+              ) : selectedChild.avatarAsset && getAvatarSource(selectedChild.avatarAsset) ? (
+                <Image
+                  source={getAvatarSource(selectedChild.avatarAsset)}
+                  style={[s.headerPhoto, { borderColor: cardColor }]}
+                  contentFit="cover"
                   transition={300}
                 />
               ) : (
