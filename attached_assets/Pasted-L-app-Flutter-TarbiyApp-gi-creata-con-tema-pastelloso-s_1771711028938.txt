@@ -1,0 +1,38 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, schermata login-signup, griglia selezione colore card figlio in add_child_screen.dart con 14 colori.
+
+ORA MODIFICA SOLO QUESTE COSE, senza toccare altre parti:
+
+1. Lingua default e cambio lingua:
+   - Imposta lingua default dell'app in inglese (locale: Locale('en'))
+   - Nella schermata login-signup (login_screen.dart o auth_screen.dart): aggiungi dropdown o SwitchListTile per cambiare lingua
+     - Opzioni: English (default), Italiano
+   - Salva scelta in users/preferredLanguage (string 'en' o 'it')
+   - Usa flutter_localizations e intl per traduzioni (aggiungi flutter pub add flutter_localizations intl)
+   - Applica Locale in MaterialApp (supportedLocales: [Locale('en'), Locale('it')], locale: currentLocale da Provider o shared_preferences)
+   - Traduci testi base: "Login", "Sign Up", "Email", "Password", "Google", "Facebook", "Lingua" → "Language" ecc.
+
+2. Griglia 14 colori tema card figlio (in add_child_screen.dart):
+   - Riga superiore (1–7): arcobaleno pastelloso (rosso → viola):
+     1. #FF9999 (rosso pastello)
+     2. #FFCC99 (arancione pastello)
+     3. #FFFF99 (giallo pastello)
+     4. #99FF99 (verde pastello)
+     5. #99FFFF (azzurro pastello)
+     6. #9999FF (blu pastello)
+     7. #CC99FF (viola pastello)
+   - Riga inferiore (8–14): arcobaleno puro (non pastelloso, colori più vividi):
+     8. #FF0000 (rosso puro)
+     9. #FFA500 (arancione puro)
+     10. #FFFF00 (giallo puro)
+     11. #00FF00 (verde puro)
+     12. #00FFFF (azzurro puro)
+     13. #0000FF (blu puro)
+     14. #800080 (viola puro)
+   - Griglia: GridView.count(crossAxisCount: 7, childAspectRatio: 1.0) – 7 sopra + 7 sotto
+   - Ogni colore: CircleAvatar tappabile (radius 30–35), sfondo con il colore, bordo verde menta #A8E6CF quando selezionato
+   - Salva hex string in children/cardColor (es. '#FF9999')
+   - Applica cardColor come backgroundColor della card figlio in Home e Dashboard header (opacità 0.9–1.0)
+
+Mantieni responsive (su piccoli schermi crossAxisCount: 4–5 se necessario), animazioni soft (fade su selezione). Usa debugPrint("Colore selezionato: $hex") per verificare.
+
+Modifica add_child_screen.dart (griglia 14 colori, 2 righe da 7, arcobaleno pastello sopra + puro sotto), main.dart o auth_screen.dart (lingua default inglese + cambio lingua in login-signup). Inizia subito con queste integrazioni precise!
