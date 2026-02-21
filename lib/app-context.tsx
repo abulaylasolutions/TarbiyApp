@@ -1,7 +1,4 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode } from 'react';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as FileSystem from 'expo-file-system/legacy';
 import { apiRequest } from '@/lib/query-client';
 
 export interface CogenitoreInfo {
@@ -21,6 +18,7 @@ export interface Child {
   coParentName?: string | null;
   cogenitori?: string | null;
   cardColor?: string | null;
+  avatarAsset?: string | null;
   salahEnabled?: boolean | null;
   fastingEnabled?: boolean | null;
   userId: string;
@@ -55,7 +53,6 @@ interface AppContextValue {
   notes: Note[];
   cogenitori: CogenitoreInfo[];
   pendingChanges: PendingChange[];
-  customPhotos: Record<string, string>;
   addChild: (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => Promise<{ success: boolean; message?: string; childId?: string }>;
   updateChild: (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string; salahEnabled?: boolean; fastingEnabled?: boolean; trackQuranToday?: boolean }) => Promise<{ success: boolean; message?: string }>;
   removeChild: (id: string) => Promise<void>;
@@ -67,10 +64,6 @@ interface AppContextValue {
   refreshNotes: () => Promise<void>;
   refreshCogenitori: () => Promise<void>;
   refreshPending: () => Promise<void>;
-  refreshCustomPhotos: () => Promise<void>;
-  setCustomPhoto: (childId: string, photoUrl: string) => Promise<void>;
-  removeCustomPhoto: (childId: string) => Promise<void>;
-  getChildPhoto: (childId: string) => string | null;
   approvePending: (id: string) => Promise<void>;
   rejectPending: (id: string) => Promise<void>;
   getCogenitoreNameById: (uid: string) => string | null;
@@ -87,7 +80,6 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
   const [notesList, setNotesList] = useState<Note[]>([]);
   const [cogenitori, setCogenitori] = useState<CogenitoreInfo[]>([]);
   const [pendingList, setPendingList] = useState<PendingChange[]>([]);
-  const [customPhotos, setCustomPhotos] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -101,7 +93,6 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
         refreshNotesInternal(),
         refreshCogenitoriInternal(),
         refreshPendingInternal(),
-        refreshCustomPhotosInternal(),
       ]);
     } catch (error) {
       console.error('Error loading data:', error);
@@ -143,64 +134,6 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
       const data = await res.json();
       setPendingList(data || []);
     } catch {}
-  };
-
-  const refreshCustomPhotosInternal = async () => {
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const photoKeys = keys.filter(k => k.startsWith('child_photo_'));
-      if (photoKeys.length === 0) {
-        setCustomPhotos({});
-        return;
-      }
-      const pairs = await AsyncStorage.multiGet(photoKeys);
-      const map: Record<string, string> = {};
-      for (const [key, value] of pairs) {
-        if (value) {
-          const childId = key.replace('child_photo_', '');
-          map[childId] = value;
-        }
-      }
-      setCustomPhotos(map);
-    } catch (error) {
-      console.error('Error loading local photos:', error);
-    }
-  };
-
-  const setCustomPhotoFn = async (childId: string, localPath: string) => {
-    try {
-      await AsyncStorage.setItem(`child_photo_${childId}`, localPath);
-      setCustomPhotos(prev => ({ ...prev, [childId]: localPath }));
-    } catch (error) {
-      console.error('Error saving local photo:', error);
-    }
-  };
-
-  const removeCustomPhotoFn = async (childId: string) => {
-    try {
-      await AsyncStorage.removeItem(`child_photo_${childId}`);
-      setCustomPhotos(prev => {
-        const next = { ...prev };
-        delete next[childId];
-        return next;
-      });
-      if (Platform.OS !== 'web') {
-        const localPath = `${FileSystem.documentDirectory}child_photos/${childId}.jpg`;
-        const info = await FileSystem.getInfoAsync(localPath);
-        if (info.exists) {
-          await FileSystem.deleteAsync(localPath, { idempotent: true });
-        }
-      }
-    } catch (error) {
-      console.error('Error removing local photo:', error);
-    }
-  };
-
-  const getChildPhoto = (childId: string): string | null => {
-    if (customPhotos[childId]) {
-      return customPhotos[childId];
-    }
-    return null;
   };
 
   const addChild = async (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[]; avatarAsset?: string }) => {
@@ -303,7 +236,6 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     notes: notesList,
     cogenitori,
     pendingChanges: pendingList,
-    customPhotos,
     addChild,
     updateChild: updateChildFn,
     removeChild,
@@ -315,15 +247,11 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     refreshNotes: refreshNotesInternal,
     refreshCogenitori: refreshCogenitoriInternal,
     refreshPending: refreshPendingInternal,
-    refreshCustomPhotos: refreshCustomPhotosInternal,
-    setCustomPhoto: setCustomPhotoFn,
-    removeCustomPhoto: removeCustomPhotoFn,
-    getChildPhoto,
     approvePending,
     rejectPending,
     getCogenitoreNameById,
     isLoading,
-  }), [childrenList, selectedChildId, notesList, cogenitori, pendingList, customPhotos, isLoading]);
+  }), [childrenList, selectedChildId, notesList, cogenitori, pendingList, isLoading]);
 
   return (
     <AppContext.Provider value={value}>

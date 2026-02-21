@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import * as ImagePicker from 'expo-image-picker';
 import ReAnimated, { FadeIn, FadeOut, FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
@@ -24,7 +23,6 @@ import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest } from '@/lib/query-client';
 import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
-import * as FileSystem from 'expo-file-system/legacy';
 
 const PASTEL_COLORS = [
   '#FFD3B6', '#C7CEEA', '#A8E6CF', '#E0BBE4',
@@ -37,7 +35,6 @@ interface ChildCardProps {
   totalCount: number;
   cogenitori: CogenitoreInfo[];
   currentUserId: string;
-  photoUrl: string | null;
   onDelete: (id: string) => void;
   onEdit: (child: Child) => void;
   onPress: (child: Child) => void;
@@ -45,7 +42,7 @@ interface ChildCardProps {
   onMove: (index: number, direction: 'up' | 'down') => void;
 }
 
-function ChildCard({ child, index, totalCount, cogenitori, currentUserId, photoUrl, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
+function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
   const { t } = useI18n();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
@@ -90,21 +87,12 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, photoU
         ]}
       >
         <View style={[styles.childGradient, { backgroundColor: cardBg }]}>
-          {photoUrl ? (
-            <Image
-              key={photoUrl}
-              source={{ uri: photoUrl }}
-              style={styles.childPhoto}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-              transition={300}
-            />
-          ) : child.avatarAsset && getAvatarSource(child.avatarAsset) ? (
+          {child.avatarAsset && getAvatarSource(child.avatarAsset) ? (
             <Image
               source={getAvatarSource(child.avatarAsset)}
               style={styles.childPhoto}
               contentFit="cover"
-              transition={300}
+              transition={0}
             />
           ) : (
             <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
@@ -208,7 +196,6 @@ interface ChildFormData {
   birthMonth: string;
   birthYear: string;
   gender: string;
-  photoUri: string;
   selectedCogenitori: string[];
   cardColor: string;
   avatarAsset: string;
@@ -220,7 +207,6 @@ const EMPTY_FORM: ChildFormData = {
   birthMonth: '',
   birthYear: '',
   gender: '',
-  photoUri: '',
   selectedCogenitori: [],
   cardColor: PASTEL_COLORS[0],
   avatarAsset: '',
@@ -228,7 +214,7 @@ const EMPTY_FORM: ChildFormData = {
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren, getChildPhoto, setCustomPhoto, removeCustomPhoto, refreshCustomPhotos } = useApp();
+  const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren } = useApp();
   const { user } = useAuth();
   const { t, isRTL } = useI18n();
   const [showModal, setShowModal] = useState(false);
@@ -266,14 +252,12 @@ export default function HomeScreen() {
         selectedCogs = JSON.parse(child.cogenitori).filter((id: string) => id !== user?.id);
       } catch {}
     }
-    const existingPhoto = getChildPhoto(child.id);
     setForm({
       name: child.name,
       birthDay: String(birth.getDate()),
       birthMonth: String(birth.getMonth() + 1),
       birthYear: String(birth.getFullYear()),
       gender: child.gender || '',
-      photoUri: existingPhoto || '',
       selectedCogenitori: selectedCogs,
       cardColor: child.cardColor || PASTEL_COLORS[0],
       avatarAsset: child.avatarAsset || '',
@@ -311,43 +295,6 @@ export default function HomeScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setShowSettings(false);
     } catch {}
-  };
-
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-
-  const savePhotoLocally = async (sourceUri: string, childId: string): Promise<string | null> => {
-    try {
-      setUploadingPhoto(true);
-      if (Platform.OS === 'web') {
-        return sourceUri;
-      }
-      const dir = `${FileSystem.documentDirectory}child_photos/`;
-      const dirInfo = await FileSystem.getInfoAsync(dir);
-      if (!dirInfo.exists) {
-        await FileSystem.makeDirectoryAsync(dir, { intermediates: true });
-      }
-      const localPath = `${dir}${childId}.jpg`;
-      await FileSystem.copyAsync({ from: sourceUri, to: localPath });
-      return localPath;
-    } catch (err) {
-      console.error('Errore salvataggio foto locale:', err);
-      return sourceUri;
-    } finally {
-      setUploadingPhoto(false);
-    }
-  };
-
-  const pickImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.7,
-    });
-    if (!result.canceled && result.assets[0]) {
-      const localUri = result.assets[0].uri;
-      setForm(prev => ({ ...prev, photoUri: localUri }));
-    }
   };
 
   const selectCogenitore = (id: string) => {
@@ -404,16 +351,7 @@ export default function HomeScreen() {
         cogenitori: JSON.stringify(cogArray),
       });
       if (result.success) {
-        if (form.photoUri) {
-          const localPath = await savePhotoLocally(form.photoUri, editingChild.id);
-          if (localPath) {
-            await setCustomPhoto(editingChild.id, localPath);
-          }
-        } else if (getChildPhoto(editingChild.id)) {
-          await removeCustomPhoto(editingChild.id);
-        }
         await refreshChildren();
-        await refreshCustomPhotos();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -434,14 +372,7 @@ export default function HomeScreen() {
         avatarAsset: form.avatarAsset || undefined,
       });
       if (result.success) {
-        if (form.photoUri && result.childId) {
-          const localPath = await savePhotoLocally(form.photoUri, result.childId);
-          if (localPath) {
-            await setCustomPhoto(result.childId, localPath);
-          }
-        }
         await refreshChildren();
-        await refreshCustomPhotos();
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         setShowModal(false);
       } else {
@@ -507,7 +438,6 @@ export default function HomeScreen() {
                 totalCount={children.length}
                 cogenitori={cogenitori}
                 currentUserId={user?.id || ''}
-                photoUrl={getChildPhoto(child.id)}
                 onDelete={removeChild}
                 onEdit={openEditModal}
                 onPress={handleChildPress}
@@ -557,32 +487,6 @@ export default function HomeScreen() {
                   <Text style={styles.errorText}>{errorMsg}</Text>
                 </View>
               ) : null}
-
-              <View style={{ alignItems: 'center' }}>
-                <Pressable onPress={uploadingPhoto ? undefined : pickImage} style={styles.photoPickerWrap}>
-                  {uploadingPhoto ? (
-                    <View style={styles.photoPlaceholder}>
-                      <Ionicons name="cloud-upload" size={28} color={Colors.primary} />
-                    </View>
-                  ) : form.photoUri ? (
-                    <Image key={form.photoUri} source={{ uri: form.photoUri }} style={styles.photoPreview} contentFit="cover" transition={300} />
-                  ) : (
-                    <View style={styles.photoPlaceholder}>
-                      <Ionicons name="camera" size={28} color={Colors.textMuted} />
-                    </View>
-                  )}
-                  <Text style={styles.photoLabel}>{uploadingPhoto ? 'Caricamento...' : t('photoOptional')}</Text>
-                </Pressable>
-                {form.photoUri ? (
-                  <Pressable
-                    onPress={() => setForm(prev => ({ ...prev, photoUri: '' }))}
-                    style={{ flexDirection: 'row', alignItems: 'center', marginTop: 6, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 12, backgroundColor: '#FFF0F0' }}
-                  >
-                    <Ionicons name="trash-outline" size={14} color={Colors.danger} />
-                    <Text style={{ color: Colors.danger, fontSize: 12, marginLeft: 4, fontFamily: 'Nunito_600SemiBold' }}>Rimuovi foto</Text>
-                  </Pressable>
-                ) : null}
-              </View>
 
               <Text style={styles.inputLabel}>{t('childName')}</Text>
               <TextInput
@@ -642,36 +546,6 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
 
-              {(form.gender === 'maschio' || form.gender === 'femmina') && (
-                <>
-                  <Text style={styles.inputLabel}>Avatar</Text>
-                  <View style={styles.avatarGrid}>
-                    {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
-                      const isSelected = form.avatarAsset === path;
-                      return (
-                        <Pressable
-                          key={path}
-                          onPress={() => {
-                            const newVal = isSelected ? '' : path;
-                            setForm(p => ({ ...p, avatarAsset: newVal }));
-                            console.log("Avatar selezionato:", newVal || 'nessuno');
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          }}
-                          style={[styles.avatarItem, isSelected && styles.avatarItemSelected]}
-                        >
-                          <Image
-                            source={getAvatarSource(path)}
-                            style={styles.avatarImage}
-                            contentFit="cover"
-                            transition={200}
-                          />
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </>
-              )}
-
               <Text style={styles.inputLabel}>{t('coParent')}</Text>
               {cogenitori.length > 0 ? (
                 <View style={styles.cogSelectorWrap}>
@@ -705,6 +579,36 @@ export default function HomeScreen() {
                     {t('connectCoParent')}
                   </Text>
                 </View>
+              )}
+
+              {(form.gender === 'maschio' || form.gender === 'femmina') && (
+                <>
+                  <Text style={styles.inputLabel}>Avatar</Text>
+                  <View style={styles.avatarGrid}>
+                    {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
+                      const isSelected = form.avatarAsset === path;
+                      return (
+                        <Pressable
+                          key={path}
+                          onPress={() => {
+                            const newVal = isSelected ? '' : path;
+                            setForm(p => ({ ...p, avatarAsset: newVal }));
+                            console.log("Avatar selezionato:", newVal || 'nessuno');
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          style={[styles.avatarItem, isSelected && styles.avatarItemSelected]}
+                        >
+                          <Image
+                            source={getAvatarSource(path)}
+                            style={styles.avatarImage}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
               )}
 
               <Text style={styles.inputLabel}>{t('cardColor')}</Text>
@@ -861,8 +765,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.8)',
   },
   childAvatar: {
     width: 56,
@@ -941,13 +843,6 @@ const styles = StyleSheet.create({
   modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 20 },
   errorBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.dangerLight, borderRadius: 12, padding: 12, gap: 8, marginBottom: 16 },
   errorText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.danger, flex: 1 },
-  photoPickerWrap: { alignItems: 'center', marginBottom: 20 },
-  photoPreview: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: Colors.mintGreenLight },
-  photoPlaceholder: {
-    width: 80, height: 80, borderRadius: 40, backgroundColor: Colors.creamBeige,
-    alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.textMuted, borderStyle: 'dashed',
-  },
-  photoLabel: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.textMuted, marginTop: 6 },
   inputLabel: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary, marginBottom: 8 },
   modalInput: { fontFamily: 'Nunito_400Regular', fontSize: 16, color: Colors.textPrimary, backgroundColor: Colors.creamBeige, borderRadius: 16, padding: 14, marginBottom: 16 },
   dateRow: { flexDirection: 'row', gap: 10 },
@@ -981,10 +876,10 @@ const styles = StyleSheet.create({
   },
   noCogWarnText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.skyBlueDark, flex: 1 },
   avatarGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16, justifyContent: 'center',
+    flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 16, justifyContent: 'center',
   },
   avatarItem: {
-    width: 64, height: 64, borderRadius: 32, overflow: 'hidden',
+    width: 80, height: 80, borderRadius: 40, overflow: 'hidden',
     borderWidth: 3, borderColor: 'transparent',
   },
   avatarItemSelected: {
@@ -993,7 +888,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
   },
   avatarImage: {
-    width: '100%', height: '100%', borderRadius: 30,
+    width: '100%', height: '100%', borderRadius: 38,
   },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   colorSwatch: {
