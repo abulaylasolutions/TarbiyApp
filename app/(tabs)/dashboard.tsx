@@ -1022,11 +1022,11 @@ export default function DashboardScreen() {
               )}
               <View style={s.headerInfo}>
                 <Text style={[s.headerName, { color: nameColor }]}>{selectedChild.name}</Text>
-                <Text style={[s.headerAge, { color: isDark ? colors.textSecondary : Colors.textPrimary }]}>{getAge(selectedChild.birthDate, t)}</Text>
+                <Text style={[s.headerAge, { color: Colors.white }]}>{getAge(selectedChild.birthDate, t)}</Text>
                 {coParentName && (
-                  <Text style={[s.headerCoParent, { color: isDark ? colors.textSecondary : Colors.textPrimary }]}>
+                  <Text style={[s.headerCoParent, { color: Colors.white }]}>
                     {isFemale ? t('daughterOf') : t('sonOf')}{' '}
-                    <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
+                    <Text style={{ color: Colors.white, fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
                   </Text>
                 )}
               </View>
