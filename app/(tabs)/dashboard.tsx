@@ -1037,11 +1037,14 @@ export default function DashboardScreen() {
 
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
           <View style={s.dateBarHeader}>
-            <Text style={s.dateBarMonth}>
-              {useHijri
-                ? `${gregorianToHijri(currentDate, lang).monthName} ${gregorianToHijri(currentDate, lang).year}`
-                : `${getMonthName(currentDate, lang)} ${currentDate.getFullYear()}`}
-            </Text>
+            <View>
+              <Text style={s.dateBarMonth}>
+                {`${getMonthName(currentDate, lang)} ${currentDate.getFullYear()}`}
+              </Text>
+              <Text style={s.dateBarHijriMonth}>
+                {`${gregorianToHijri(currentDate, lang).monthName} ${gregorianToHijri(currentDate, lang).year}`}
+              </Text>
+            </View>
             {dateStr !== todayStr && (
               <Pressable onPress={goToToday} style={[s.todayBtn, { backgroundColor: cardColor }]}>
                 <Text style={s.todayBtnText}>{t('today')}</Text>
@@ -1054,12 +1057,13 @@ export default function DashboardScreen() {
             data={dates}
             showsHorizontalScrollIndicator={false}
             initialScrollIndex={30}
-            getItemLayout={(_, i) => ({ length: 56, offset: 56 * i, index: i })}
+            getItemLayout={(_, i) => ({ length: 80, offset: 80 * i, index: i })}
             keyExtractor={(item) => formatDate(item)}
             renderItem={({ item }) => {
               const ds = formatDate(item);
               const isSelected = ds === dateStr;
               const isToday = ds === todayStr;
+              const hijri = gregorianToHijri(item, lang);
               return (
                 <Pressable
                   onPress={() => setCurrentDate(new Date(item))}
@@ -1073,7 +1077,13 @@ export default function DashboardScreen() {
                     {getDayName(item, lang)}
                   </Text>
                   <Text style={[s.dateNum, isSelected && s.dateNumActive]}>
-                    {useHijri ? gregorianToHijri(item, lang).day : item.getDate()}
+                    {item.getDate()}
+                  </Text>
+                  <Text style={[s.dateGregorianSub, isSelected && s.dateGregorianSubActive]}>
+                    {getMonthName(item, lang)}
+                  </Text>
+                  <Text style={[s.dateHijriSub, isSelected && s.dateHijriSubActive]} numberOfLines={1}>
+                    {`${hijri.day} ${hijri.monthNameShort}`}
                   </Text>
                 </Pressable>
               );
@@ -2102,18 +2112,23 @@ const s = StyleSheet.create({
   dateBarWrap: { marginBottom: 8 },
   dateBarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
   dateBarMonth: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary },
+  dateBarHijriMonth: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.textMuted, marginTop: 1 },
   todayBtn: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 },
   todayBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#000000' },
   dateItem: {
-    width: 48, height: 64, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-    marginHorizontal: 4, backgroundColor: Colors.cardBackground,
+    width: 72, height: 84, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    marginHorizontal: 4, backgroundColor: Colors.cardBackground, paddingVertical: 4,
   },
   dateItemActive: {},
   dateItemToday: {},
-  dateDayName: { fontFamily: 'Nunito_500Medium', fontSize: 11, color: Colors.textMuted },
+  dateDayName: { fontFamily: 'Nunito_500Medium', fontSize: 10, color: Colors.textMuted },
   dateDayNameActive: { color: '#000000', fontFamily: 'Nunito_700Bold' },
   dateNum: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
   dateNumActive: { color: '#000000' },
+  dateGregorianSub: { fontFamily: 'Nunito_500Medium', fontSize: 9, color: Colors.textMuted, marginTop: -1 },
+  dateGregorianSubActive: { color: '#000000' },
+  dateHijriSub: { fontFamily: 'Nunito_400Regular', fontSize: 8, color: 'rgba(0,0,0,0.35)', marginTop: 1 },
+  dateHijriSubActive: { color: 'rgba(0,0,0,0.55)' },
 
   sectionsWrap: { paddingHorizontal: 16, gap: 8 },
   sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary, marginTop: 12, marginBottom: 8, flex: 1 },
