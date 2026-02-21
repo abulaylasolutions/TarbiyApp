@@ -1,0 +1,26 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso (verde menta #A8E6CF come accento), schermata modifica figlio (add_child_screen.dart o edit_child_screen.dart), Dashboard con selector figlio in alto, sezione Aqidah con nota genitore, Adab e Akhlaq in Educazione.
+
+ORA MODIFICA E AGGIUNGI SOLO QUESTE COSE, senza riscrivere l'intera app:
+
+1. Sfondo schermata modifica figlio:
+   - Cambia sfondo da bianco completo a gradiente lineare: da verde menta chiaro #A8E6CF (in alto) a bianco crema #FFF5E1 (in basso)
+   - Usa Container con decoration: BoxDecoration(gradient: LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFA8E6CF), Color(0xFFFFFFFF)]))
+   - Applica come sfondo del Scaffold o Column principale in add/edit child screen
+
+2. Aggiungi "nota genitore" a Adab e Akhlaq:
+   - Nella sezione "Akhlaq e 'Adab" di Educazione: per ogni categoria (Mangiare, Bere, ecc.) e ogni item della checklist, aggiungi TextField per nota genitore (simile a Aqidah)
+     - Salva in children/akhlaqAndAdab/{categoria}/{item}/note: string
+   - Rendilo realtime sync Firestore, con placeholder "Nota del genitore (es. 'Oggi l'ha detto con gioia')"
+
+3. Switch figlio in Dashboard con swipe card:
+   - Rimuovi selector figlio in alto (dropdown/carousel)
+   - Nella Dashboard: rendi la card principale (header con foto/nome/età/cogenitore) swipable orizzontalmente per cambiare figlio
+     - Usa GestureDetector o PageView con 1 pagina per figlio (lista figli da Firestore)
+     - Aggiungi freccette lievi > e < ai lati (IconButton semi-trasparente grigio tenue, opacity 0.5, icon: Icons.chevron_left/right)
+     - Swipe destra/sinistra o clic freccette: cambia figlio istantaneo con animazione slide (PageController.animateToPage)
+     - Se ultimo/primo figlio: non swipe o bounce leggero
+   - Aggiorna sezione giornaliera/altre sotto in realtime su cambio figlio
+
+Mantieni responsive, animazioni soft (slide 300ms su swipe, fade su cambio), sync realtime. Usa Provider per stato currentChildId.
+
+Modifica dashboard_screen.dart (rimuovi selector, aggiungi swipe card con freccette), education_section.dart (aggiungi note in Adab/Akhlaq), add_child_screen.dart (sfondo gradiente). Inizia subito con queste integrazioni precise!

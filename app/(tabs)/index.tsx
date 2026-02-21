@@ -475,6 +475,12 @@ export default function HomeScreen() {
             exiting={FadeOut.duration(150)}
             style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
           >
+            <LinearGradient
+              colors={['#A8E6CF', '#FFF5E1']}
+              start={{ x: 0.5, y: 0 }}
+              end={{ x: 0.5, y: 1 }}
+              style={styles.modalGradient}
+            >
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
               <View style={styles.modalHandle} />
               <Text style={styles.modalTitle}>
@@ -642,6 +648,7 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
             </ScrollView>
+            </LinearGradient>
           </ReAnimated.View>
         </View>
       </Modal>
@@ -833,11 +840,15 @@ const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
   modalDismiss: { flex: 1 },
   modalContent: {
-    backgroundColor: Colors.cardBackground,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
     maxHeight: '85%',
+    overflow: 'hidden',
+  },
+  modalGradient: {
+    padding: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
   },
   modalHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.textMuted, alignSelf: 'center', marginBottom: 20 },
   modalTitle: { fontFamily: 'Nunito_700Bold', fontSize: 20, color: Colors.textPrimary, marginBottom: 20 },
