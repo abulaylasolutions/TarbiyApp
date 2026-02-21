@@ -69,7 +69,7 @@ export default function IndexScreen() {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(700).duration(600)}>
-          <Text style={styles.subtitle}>Educazione islamica dei tuoi figli</Text>
+          <Text style={styles.subtitle}>Raise righteous children, hand in hand</Text>
         </Animated.View>
       </View>
 
@@ -115,10 +115,12 @@ const styles = StyleSheet.create({
     fontSize: 38,
   },
   subtitle: {
-    fontFamily: 'Nunito_400Regular',
+    fontFamily: 'Nunito_700Bold',
     fontSize: 16,
-    color: Colors.textSecondary,
-    marginTop: 4,
+    color: '#A8E6CF',
+    marginTop: 8,
+    textAlign: 'center',
+    letterSpacing: 0.3,
   },
   bottomDots: {
     position: 'absolute',
