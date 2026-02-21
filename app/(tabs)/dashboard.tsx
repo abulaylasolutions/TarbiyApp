@@ -22,7 +22,7 @@ import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, ty
 import PremiumOverlay from '@/components/PremiumOverlay';
 
 const PASTEL_COLORS = [
-  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
+  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFC1CC',
   '#E0BBE4', '#FFF5BA', '#B2D8B2',
 ];
 
@@ -603,35 +603,18 @@ export default function DashboardScreen() {
     } catch {}
   };
 
-  const handleDeleteTask = (taskId: string, taskName: string, frequency?: string) => {
-    const isRecurring = frequency === 'weekly' || frequency === 'monthly';
-    if (isRecurring) {
-      Alert.alert(t('delete'), t('deleteRecurringQuestion'), [
-        { text: t('cancel'), style: 'cancel' },
-        { text: t('onlyThis'), onPress: async () => {
-          try {
-            await apiRequest('DELETE', `/api/tasks/${taskId}`);
-            fetchDashboardData();
-          } catch {}
-        }},
-        { text: t('allFuture'), style: 'destructive', onPress: async () => {
-          try {
-            await apiRequest('DELETE', `/api/tasks/${taskId}`);
-            fetchDashboardData();
-          } catch {}
-        }},
-      ]);
-    } else {
-      Alert.alert(t('delete'), `${t('deleteConfirm')} "${taskName}"?`, [
-        { text: t('cancel'), style: 'cancel' },
-        { text: t('delete'), style: 'destructive', onPress: async () => {
-          try {
-            await apiRequest('DELETE', `/api/tasks/${taskId}`);
-            fetchDashboardData();
-          } catch {}
-        }},
-      ]);
-    }
+  const [deletedTaskSnackbar, setDeletedTaskSnackbar] = useState<{ id: string; name: string; visible: boolean } | null>(null);
+  const deletedTaskBackupRef = useRef<any>(null);
+
+  const handleDeleteTask = async (taskId: string, taskName: string, _frequency?: string) => {
+    try {
+      deletedTaskBackupRef.current = { id: taskId, name: taskName };
+      await apiRequest('DELETE', `/api/tasks/${taskId}`);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setDeletedTaskSnackbar({ id: taskId, name: taskName, visible: true });
+      fetchDashboardData();
+      setTimeout(() => setDeletedTaskSnackbar(null), 4000);
+    } catch {}
   };
 
   const openEditTask = (task: TaskItem) => {
@@ -1928,6 +1911,16 @@ export default function DashboardScreen() {
           </Pressable>
         </View>
       </Modal>
+
+      {deletedTaskSnackbar?.visible && (
+        <Animated.View
+          entering={FadeIn.duration(250)}
+          style={[s.deleteSnackbar, { bottom: Platform.OS === 'web' ? 34 + 16 : insets.bottom + 72 }]}
+        >
+          <Ionicons name="trash" size={18} color={Colors.white} />
+          <Text style={s.deleteSnackbarText}>{t('eventDeleted')}</Text>
+        </Animated.View>
+      )}
     </View>
   );
 }
@@ -2274,4 +2267,13 @@ const s = StyleSheet.create({
   },
   popupBtnDanger: { backgroundColor: '#FFE5E5', marginTop: 4 },
   popupBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary },
+  deleteSnackbar: {
+    position: 'absolute', left: 20, right: 20,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    backgroundColor: Colors.textPrimary, borderRadius: 16,
+    paddingVertical: 14, paddingHorizontal: 20,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2, shadowRadius: 10, elevation: 8,
+  },
+  deleteSnackbarText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.white },
 });

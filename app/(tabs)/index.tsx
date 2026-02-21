@@ -26,7 +26,7 @@ import { apiRequest } from '@/lib/query-client';
 import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
 const PASTEL_COLORS = [
-  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
+  '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFC1CC',
   '#E0BBE4', '#FFF5BA', '#B2D8B2',
 ];
 
@@ -622,13 +622,16 @@ export default function HomeScreen() {
 
               <Text style={styles.inputLabel}>{t('cardColor')}</Text>
               <View style={styles.colorRow}>
-                {PASTEL_COLORS.map(color => (
+                {PASTEL_COLORS.map(color => {
+                  const r = parseInt(color.slice(1,3),16), g = parseInt(color.slice(3,5),16), b = parseInt(color.slice(5,7),16);
+                  const darkerBorder = `rgb(${Math.max(0,r-50)},${Math.max(0,g-50)},${Math.max(0,b-50)})`;
+                  return (
                   <Pressable
                     key={color}
                     onPress={() => setForm(p => ({ ...p, cardColor: color }))}
                     style={[
                       styles.colorSwatch,
-                      { backgroundColor: color },
+                      { backgroundColor: color, borderColor: darkerBorder },
                       form.cardColor === color && styles.colorSwatchSelected,
                     ]}
                   >
@@ -636,7 +639,8 @@ export default function HomeScreen() {
                       <Ionicons name="checkmark" size={16} color="rgba(0,0,0,0.5)" />
                     )}
                   </Pressable>
-                ))}
+                  );
+                })}
               </View>
 
               <View style={styles.modalActions}>
@@ -925,7 +929,8 @@ const styles = StyleSheet.create({
   },
   colorRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 10, marginBottom: 16, justifyContent: 'center' },
   colorSwatch: {
-    width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+    width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: 'transparent',
   },
   colorSwatchSelected: { borderWidth: 3, borderColor: Colors.textPrimary },
   modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
