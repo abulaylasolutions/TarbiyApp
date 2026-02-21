@@ -8,6 +8,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider } from "@/lib/auth-context";
 import { I18nProvider } from "@/lib/i18n";
+import { ThemeProvider, useTheme } from "@/lib/theme-context";
 import { StatusBar } from "expo-status-bar";
 import {
   useFonts,
@@ -21,13 +22,17 @@ import {
 SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
+  const { colors } = useTheme();
   return (
-    <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
-      <Stack.Screen name="index" />
-      <Stack.Screen name="auth" />
-      <Stack.Screen name="profile-completion" />
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <>
+      <StatusBar style={colors.statusBar} />
+      <Stack screenOptions={{ headerShown: false, animation: "fade" }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="auth" />
+        <Stack.Screen name="profile-completion" />
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </>
   );
 }
 
@@ -53,12 +58,13 @@ export default function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <GestureHandlerRootView>
           <KeyboardProvider>
-            <AuthProvider>
-              <I18nProvider>
-                <StatusBar style="dark" />
-                <RootLayoutNav />
-              </I18nProvider>
-            </AuthProvider>
+            <ThemeProvider>
+              <AuthProvider>
+                <I18nProvider>
+                  <RootLayoutNav />
+                </I18nProvider>
+              </AuthProvider>
+            </ThemeProvider>
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
