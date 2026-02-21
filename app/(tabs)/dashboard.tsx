@@ -782,9 +782,7 @@ export default function DashboardScreen() {
   return (
     <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 100 }} showsVerticalScrollIndicator={false}>
-        <View style={{ paddingTop: topPadding + 8 }}>
-          <ChildSelector children={children} selectedChildId={selectedChildId} selectChild={selectChild} />
-        </View>
+        <View style={{ paddingTop: topPadding + 8 }} />
 
         <Animated.View entering={FadeIn.duration(300)} style={s.headerCard}>
           <LinearGradient
@@ -793,6 +791,18 @@ export default function DashboardScreen() {
             style={s.headerGradient}
           >
             <View style={s.headerRow}>
+              {children.length > 1 && (
+                <Pressable
+                  onPress={() => {
+                    const prevIndex = selectedIndex <= 0 ? children.length - 1 : selectedIndex - 1;
+                    selectChild(children[prevIndex].id);
+                  }}
+                  style={s.childNavArrow}
+                  hitSlop={12}
+                >
+                  <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.85)" />
+                </Pressable>
+              )}
               {selectedChild.avatarAsset && getAvatarSource(selectedChild.avatarAsset) ? (
                 <Image
                   source={getAvatarSource(selectedChild.avatarAsset)}
@@ -814,7 +824,22 @@ export default function DashboardScreen() {
                     <Text style={{ color: '#333', fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
                   </Text>
                 )}
+                {children.length > 1 && (
+                  <Text style={s.childCounter}>{selectedIndex + 1} / {children.length}</Text>
+                )}
               </View>
+              {children.length > 1 && (
+                <Pressable
+                  onPress={() => {
+                    const nextIndex = selectedIndex >= children.length - 1 ? 0 : selectedIndex + 1;
+                    selectChild(children[nextIndex].id);
+                  }}
+                  style={s.childNavArrow}
+                  hitSlop={12}
+                >
+                  <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.85)" />
+                </Pressable>
+              )}
               <Pressable onPress={() => setShowAddTask(true)} style={s.addTaskBtn}>
                 <Ionicons name="add" size={24} color={Colors.white} />
               </Pressable>
@@ -1573,8 +1598,16 @@ const s = StyleSheet.create({
 
   headerCard: { marginHorizontal: 16, borderRadius: 24, overflow: 'hidden', marginBottom: 4 },
   headerGradient: { padding: 20 },
-  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  headerRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerPhoto: { width: 72, height: 72, borderRadius: 36 },
+  childNavArrow: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  childCounter: {
+    fontFamily: 'Nunito_500Medium', fontSize: 11, color: 'rgba(0,0,0,0.45)', marginTop: 2,
+  },
   headerPhotoFallback: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
   headerPhotoInitial: { fontFamily: 'Nunito_800ExtraBold', fontSize: 28 },
   headerInfo: { flex: 1 },
