@@ -347,6 +347,15 @@ export default function DashboardScreen() {
   const [editingAkhlaqNote, setEditingAkhlaqNote] = useState<string | null>(null);
   const [akhlaqNoteText, setAkhlaqNoteText] = useState('');
 
+  const trackRamadan = (selectedChild as any)?.trackRamadan === true;
+  const [ramadanYear, setRamadanYear] = useState(() => {
+    const now = new Date();
+    const gYear = now.getFullYear();
+    return String(gYear <= 2024 ? 1446 : gYear <= 2025 ? 1446 : gYear <= 2026 ? 1447 : 1448);
+  });
+  const [ramadanLogs, setRamadanLogs] = useState<Record<string, boolean>>({});
+  const [ramadanLoading, setRamadanLoading] = useState(false);
+
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskFreq, setNewTaskFreq] = useState('daily');
@@ -480,6 +489,44 @@ export default function DashboardScreen() {
   }, [childId, dateStr, salahEnabled, fastingEnabled]);
 
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
+
+  const fetchRamadanLogs = useCallback(async () => {
+    if (!childId || !trackRamadan) return;
+    setRamadanLoading(true);
+    try {
+      const base = getBaseUrl();
+      const res = await fetch(new URL(`/api/children/${childId}/ramadan/${ramadanYear}`, base).toString(), { credentials: 'include' });
+      if (res.ok) {
+        const logs = await res.json();
+        const map: Record<string, boolean> = {};
+        logs.forEach((l: any) => { map[l.day] = l.fasted; });
+        setRamadanLogs(map);
+      }
+    } catch {}
+    setRamadanLoading(false);
+  }, [childId, ramadanYear, trackRamadan]);
+
+  useEffect(() => { fetchRamadanLogs(); }, [fetchRamadanLogs]);
+
+  const toggleRamadanDay = async (day: number) => {
+    if (!childId) return;
+    const dayStr = String(day);
+    const current = ramadanLogs[dayStr];
+    const newVal = !current;
+    setRamadanLogs(prev => ({ ...prev, [dayStr]: newVal }));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    try {
+      await apiRequest('POST', `/api/children/${childId}/ramadan`, {
+        ramadanYear,
+        day: dayStr,
+        fasted: newVal,
+      });
+    } catch {
+      setRamadanLogs(prev => ({ ...prev, [dayStr]: !newVal }));
+    }
+  };
+
+  const ramadanFastedCount = Object.values(ramadanLogs).filter(v => v === true).length;
 
   const shouldShowTask = useCallback((task: TaskItem) => {
     if (task.frequency === 'daily') return true;
@@ -1136,6 +1183,75 @@ export default function DashboardScreen() {
                     </View>
                   </View>
                 )}
+              </View>
+            </Animated.View>
+          )}
+
+          {trackRamadan && (
+            <Animated.View entering={FadeInDown.delay(450).duration(300)}>
+              <View style={s.sectionTitleRow}>
+                <Ionicons name="moon" size={20} color="#D4A03C" />
+                <Text style={s.sectionTitle}>{t('ramadanTracker')}</Text>
+              </View>
+              <View style={[s.subjectCard, { padding: 16 }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                  <Pressable onPress={() => setRamadanYear(String(Number(ramadanYear) - 1))} hitSlop={12}>
+                    <Ionicons name="chevron-back" size={20} color={Colors.textMuted} />
+                  </Pressable>
+                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary }}>
+                    {t('ramadanYear')} {ramadanYear}
+                  </Text>
+                  <Pressable onPress={() => setRamadanYear(String(Number(ramadanYear) + 1))} hitSlop={12}>
+                    <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                  </Pressable>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                  <View style={{ flex: 1, height: 8, backgroundColor: Colors.creamBeige, borderRadius: 4, overflow: 'hidden' }}>
+                    <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: '#D4A03C', borderRadius: 4 }} />
+                  </View>
+                  <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textMuted }}>
+                    {ramadanFastedCount}/30
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                  {Array.from({ length: 30 }, (_, i) => i + 1).map(day => {
+                    const dayStr = String(day);
+                    const fasted = ramadanLogs[dayStr] === true;
+                    return (
+                      <Pressable
+                        key={day}
+                        onPress={() => toggleRamadanDay(day)}
+                        style={{
+                          width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+                          backgroundColor: fasted ? '#D4A03C' + '20' : Colors.creamBeige + '80',
+                          borderWidth: 1.5,
+                          borderColor: fasted ? '#D4A03C' : Colors.creamBeige,
+                        }}
+                      >
+                        <Text style={{
+                          fontFamily: fasted ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
+                          fontSize: 13,
+                          color: fasted ? '#D4A03C' : Colors.textMuted,
+                        }}>
+                          {day}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 16, marginTop: 12, justifyContent: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#D4A03C' + '20', borderWidth: 1, borderColor: '#D4A03C' }} />
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted }}>{t('ramadanFasted')}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: Colors.creamBeige + '80', borderWidth: 1, borderColor: Colors.creamBeige }} />
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted }}>{t('ramadanNotTracked')}</Text>
+                  </View>
+                </View>
               </View>
             </Animated.View>
           )}
