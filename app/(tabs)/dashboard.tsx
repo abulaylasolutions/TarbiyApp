@@ -329,6 +329,9 @@ export default function DashboardScreen() {
   const [editingAqidahNote, setEditingAqidahNote] = useState<string | null>(null);
   const [aqidahNoteText, setAqidahNoteText] = useState('');
   const [prophetModal, setProphetModal] = useState<AqidahLeafItem | null>(null);
+  const [akhlaqNotesMap, setAkhlaqNotesMap] = useState<Record<string, string>>({});
+  const [editingAkhlaqNote, setEditingAkhlaqNote] = useState<string | null>(null);
+  const [akhlaqNoteText, setAkhlaqNoteText] = useState('');
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -375,6 +378,7 @@ export default function DashboardScreen() {
       fetches.push(fetch(new URL(`/api/children/${childId}/quran-daily/${dateStr}`, base).toString(), { credentials: 'include' }));
       fetches.push(fetch(new URL(`/api/children/${childId}/quran`, base).toString(), { credentials: 'include' }));
       fetches.push(fetch(new URL(`/api/children/${childId}/aqidah`, base).toString(), { credentials: 'include' }));
+      fetches.push(fetch(new URL(`/api/children/${childId}/akhlaq-notes`, base).toString(), { credentials: 'include' }));
 
       const results = await Promise.all(fetches);
       const [tasksData, compData, actData] = await Promise.all(results.slice(0, 3).map(r => r.json()));
@@ -416,6 +420,13 @@ export default function DashboardScreen() {
         const aqMap: Record<string, { checked: boolean; note: string }> = {};
         aqidahData.forEach((item: any) => { aqMap[item.itemKey] = { checked: !!item.checked, note: item.note || '' }; });
         setAqidahItems(aqMap);
+      }
+      idx++;
+      const akhlaqNotesData = await results[idx].json();
+      if (Array.isArray(akhlaqNotesData)) {
+        const anMap: Record<string, string> = {};
+        akhlaqNotesData.forEach((item: any) => { if (item.note) anMap[item.itemKey] = item.note; });
+        setAkhlaqNotesMap(anMap);
       }
     } catch {}
   }, [childId, dateStr, salahEnabled, fastingEnabled]);
@@ -705,6 +716,19 @@ export default function DashboardScreen() {
     setEditingAqidahNote(null);
     try {
       await apiRequest('POST', `/api/children/${childId}/aqidah`, { itemKey, checked: current?.checked || false, note: aqidahNoteText });
+    } catch {}
+  };
+
+  const saveAkhlaqNote = async (itemKey: string) => {
+    if (!childId) return;
+    if (akhlaqNoteText.trim()) {
+      setAkhlaqNotesMap(prev => ({ ...prev, [itemKey]: akhlaqNoteText.trim() }));
+    } else {
+      setAkhlaqNotesMap(prev => { const next = { ...prev }; delete next[itemKey]; return next; });
+    }
+    setEditingAkhlaqNote(null);
+    try {
+      await apiRequest('POST', `/api/children/${childId}/akhlaq-notes`, { itemKey, note: akhlaqNoteText.trim() });
     } catch {}
   };
 
@@ -1124,13 +1148,56 @@ export default function DashboardScreen() {
                               </Pressable>
                               {isCatExpanded && cat.items.map((item) => {
                                 const isChecked = localAkhlaqChecked.includes(item.key);
+                                const akhlaqHasNote = !!akhlaqNotesMap[item.key];
+                                const isEditingAkhlaq = editingAkhlaqNote === item.key;
                                 return (
-                                  <Pressable key={item.key} onPress={() => toggleAkhlaqItem(item.key)} style={s.akhlaqItemRow}>
-                                    <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
-                                      {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                                  <View key={item.key} style={s.aqidahItemContainer}>
+                                    <View style={s.aqidahLeafRow}>
+                                      <Pressable onPress={() => toggleAkhlaqItem(item.key)} style={s.aqidahLeafCheckArea}>
+                                        <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                                          {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                                        </View>
+                                        <Text style={[s.akhlaqItemText, isChecked && { color: Colors.textMuted, textDecorationLine: 'line-through' as const }]}>{getAkhlaqLabel(item)}</Text>
+                                      </Pressable>
+                                      <View style={s.aqidahLeafActions}>
+                                        <Pressable
+                                          onPress={() => {
+                                            if (isEditingAkhlaq) {
+                                              setEditingAkhlaqNote(null);
+                                            } else {
+                                              setEditingAkhlaqNote(item.key);
+                                              setAkhlaqNoteText(akhlaqNotesMap[item.key] || '');
+                                            }
+                                          }}
+                                          hitSlop={8}
+                                        >
+                                          <Ionicons
+                                            name={akhlaqHasNote ? 'chatbubble' : 'chatbubble-outline'}
+                                            size={15}
+                                            color={akhlaqHasNote ? Colors.mintGreen : Colors.textMuted}
+                                          />
+                                        </Pressable>
+                                      </View>
                                     </View>
-                                    <Text style={[s.akhlaqItemText, isChecked && { color: Colors.textMuted, textDecorationLine: 'line-through' as const }]}>{getAkhlaqLabel(item)}</Text>
-                                  </Pressable>
+                                    {isEditingAkhlaq && (
+                                      <View style={s.aqidahNoteRow}>
+                                        <TextInput
+                                          style={s.aqidahNoteInput}
+                                          value={akhlaqNoteText}
+                                          onChangeText={setAkhlaqNoteText}
+                                          placeholder={lang === 'it' ? 'Nota del genitore...' : lang === 'ar' ? 'ملاحظة الوالد...' : 'Parent note...'}
+                                          placeholderTextColor={Colors.textMuted}
+                                          multiline
+                                        />
+                                        <Pressable onPress={() => saveAkhlaqNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: Colors.mintGreen }]}>
+                                          <Ionicons name="checkmark" size={16} color={Colors.white} />
+                                        </Pressable>
+                                      </View>
+                                    )}
+                                    {!isEditingAkhlaq && akhlaqHasNote && (
+                                      <Text style={s.aqidahNotePreview}>{akhlaqNotesMap[item.key]}</Text>
+                                    )}
+                                  </View>
                                 );
                               })}
                             </View>
