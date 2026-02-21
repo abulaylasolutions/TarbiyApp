@@ -27,7 +27,6 @@ import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
 const PASTEL_COLORS = [
   '#FF9999', '#FFCC99', '#FFFF99', '#99FF99', '#99FFFF', '#9999FF', '#CC99FF',
-  '#FF0000', '#FFA500', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#800080',
 ];
 
 interface ChildCardProps {
@@ -596,25 +595,24 @@ export default function HomeScreen() {
 
               <Text style={styles.inputLabel}>{t('cardColor')}</Text>
               <View style={styles.colorRow}>
-                {PASTEL_COLORS.map(color => {
-                  const r = parseInt(color.slice(1,3),16), g = parseInt(color.slice(3,5),16), b = parseInt(color.slice(5,7),16);
-                  const darkerBorder = `rgb(${Math.max(0,r-50)},${Math.max(0,g-50)},${Math.max(0,b-50)})`;
-                  return (
+                {PASTEL_COLORS.map(color => (
                   <Pressable
                     key={color}
-                    onPress={() => setForm(p => ({ ...p, cardColor: color }))}
+                    onPress={() => {
+                      setForm(p => ({ ...p, cardColor: color }));
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    }}
                     style={[
                       styles.colorSwatch,
-                      { backgroundColor: color, borderColor: darkerBorder },
+                      { backgroundColor: color },
                       form.cardColor === color && styles.colorSwatchSelected,
                     ]}
                   >
                     {form.cardColor === color && (
-                      <Ionicons name="checkmark" size={16} color="rgba(0,0,0,0.5)" />
+                      <Ionicons name="checkmark" size={18} color="rgba(0,0,0,0.45)" />
                     )}
                   </Pressable>
-                  );
-                })}
+                ))}
               </View>
 
               {(form.gender === 'maschio' || form.gender === 'femmina') && (
@@ -930,12 +928,12 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%', height: '100%', borderRadius: 38,
   },
-  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12, justifyContent: 'center' },
+  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12, justifyContent: 'center' },
   colorSwatch: {
-    width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: 'transparent',
+    width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2.5, borderColor: 'transparent',
   },
-  colorSwatchSelected: { borderWidth: 3, borderColor: '#A8E6CF' },
+  colorSwatchSelected: { borderWidth: 3, borderColor: '#A8E6CF', transform: [{ scale: 1.1 }] },
   modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   modalCancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
   modalCancelText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textSecondary },
