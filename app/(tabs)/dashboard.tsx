@@ -1735,7 +1735,7 @@ export default function DashboardScreen() {
           <View style={s.quranFilterRow}>
             {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
               const isActive = quranFilter === f;
-              const filterBg = f === 'learned' ? '#2E7D32' : f === 'in_progress' ? '#FF9800' : f === 'not_started' ? Colors.textMuted : cardColor;
+              const filterBg = f === 'learned' ? '#A8E6CF' : f === 'in_progress' ? '#FFCC99' : f === 'not_started' ? Colors.textMuted : cardColor;
               return (
                 <Pressable
                   key={f}
@@ -1756,13 +1756,13 @@ export default function DashboardScreen() {
             style={s.quranList}
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             renderItem={({ item }) => {
-              const statusColor = item.status === 'learned' ? '#2E7D32' : item.status === 'in_progress' ? '#FF9800' : Colors.textMuted;
+              const statusColor = item.status === 'learned' ? '#A8E6CF' : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
               const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
-              const badgeBg = item.status === 'learned' ? '#2E7D32' : item.status === 'in_progress' ? '#FF9800' : Colors.textMuted;
+              const badgeBg = item.status === 'learned' ? '#A8E6CF' : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
               return (
                 <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
                   <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
-                    <Text style={s.surahNum}>{item.number}</Text>
+                    <Text style={[s.surahNum, badgeBg !== Colors.textMuted && { color: '#333333' }]}>{item.number}</Text>
                   </View>
                   <View style={s.surahNameCol}>
                     <Text style={s.surahArabicName}>{item.arabicName}</Text>
