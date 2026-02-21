@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 16,
-    color: '#A8E6CF',
+    color: Colors.textSecondary,
     marginTop: 8,
     textAlign: 'center',
     letterSpacing: 0.3,
