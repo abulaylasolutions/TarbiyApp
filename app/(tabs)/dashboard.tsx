@@ -1735,14 +1735,14 @@ export default function DashboardScreen() {
           <View style={s.quranFilterRow}>
             {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
               const isActive = quranFilter === f;
-              const filterColor = f === 'learned' ? Colors.mintGreen : f === 'in_progress' ? Colors.mintGreenDark : f === 'not_started' ? Colors.textMuted : cardColor;
+              const filterBg = f === 'learned' ? '#2E7D32' : f === 'in_progress' ? '#FF9800' : f === 'not_started' ? Colors.textMuted : cardColor;
               return (
                 <Pressable
                   key={f}
                   onPress={() => setQuranFilter(f)}
-                  style={[s.quranFilterBtn, isActive && { backgroundColor: filterColor + '20', borderColor: filterColor }]}
+                  style={[s.quranFilterBtn, isActive && { backgroundColor: filterBg + '20', borderColor: filterBg }]}
                 >
-                  <Text style={[s.quranFilterText, isActive && { color: filterColor }]}>
+                  <Text style={[s.quranFilterText, { color: '#000000' }, isActive && { color: filterBg, fontFamily: 'Nunito_700Bold' }]}>
                     {f === 'all' ? (lang === 'ar' ? 'الكل' : lang === 'en' ? 'All' : 'Tutte') : t(f === 'learned' ? 'surahLearned' : f === 'in_progress' ? 'surahInProgress' : 'surahNotStarted')}
                   </Text>
                 </Pressable>
@@ -1756,9 +1756,9 @@ export default function DashboardScreen() {
             style={s.quranList}
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             renderItem={({ item }) => {
-              const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? Colors.mintGreenDark : Colors.textMuted;
+              const statusColor = item.status === 'learned' ? '#2E7D32' : item.status === 'in_progress' ? '#FF9800' : Colors.textMuted;
               const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
-              const badgeBg = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? Colors.mintGreenDark : Colors.textMuted;
+              const badgeBg = item.status === 'learned' ? '#2E7D32' : item.status === 'in_progress' ? '#FF9800' : Colors.textMuted;
               return (
                 <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
                   <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
@@ -1821,9 +1821,9 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleDayOfWeek(i)}
-                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                          style={[s.dayChip, isActive && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
                         >
-                          <Text style={[s.dayChipText, isActive && { color: Colors.white }]}>{t(dayKey)}</Text>
+                          <Text style={[s.dayChipText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
                       );
                     })}
@@ -1967,9 +1967,9 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleEditDayOfWeek(i)}
-                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                          style={[s.dayChip, isActive && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
                         >
-                          <Text style={[s.dayChipText, isActive && { color: Colors.white }]}>{t(dayKey)}</Text>
+                          <Text style={[s.dayChipText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
                       );
                     })}
