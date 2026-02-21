@@ -46,7 +46,7 @@ export default function IndexScreen() {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={['#FFF8EE', '#FFFCF7', '#FFFFFF']}
+        colors={['#F0FAF4', '#F8FEFA', '#FFFFFF']}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 1 }}
         style={StyleSheet.absoluteFill}

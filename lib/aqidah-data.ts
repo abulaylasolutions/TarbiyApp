@@ -75,7 +75,7 @@ export const AQIDAH_LEVELS: AqidahLevel[] = [
         ar: 'الزكاة',
         icon: 'cash-outline',
         iconLib: 'ionicons',
-        iconColor: '#FFF5BA',
+        iconColor: '#C8F0E3',
         items: [
           { key: 'zakat_meaning', it: 'Significato: purificazione della ricchezza', en: 'Meaning: purification of wealth', ar: 'معنى الزكاة: تطهير المال' },
           { key: 'zakat_nisab', it: 'Nisab: soglia minima per l\'obbligo', en: 'Nisab: minimum threshold for obligation', ar: 'النصاب: الحد الأدنى للوجوب' },
@@ -230,7 +230,7 @@ export const AQIDAH_LEVELS: AqidahLevel[] = [
         ar: 'الإيمان بالقدر',
         icon: 'infinite-outline',
         iconLib: 'ionicons',
-        iconColor: '#FFF5BA',
+        iconColor: '#C8F0E3',
         items: [
           { key: 'qadar_knowledge', it: 'La Scienza di Allah: Egli sa tutto dall\'eternita', en: 'Allah\'s Knowledge: He knows everything from eternity', ar: 'علم الله: يعلم كل شيء من الأزل' },
           { key: 'qadar_writing', it: 'La Scrittura: tutto e registrato nella Tavola Preservata', en: 'The Writing: everything is recorded in the Preserved Tablet', ar: 'الكتابة: كل شيء مكتوب في اللوح المحفوظ' },

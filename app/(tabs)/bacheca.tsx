@@ -29,7 +29,7 @@ import PremiumOverlay from '@/components/PremiumOverlay';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2;
 
-const NOTE_COLORS = ['#FFD3B6', '#C7CEEA', '#A8E6CF', '#FFF5E1', '#FFE8D9', '#D4F5E5', '#E3E7F5', '#E0BBE4'];
+const NOTE_COLORS = ['#FFD3B6', '#C7CEEA', '#A8E6CF', '#C8F0E3', '#FFE8D9', '#D4F5E5', '#E3E7F5', '#E0BBE4'];
 
 interface CommentData {
   id: string;
@@ -114,8 +114,8 @@ function NoteCard({ note, onPress, onDelete, onArchive, onEdit }: NoteCardProps)
               onPress={() => { setShowActions(false); onArchive(note.id); }}
               style={styles.actionSheetItem}
             >
-              <View style={[styles.actionSheetIcon, { backgroundColor: '#FFF5BA' }]}>
-                <Ionicons name="archive-outline" size={20} color="#B8860B" />
+              <View style={[styles.actionSheetIcon, { backgroundColor: Colors.mintGreenLight }]}>
+                <Ionicons name="archive-outline" size={20} color={Colors.mintGreenDark} />
               </View>
               <Text style={styles.actionSheetText}>{t('archive')}</Text>
             </Pressable>

@@ -27,7 +27,7 @@ import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
 const PASTEL_COLORS = [
   '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFC1CC',
-  '#E0BBE4', '#FFF5BA', '#B2D8B2',
+  '#E0BBE4', '#FFDAC1', '#B2D8B2',
 ];
 
 interface ChildCardProps {
@@ -483,7 +483,7 @@ export default function HomeScreen() {
             style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
           >
             <LinearGradient
-              colors={['#A8E6CF', '#FFF5E1']}
+              colors={['#A8E6CF', '#C8F0E3']}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
               style={styles.modalGradient}
@@ -691,7 +691,7 @@ export default function HomeScreen() {
 
             <View style={styles.settingsRow}>
               <View style={styles.settingsLabelRow}>
-                <Ionicons name="moon-outline" size={22} color="#F4C430" />
+                <Ionicons name="moon-outline" size={22} color={Colors.mintGreenDark} />
                 <Text style={styles.settingsLabel}>{t('fastingTracker')}</Text>
               </View>
               <Pressable
@@ -707,7 +707,7 @@ export default function HomeScreen() {
 
             <View style={styles.settingsRow}>
               <View style={styles.settingsLabelRow}>
-                <Ionicons name="calendar-outline" size={22} color="#D4A03C" />
+                <Ionicons name="calendar-outline" size={22} color={Colors.mintGreenDark} />
                 <Text style={styles.settingsLabel}>{t('trackRamadan')}</Text>
               </View>
               <Pressable

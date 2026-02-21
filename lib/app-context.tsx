@@ -72,7 +72,7 @@ interface AppContextValue {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-const NOTE_COLORS = ['#FFD3B6', '#C7CEEA', '#A8E6CF', '#FFF5E1', '#FFE8D9', '#D4F5E5', '#E3E7F5'];
+const NOTE_COLORS = ['#FFD3B6', '#C7CEEA', '#A8E6CF', '#C8F0E3', '#FFE8D9', '#D4F5E5', '#E3E7F5'];
 
 export function AppProvider({ children: childrenProp }: { children: ReactNode }) {
   const [childrenList, setChildrenList] = useState<Child[]>([]);

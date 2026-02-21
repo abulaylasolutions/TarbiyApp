@@ -252,7 +252,7 @@ function PendingApprovalsSection() {
   return (
     <View style={styles.pendingCard}>
       <View style={styles.pendingHeader}>
-        <Ionicons name="notifications" size={20} color="#F4C430" />
+        <Ionicons name="notifications" size={20} color={Colors.mintGreenDark} />
         <Text style={styles.pendingTitle}>{t('pendingApprovals')}</Text>
         <View style={styles.pendingBadge}>
           <Text style={styles.pendingBadgeText}>{pendingChanges.length}</Text>
@@ -400,7 +400,7 @@ export default function SettingsScreen() {
   const langOptions: { code: Language; label: string; circleText: string; circleColor: string }[] = [
     { code: 'it', label: 'Italiano', circleText: 'IT', circleColor: '#4A90E2' },
     { code: 'en', label: 'English', circleText: 'EN', circleColor: '#7BC8A4' },
-    { code: 'ar', label: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629', circleText: 'AR', circleColor: '#F4C430' },
+    { code: 'ar', label: '\u0627\u0644\u0639\u0631\u0628\u064A\u0629', circleText: 'AR', circleColor: '#6BBF9A' },
   ];
 
   return (
@@ -438,7 +438,7 @@ export default function SettingsScreen() {
             style={({ pressed }) => [styles.premiumBanner, pressed && { opacity: 0.9 }]}
           >
             <LinearGradient
-              colors={['#F4C430', '#FFBA8C'] as const}
+              colors={['#6BBF9A', '#A8E6CF'] as const}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.premiumGradient}
@@ -475,8 +475,8 @@ export default function SettingsScreen() {
             onPress={() => setShowLangModal(true)}
           />
           <View style={[styles.settingsRow, styles.settingsRowBorder]}>
-            <View style={[styles.settingsIcon, { backgroundColor: '#FFF5E1' }]}>
-              <Ionicons name="calendar" size={18} color="#D4A03C" />
+            <View style={[styles.settingsIcon, { backgroundColor: Colors.mintGreenLight }]}>
+              <Ionicons name="calendar" size={18} color={Colors.mintGreenDark} />
             </View>
             <Text style={styles.settingsLabel}>{t('hijriCalendar')}</Text>
             <View style={styles.settingsRight}>
@@ -506,8 +506,8 @@ export default function SettingsScreen() {
           </View>
           <SettingsRow
             icon="star"
-            iconColor="#F4C430"
-            iconBg={Colors.creamBeige}
+            iconColor={Colors.mintGreenDark}
+            iconBg={Colors.mintGreenLight}
             label={t('plan')}
             value={user?.isPremium ? t('premium') : t('free')}
             onPress={() => setShowPremiumModal(true)}
@@ -903,17 +903,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   pendingCard: {
-    backgroundColor: '#FFF9E6',
+    backgroundColor: Colors.mintGreenLight,
     borderRadius: 20,
     padding: 16,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#F4C430',
+    borderColor: Colors.mintGreen,
   },
   pendingHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
   pendingTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary, flex: 1 },
   pendingBadge: {
-    backgroundColor: '#F4C430',
+    backgroundColor: Colors.mintGreenDark,
     width: 24, height: 24, borderRadius: 12,
     alignItems: 'center', justifyContent: 'center',
   },
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
   premiumFeatureText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textPrimary, flex: 1 },
   pricingColumn: { width: '100%', gap: 16, marginBottom: 12, paddingTop: 12 },
   pricingCard: { width: '100%', backgroundColor: Colors.creamBeige, borderRadius: 20, padding: 16, borderWidth: 2, borderColor: 'transparent' },
-  pricingCardBest: { borderColor: Colors.goldAccent, backgroundColor: '#FFF9E6' },
+  pricingCardBest: { borderColor: Colors.mintGreen, backgroundColor: Colors.mintGreenLight },
   pricingCardLifetime: { borderColor: '#B39DDB', backgroundColor: '#F3E5F5' },
   pricingCardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   pricingCardInfo: { flex: 1, gap: 2 },

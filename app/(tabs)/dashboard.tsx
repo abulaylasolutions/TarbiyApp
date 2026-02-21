@@ -24,7 +24,7 @@ import { gregorianToHijri, getHijriMonthName, getCurrentHijriYear } from '@/lib/
 
 const PASTEL_COLORS = [
   '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFC1CC',
-  '#E0BBE4', '#FFF5BA', '#B2D8B2',
+  '#E0BBE4', '#FFDAC1', '#B2D8B2',
 ];
 
 const TIME_SLOTS: string[] = [];
@@ -1211,7 +1211,7 @@ export default function DashboardScreen() {
                 {fastingEnabled && (
                   <View style={s.dailySubsection}>
                     <View style={s.dailySubHeader}>
-                      <Ionicons name="moon-outline" size={16} color="#D4A03C" />
+                      <Ionicons name="moon-outline" size={16} color={Colors.mintGreenDark} />
                       <Text style={s.dailySubTitle}>{t('fastingSection')}</Text>
                     </View>
                     <View style={s.fastingRow}>
@@ -1225,10 +1225,10 @@ export default function DashboardScreen() {
                       {!trackRamadan && (
                         <Pressable
                           onPress={() => updateFasting('partial')}
-                          style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: '#F4C430' + '20', borderColor: '#F4C430' }]}
+                          style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: Colors.mintGreen + '20', borderColor: Colors.mintGreen }]}
                         >
-                          <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? '#F4C430' : Colors.textMuted} />
-                          <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: '#F4C430' }]}>{t('partial')}</Text>
+                          <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? Colors.mintGreenDark : Colors.textMuted} />
+                          <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: Colors.mintGreenDark }]}>{t('partial')}</Text>
                         </Pressable>
                       )}
                     </View>
@@ -1735,7 +1735,7 @@ export default function DashboardScreen() {
           <View style={s.quranFilterRow}>
             {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
               const isActive = quranFilter === f;
-              const filterColor = f === 'learned' ? Colors.mintGreen : f === 'in_progress' ? '#F4C430' : f === 'not_started' ? Colors.textMuted : cardColor;
+              const filterColor = f === 'learned' ? Colors.mintGreen : f === 'in_progress' ? Colors.mintGreenDark : f === 'not_started' ? Colors.textMuted : cardColor;
               return (
                 <Pressable
                   key={f}
@@ -1756,9 +1756,9 @@ export default function DashboardScreen() {
             style={s.quranList}
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             renderItem={({ item }) => {
-              const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
+              const statusColor = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? Colors.mintGreenDark : Colors.textMuted;
               const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
-              const badgeBg = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? '#F4C430' : Colors.textMuted;
+              const badgeBg = item.status === 'learned' ? Colors.mintGreen : item.status === 'in_progress' ? Colors.mintGreenDark : Colors.textMuted;
               return (
                 <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
                   <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
