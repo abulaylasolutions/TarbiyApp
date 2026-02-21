@@ -404,6 +404,11 @@ export async function addTask(childId: string, userId: string, name: string, fre
   return result[0];
 }
 
+export async function updateTask(id: string, data: { name?: string; frequency?: string; time?: string | null; endTime?: string | null; days?: string | null }): Promise<CustomTask> {
+  const result = await db.update(customTasks).set(data).where(eq(customTasks.id, id)).returning();
+  return result[0];
+}
+
 export async function removeTask(id: string): Promise<void> {
   await db.delete(taskCompletions).where(eq(taskCompletions.taskId, id));
   await db.delete(customTasks).where(eq(customTasks.id, id));

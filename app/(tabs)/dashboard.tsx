@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, Platform, Pressable,
   TextInput, Modal, Alert, KeyboardAvoidingView, FlatList,
+  PanResponder,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -228,6 +229,7 @@ interface TaskItem {
   time?: string | null;
   endTime?: string | null;
   days?: string | null;
+  createdAt?: string | null;
 }
 
 interface TaskCompletionItem {
@@ -341,8 +343,42 @@ export default function DashboardScreen() {
   const [newTaskDays, setNewTaskDays] = useState<number[]>([]);
   const [newTaskDayOfMonth, setNewTaskDayOfMonth] = useState('');
 
+  const [longPressTask, setLongPressTask] = useState<TaskItem | null>(null);
+  const [showEditTask, setShowEditTask] = useState(false);
+  const [editTaskId, setEditTaskId] = useState('');
+  const [editTaskName, setEditTaskName] = useState('');
+  const [editTaskFreq, setEditTaskFreq] = useState('daily');
+  const [editTaskTime, setEditTaskTime] = useState('');
+  const [editTaskEndTime, setEditTaskEndTime] = useState('');
+  const [editTaskDays, setEditTaskDays] = useState<number[]>([]);
+  const [editTaskDayOfMonth, setEditTaskDayOfMonth] = useState('');
+
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
   const dateScrollRef = useRef<FlatList>(null);
+
+  const childrenRef = useRef(children);
+  const selectedIndexRef = useRef(selectedIndex);
+  childrenRef.current = children;
+  selectedIndexRef.current = selectedIndex;
+
+  const swipePanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        return Math.abs(gestureState.dx) > 20 && Math.abs(gestureState.dx) > Math.abs(gestureState.dy * 2);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        const c = childrenRef.current;
+        const si = selectedIndexRef.current;
+        if (gestureState.dx < -50 && c.length > 1) {
+          const nextIdx = si >= c.length - 1 ? 0 : si + 1;
+          selectChild(c[nextIdx].id);
+        } else if (gestureState.dx > 50 && c.length > 1) {
+          const prevIdx = si <= 0 ? c.length - 1 : si - 1;
+          selectChild(c[prevIdx].id);
+        }
+      },
+    })
+  ).current;
 
   const childId = selectedChild?.id;
 
@@ -435,6 +471,15 @@ export default function DashboardScreen() {
 
   const shouldShowTask = useCallback((task: TaskItem) => {
     if (task.frequency === 'daily') return true;
+    if (task.frequency === 'once') {
+      if (task.days) {
+        try {
+          return task.days === `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+        } catch {}
+      }
+      const created = task.createdAt ? new Date(task.createdAt) : new Date();
+      return created.toDateString() === currentDate.toDateString();
+    }
     if (task.frequency === 'weekly') {
       const dayOfWeek = currentDate.getDay();
       if (task.days) {
@@ -528,6 +573,8 @@ export default function DashboardScreen() {
         days = JSON.stringify(newTaskDays);
       } else if (newTaskFreq === 'monthly' && newTaskDayOfMonth) {
         days = newTaskDayOfMonth;
+      } else if (newTaskFreq === 'once') {
+        days = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
       }
       await apiRequest('POST', `/api/children/${childId}/tasks`, {
         name: newTaskName.trim(),
@@ -544,20 +591,104 @@ export default function DashboardScreen() {
     } catch {}
   };
 
-  const handleDeleteTask = (taskId: string, taskName: string) => {
-    Alert.alert(t('delete'), `${t('deleteConfirm')} "${taskName}"?`, [
-      { text: t('cancel'), style: 'cancel' },
-      { text: t('delete'), style: 'destructive', onPress: async () => {
-        try {
-          await apiRequest('DELETE', `/api/tasks/${taskId}`);
-          fetchDashboardData();
-        } catch {}
-      }},
-    ]);
+  const handleDeleteTask = (taskId: string, taskName: string, frequency?: string) => {
+    const isRecurring = frequency === 'weekly' || frequency === 'monthly';
+    if (isRecurring) {
+      Alert.alert(t('delete'), t('deleteRecurringQuestion'), [
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('onlyThis'), onPress: async () => {
+          try {
+            await apiRequest('DELETE', `/api/tasks/${taskId}`);
+            fetchDashboardData();
+          } catch {}
+        }},
+        { text: t('allFuture'), style: 'destructive', onPress: async () => {
+          try {
+            await apiRequest('DELETE', `/api/tasks/${taskId}`);
+            fetchDashboardData();
+          } catch {}
+        }},
+      ]);
+    } else {
+      Alert.alert(t('delete'), `${t('deleteConfirm')} "${taskName}"?`, [
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('delete'), style: 'destructive', onPress: async () => {
+          try {
+            await apiRequest('DELETE', `/api/tasks/${taskId}`);
+            fetchDashboardData();
+          } catch {}
+        }},
+      ]);
+    }
+  };
+
+  const openEditTask = (task: TaskItem) => {
+    setEditTaskId(task.id);
+    setEditTaskName(task.name);
+    setEditTaskFreq(task.frequency);
+    setEditTaskTime(task.time || '');
+    setEditTaskEndTime(task.endTime || '');
+    if (task.frequency === 'weekly' && task.days) {
+      try { setEditTaskDays(JSON.parse(task.days)); } catch { setEditTaskDays([]); }
+    } else {
+      setEditTaskDays([]);
+    }
+    if (task.frequency === 'monthly' && task.days) {
+      setEditTaskDayOfMonth(task.days);
+    } else {
+      setEditTaskDayOfMonth('');
+    }
+    setLongPressTask(null);
+    setShowEditTask(true);
+  };
+
+  const handleEditTask = async () => {
+    if (!editTaskName.trim()) return;
+    try {
+      let days: string | undefined;
+      if (editTaskFreq === 'weekly' && editTaskDays.length > 0) {
+        days = JSON.stringify(editTaskDays);
+      } else if (editTaskFreq === 'monthly' && editTaskDayOfMonth) {
+        days = editTaskDayOfMonth;
+      } else if (editTaskFreq === 'once') {
+        days = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+      }
+      const isRecurring = editTaskFreq === 'weekly' || editTaskFreq === 'monthly';
+      const doSave = async () => {
+        await apiRequest('PUT', `/api/tasks/${editTaskId}`, {
+          name: editTaskName.trim(),
+          frequency: editTaskFreq,
+          time: editTaskTime || null,
+          endTime: editTaskEndTime || null,
+          days: days || null,
+        });
+        setShowEditTask(false);
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        fetchDashboardData();
+      };
+      if (isRecurring) {
+        Alert.alert(t('editEvent'), t('applyChangeQuestion'), [
+          { text: t('cancel'), style: 'cancel' },
+          { text: t('onlyThis'), onPress: doSave },
+          { text: t('allFuture'), onPress: doSave },
+        ]);
+      } else {
+        await doSave();
+      }
+    } catch {}
+  };
+
+  const handleLongPressTask = (task: TaskItem) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setLongPressTask(task);
   };
 
   const toggleDayOfWeek = (day: number) => {
     setNewTaskDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
+  };
+
+  const toggleEditDayOfWeek = (day: number) => {
+    setEditTaskDays(prev => prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]);
   };
 
   const dates = Array.from({ length: 61 }, (_, i) => {
@@ -784,7 +915,7 @@ export default function DashboardScreen() {
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 100 }} showsVerticalScrollIndicator={false}>
         <View style={{ paddingTop: topPadding + 8 }} />
 
-        <Animated.View entering={FadeIn.duration(300)} style={s.headerCard}>
+        <Animated.View entering={FadeIn.duration(300)} style={s.headerCard} {...swipePanResponder.panHandlers}>
           <LinearGradient
             colors={[cardColor, cardColor + '60']}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
@@ -905,7 +1036,12 @@ export default function DashboardScreen() {
                     ? `${task.time} - ${task.endTime}`
                     : task.time || task.endTime || null;
                   return (
-                    <View key={task.id} style={[s.taskRow, i > 0 && s.taskRowBorder]}>
+                    <Pressable
+                      key={task.id}
+                      onLongPress={() => handleLongPressTask(task)}
+                      delayLongPress={400}
+                      style={[s.taskRow, i > 0 && s.taskRowBorder]}
+                    >
                       <Pressable onPress={() => toggleTaskCompletion(task.id)} style={s.taskCheck}>
                         <View style={[s.checkBox, comp?.completed && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
                           {comp?.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
@@ -914,11 +1050,12 @@ export default function DashboardScreen() {
                       <View style={s.taskInfo}>
                         <Text style={[s.taskName, comp?.completed && s.taskNameDone]}>{task.name}</Text>
                         {timeDisplay && <Text style={s.taskTime}>{timeDisplay}</Text>}
+                        <Text style={s.taskFreqLabel}>{t(task.frequency as any)}</Text>
                       </View>
-                      <Pressable onPress={() => handleDeleteTask(task.id, task.name)} hitSlop={8}>
+                      <Pressable onPress={() => handleDeleteTask(task.id, task.name, task.frequency)} hitSlop={8}>
                         <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
                       </Pressable>
-                    </View>
+                    </Pressable>
                   );
                 })}
               </View>
@@ -1487,7 +1624,7 @@ export default function DashboardScreen() {
 
               <Text style={s.inputLabel}>{t('frequency')}</Text>
               <View style={s.freqRow}>
-                {(['daily', 'weekly', 'monthly'] as const).map((freq) => (
+                {(['daily', 'weekly', 'monthly', 'once'] as const).map((freq) => (
                   <Pressable
                     key={freq}
                     onPress={() => {
@@ -1567,6 +1704,142 @@ export default function DashboardScreen() {
 
               <Pressable
                 onPress={handleAddTask}
+                style={[s.saveBtn, { backgroundColor: cardColor }]}
+              >
+                <Ionicons name="checkmark" size={20} color={Colors.white} />
+                <Text style={s.saveBtnText}>{t('save')}</Text>
+              </Pressable>
+            </ScrollView>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={!!longPressTask} animationType="fade" transparent>
+        <Pressable style={s.popupOverlay} onPress={() => setLongPressTask(null)}>
+          <Animated.View entering={FadeIn.duration(200)} style={s.popupCard}>
+            <Text style={s.popupTitle}>{longPressTask?.name}</Text>
+            <Pressable
+              onPress={() => longPressTask && openEditTask(longPressTask)}
+              style={({ pressed }) => [s.popupBtn, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="create-outline" size={20} color={Colors.textPrimary} />
+              <Text style={s.popupBtnText}>{t('editEvent')}</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => {
+                if (longPressTask) {
+                  setLongPressTask(null);
+                  handleDeleteTask(longPressTask.id, longPressTask.name, longPressTask.frequency);
+                }
+              }}
+              style={({ pressed }) => [s.popupBtn, s.popupBtnDanger, pressed && { opacity: 0.7 }]}
+            >
+              <Ionicons name="trash-outline" size={20} color={Colors.danger} />
+              <Text style={[s.popupBtnText, { color: Colors.danger }]}>{t('delete')}</Text>
+            </Pressable>
+          </Animated.View>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={showEditTask} animationType="slide" transparent>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+          <View style={s.modalOverlay}>
+            <Pressable style={s.modalDismiss} onPress={() => setShowEditTask(false)} />
+            <ScrollView style={s.modalScroll} contentContainerStyle={[s.modalContent, { paddingBottom: insets.bottom + 16 }]}>
+              <View style={s.modalHandle} />
+              <Text style={s.modalTitle}>{t('editEvent')}</Text>
+
+              <Text style={s.inputLabel}>{t('eventName')}</Text>
+              <TextInput
+                style={s.input}
+                placeholder={t('eventNamePlaceholder')}
+                placeholderTextColor={Colors.textMuted}
+                value={editTaskName}
+                onChangeText={setEditTaskName}
+              />
+
+              <Text style={s.inputLabel}>{t('frequency')}</Text>
+              <View style={s.freqRow}>
+                {(['daily', 'weekly', 'monthly', 'once'] as const).map((freq) => (
+                  <Pressable
+                    key={freq}
+                    onPress={() => {
+                      setEditTaskFreq(freq);
+                      setEditTaskDays([]);
+                      setEditTaskDayOfMonth('');
+                    }}
+                    style={[s.freqBtn, editTaskFreq === freq && { backgroundColor: cardColor + '30', borderColor: cardColor }]}
+                  >
+                    <Text style={[s.freqBtnText, editTaskFreq === freq && { color: cardColor }]}>{t(freq)}</Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              {editTaskFreq === 'weekly' && (
+                <>
+                  <Text style={s.inputLabel}>{t('selectDay')}</Text>
+                  <View style={s.dayPickerRow}>
+                    {DAY_KEYS.map((dayKey, i) => {
+                      const isActive = editTaskDays.includes(i);
+                      return (
+                        <Pressable
+                          key={dayKey}
+                          onPress={() => toggleEditDayOfWeek(i)}
+                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                        >
+                          <Text style={[s.dayChipText, isActive && { color: Colors.white }]}>{t(dayKey)}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
+
+              {editTaskFreq === 'monthly' && (
+                <>
+                  <Text style={s.inputLabel}>{t('selectDayOfMonth')}</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="1-31"
+                    placeholderTextColor={Colors.textMuted}
+                    value={editTaskDayOfMonth}
+                    onChangeText={(v) => {
+                      const num = parseInt(v);
+                      if (v === '' || (num >= 1 && num <= 31)) setEditTaskDayOfMonth(v);
+                    }}
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                </>
+              )}
+
+              <View style={s.timeRow}>
+                <View style={s.timeCol}>
+                  <Text style={s.inputLabel}>{t('startTime')}</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="HH:MM"
+                    placeholderTextColor={Colors.textMuted}
+                    value={editTaskTime}
+                    onChangeText={setEditTaskTime}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+                <View style={s.timeCol}>
+                  <Text style={s.inputLabel}>{t('endTimePicker')}</Text>
+                  <TextInput
+                    style={s.input}
+                    placeholder="HH:MM"
+                    placeholderTextColor={Colors.textMuted}
+                    value={editTaskEndTime}
+                    onChangeText={setEditTaskEndTime}
+                    keyboardType="numbers-and-punctuation"
+                  />
+                </View>
+              </View>
+
+              <Pressable
+                onPress={handleEditTask}
                 style={[s.saveBtn, { backgroundColor: cardColor }]}
               >
                 <Ionicons name="checkmark" size={20} color={Colors.white} />
@@ -1889,4 +2162,26 @@ const s = StyleSheet.create({
     paddingVertical: 16, borderRadius: 20, marginTop: 8,
   },
   saveBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.white },
+  taskFreqLabel: { fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted, marginTop: 1 },
+  popupOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'center', alignItems: 'center',
+  },
+  popupCard: {
+    backgroundColor: Colors.cardBackground, borderRadius: 24,
+    padding: 20, width: 260, gap: 4,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
+  },
+  popupTitle: {
+    fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary,
+    textAlign: 'center', marginBottom: 12,
+  },
+  popupBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingVertical: 14, paddingHorizontal: 16, borderRadius: 16,
+    backgroundColor: Colors.creamBeige,
+  },
+  popupBtnDanger: { backgroundColor: '#FFE5E5', marginTop: 4 },
+  popupBtnText: { fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: Colors.textPrimary },
 });

@@ -37,6 +37,7 @@ import {
   updateUserLanguage,
   getTasksForChild,
   addTask,
+  updateTask,
   removeTask,
   getTaskCompletions,
   upsertTaskCompletion,
@@ -530,6 +531,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!name) return res.status(400).json({ message: "Nome richiesto" });
       const task = await addTask(req.params.childId as string, req.session.userId!, name, frequency || "daily", time, endTime, days);
       return res.status(201).json(task);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/tasks/:id", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { name, frequency, time, endTime, days } = req.body;
+      const task = await updateTask(req.params.id as string, { name, frequency, time, endTime, days });
+      return res.json(task);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }
