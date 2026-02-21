@@ -1059,7 +1059,7 @@ export default function DashboardScreen() {
                 }}
                 style={[
                   s.calSwitch,
-                  { backgroundColor: useHijri ? Colors.mintGreen : Colors.textMuted + '40' },
+                  { backgroundColor: useHijri ? cardColor : Colors.textMuted + '40' },
                 ]}
               >
                 <View style={[s.calSwitchThumb, { alignSelf: useHijri ? 'flex-end' : 'flex-start' }]} />
@@ -1125,7 +1125,7 @@ export default function DashboardScreen() {
                 }
                 setShowAddTask(true);
               }} hitSlop={8}>
-                <Ionicons name="add-circle" size={26} color={isPremium ? Colors.mintGreen : Colors.textMuted} />
+                <Ionicons name="add-circle" size={26} color={isPremium ? cardColor : Colors.textMuted} />
               </Pressable>
             </View>
             {todayTasks.length > 0 ? (
@@ -1143,7 +1143,7 @@ export default function DashboardScreen() {
                       style={[s.taskRow, i > 0 && s.taskRowBorder]}
                     >
                       <Pressable onPress={() => toggleTaskCompletion(task.id)} style={s.taskCheck}>
-                        <View style={[s.checkBox, comp?.completed && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                        <View style={[s.checkBox, comp?.completed && { backgroundColor: cardColor, borderColor: cardColor }]}>
                           {comp?.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
                         </View>
                       </Pressable>
@@ -1175,7 +1175,7 @@ export default function DashboardScreen() {
                 {salahEnabled && (
                   <View style={s.dailySubsection}>
                     <View style={s.dailySubHeader}>
-                      <MaterialCommunityIcons name="mosque" size={18} color={Colors.mintGreenDark} />
+                      <MaterialCommunityIcons name="mosque" size={18} color={cardColor} />
                       <Text style={s.dailySubTitle}>{t('salahSection')}</Text>
                     </View>
                     <View style={s.prayerGrid}>
@@ -1183,7 +1183,7 @@ export default function DashboardScreen() {
                         const done = prayers[prayer];
                         return (
                           <Pressable key={prayer} onPress={() => togglePrayer(prayer)} style={s.prayerItem}>
-                            <View style={[s.prayerCircle, done && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                            <View style={[s.prayerCircle, done && { backgroundColor: cardColor, borderColor: cardColor }]}>
                               {done ? (
                                 <Ionicons name="checkmark" size={20} color={Colors.white} />
                               ) : (
@@ -1211,24 +1211,24 @@ export default function DashboardScreen() {
                 {fastingEnabled && (
                   <View style={s.dailySubsection}>
                     <View style={s.dailySubHeader}>
-                      <Ionicons name="moon-outline" size={16} color={Colors.mintGreenDark} />
+                      <Ionicons name="moon-outline" size={16} color={cardColor} />
                       <Text style={s.dailySubTitle}>{t('fastingSection')}</Text>
                     </View>
                     <View style={s.fastingRow}>
                       <Pressable
                         onPress={() => updateFasting('yes')}
-                        style={[s.fastingBtn, { flex: 1 }, fasting.status === 'yes' && { backgroundColor: Colors.mintGreen + '20', borderColor: Colors.mintGreen }]}
+                        style={[s.fastingBtn, { flex: 1 }, fasting.status === 'yes' && { backgroundColor: cardColor + '20', borderColor: cardColor }]}
                       >
-                        <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? Colors.mintGreen : Colors.textMuted} />
-                        <Text style={[s.fastingBtnText, fasting.status === 'yes' && { color: Colors.mintGreen }]}>{t('yes')}</Text>
+                        <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? cardColor : Colors.textMuted} />
+                        <Text style={[s.fastingBtnText, fasting.status === 'yes' && { color: cardColor }]}>{t('yes')}</Text>
                       </Pressable>
                       {!trackRamadan && (
                         <Pressable
                           onPress={() => updateFasting('partial')}
-                          style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: Colors.mintGreen + '20', borderColor: Colors.mintGreen }]}
+                          style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: cardColor + '20', borderColor: cardColor }]}
                         >
-                          <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? Colors.mintGreenDark : Colors.textMuted} />
-                          <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: Colors.mintGreenDark }]}>{t('partial')}</Text>
+                          <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? cardColor : Colors.textMuted} />
+                          <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: cardColor }]}>{t('partial')}</Text>
                         </Pressable>
                       )}
                     </View>
@@ -1277,9 +1277,9 @@ export default function DashboardScreen() {
                     let borderStyle: 'solid' | 'dashed' = 'solid';
 
                     if (fasted) {
-                      bgColor = Colors.mintGreen + '25';
-                      borderColor = Colors.mintGreen;
-                      textColor = Colors.mintGreenDark || '#2E7D32';
+                      bgColor = cardColor + '25';
+                      borderColor = cardColor;
+                      textColor = cardColor;
                     } else if (isToday && !fasted) {
                       bgColor = Colors.creamBeige + '50';
                       borderColor = Colors.creamBeige;
@@ -1324,7 +1324,7 @@ export default function DashboardScreen() {
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 8 }}>
                   <View style={{ flex: 1, height: 10, backgroundColor: Colors.creamBeige, borderRadius: 5, overflow: 'hidden' }}>
-                    <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: Colors.mintGreen, borderRadius: 5 }} />
+                    <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: cardColor, borderRadius: 5 }} />
                   </View>
                   <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textPrimary }}>
                     {ramadanFastedCount}/30
@@ -1333,7 +1333,7 @@ export default function DashboardScreen() {
 
                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: Colors.mintGreen + '25', borderWidth: 1, borderColor: Colors.mintGreen }} />
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: cardColor + '25', borderWidth: 1, borderColor: cardColor }} />
                     <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanFasted')}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
@@ -1419,7 +1419,7 @@ export default function DashboardScreen() {
                               <Pressable
                                 key={letter}
                                 onPress={() => toggleArabicLetter(letter)}
-                                style={[s.arabicLetterChip, isSelected && { backgroundColor: Colors.mintGreen }]}
+                                style={[s.arabicLetterChip, isSelected && { backgroundColor: cardColor }]}
                               >
                                 <Text style={[s.arabicLetterText, isSelected && { color: Colors.white }]}>{letter}</Text>
                               </Pressable>
@@ -1430,7 +1430,7 @@ export default function DashboardScreen() {
                           <Text style={s.arabicToggleLabel}>{t('harakat')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('hasHarakat')}
-                            style={[s.arabicPill, localHarakat && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                            style={[s.arabicPill, localHarakat && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
                             <Text style={[s.arabicPillText, localHarakat && { color: Colors.white }]}>
                               {localHarakat ? t('yes') : t('no')}
@@ -1441,7 +1441,7 @@ export default function DashboardScreen() {
                           <Text style={s.arabicToggleLabel}>{t('canReadArabic')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('canReadArabic')}
-                            style={[s.arabicPill, localCanRead && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                            style={[s.arabicPill, localCanRead && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
                             <Text style={[s.arabicPillText, localCanRead && { color: Colors.white }]}>
                               {localCanRead ? t('yes') : t('no')}
@@ -1452,7 +1452,7 @@ export default function DashboardScreen() {
                           <Text style={s.arabicToggleLabel}>{t('canWriteArabic')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('canWriteArabic')}
-                            style={[s.arabicPill, localCanWrite && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                            style={[s.arabicPill, localCanWrite && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
                             <Text style={[s.arabicPillText, localCanWrite && { color: Colors.white }]}>
                               {localCanWrite ? t('yes') : t('no')}
@@ -1490,7 +1490,7 @@ export default function DashboardScreen() {
                                   <View key={item.key} style={s.aqidahItemContainer}>
                                     <View style={s.aqidahLeafRow}>
                                       <Pressable onPress={() => toggleAkhlaqItem(item.key)} style={s.aqidahLeafCheckArea}>
-                                        <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
+                                        <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: cardColor, borderColor: cardColor }]}>
                                           {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
                                         </View>
                                         <Text style={[s.akhlaqItemText, isChecked && { color: Colors.textMuted, textDecorationLine: 'line-through' as const }]}>{getAkhlaqLabel(item)}</Text>
@@ -1510,7 +1510,7 @@ export default function DashboardScreen() {
                                           <Ionicons
                                             name={akhlaqHasNote ? 'chatbubble' : 'chatbubble-outline'}
                                             size={15}
-                                            color={akhlaqHasNote ? Colors.mintGreen : Colors.textMuted}
+                                            color={akhlaqHasNote ? cardColor : Colors.textMuted}
                                           />
                                         </Pressable>
                                       </View>
@@ -1525,7 +1525,7 @@ export default function DashboardScreen() {
                                           placeholderTextColor={Colors.textMuted}
                                           multiline
                                         />
-                                        <Pressable onPress={() => saveAkhlaqNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: Colors.mintGreen }]}>
+                                        <Pressable onPress={() => saveAkhlaqNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: cardColor }]}>
                                           <Ionicons name="checkmark" size={16} color={Colors.white} />
                                         </Pressable>
                                       </View>
@@ -1735,7 +1735,7 @@ export default function DashboardScreen() {
           <View style={s.quranFilterRow}>
             {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
               const isActive = quranFilter === f;
-              const filterBg = f === 'learned' ? '#A8E6CF' : f === 'in_progress' ? '#FFCC99' : f === 'not_started' ? Colors.textMuted : cardColor;
+              const filterBg = f === 'learned' ? cardColor : f === 'in_progress' ? '#FFCC99' : f === 'not_started' ? Colors.textMuted : cardColor;
               return (
                 <Pressable
                   key={f}
@@ -1756,9 +1756,9 @@ export default function DashboardScreen() {
             style={s.quranList}
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             renderItem={({ item }) => {
-              const statusColor = item.status === 'learned' ? '#A8E6CF' : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
+              const statusColor = item.status === 'learned' ? cardColor : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
               const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
-              const badgeBg = item.status === 'learned' ? '#A8E6CF' : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
+              const badgeBg = item.status === 'learned' ? cardColor : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
               return (
                 <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
                   <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
@@ -1821,7 +1821,7 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleDayOfWeek(i)}
-                          style={[s.dayChip, isActive && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
                         >
                           <Text style={[s.dayChipText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
@@ -1967,7 +1967,7 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleEditDayOfWeek(i)}
-                          style={[s.dayChip, isActive && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}
+                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
                         >
                           <Text style={[s.dayChipText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
