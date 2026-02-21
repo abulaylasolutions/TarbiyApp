@@ -1,0 +1,37 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Dashboard con sezione "Attività di oggi" (Salah, Digiuno, Ramadan), switch calendario solare/islamico, tracker Ramadan, e altre feature.
+
+ORA MODIFICA E AGGIUNGI SOLO QUESTE COSE PRECISE, senza riscrivere l'intera app:
+
+1. Digiuno oggi:
+   - Cliccando nuovamente su "Sì" annulla (toggle Sì/No semplice, senza "Parziale" se Ramadan attivo)
+   - Se figlio ha trackRamadan true: togli completamente "Parziale", lascia solo toggle Sì/No in unica riga
+
+2. Connessione calendario solare/islamico:
+   - Usa https://www.islamicfinder.org/islamic-date-converter/ o package hijri per conversione
+   - Switch in Impostazioni: "Usa calendario islamico (Hijri)" (salva users/preferredHijri bool)
+   - Se ON: barra date mostra date hijri (es. 1 Ramadan 1447), eventi e digiuni usano data hijri corrente
+   - Freccette barra date cambiano giorno hijri se switch ON
+
+3. Tracker Ramadan:
+   - Se trackRamadan true per figlio: mostra sezione "Ramadan" sotto "Salah e digiuno odierni"
+   - Titolo: "Ramadan" (togli "Luna" o qualsiasi icona luna)
+   - Freccette < > per cambiare anno Ramadan (default 1447 attuale, +1 solo se anno corrente o futuro; no anni indietro come 1446)
+   - Tabella 30 quadrati (GridView o Row): giorno 1–29 pieni, 30 tratteggiato
+     - Verde pieno: digiunato
+     - Rosso: non digiunato (da recuperare)
+     - Grigio: giorno futuro/non ancora
+   - Clic su giorno: toggle digiunato (verde) / non digiunato (rosso), aggiorna children/ramadanDigests/{year}/{day}: {fasted: bool}
+   - Connesso a "Sì" in Digiuno: se digiunato quel giorno hijri → verde, viceversa
+   - Barra progresso sotto tabella (value: giorni digiunati / 30, verde)
+
+4. Switch calendario:
+   - Cambia visualizzazione barra date: se preferredHijri ON, usa date hijri (con package hijri o conversione API)
+   - Aggiorna eventi custom, digiuni, tracker Ramadan in base a calendario scelto
+
+5. Testo sezione giornaliera:
+   - Cambia da "Attività di oggi" a "Salah e digiuno odierni"
+   - Da "Attivita recenti" a "Attività recenti" (correggi typo)
+
+Mantieni responsive (tabella Ramadan scrollabile orizzontale se necessario), animazioni soft (toggle verde/rosso, fade su cambio calendario). Aggiungi package hijri se manca (flutter pub add hijri) o usa conversione manuale.
+
+Modifica dashboard_screen.dart (sezione Ramadan, toggle digiuno Sì/No, titolo "Salah e digiuno odierni", attività recenti typo), settings_screen.dart (switch Ramadan). Inizia subito con queste integrazioni precise!

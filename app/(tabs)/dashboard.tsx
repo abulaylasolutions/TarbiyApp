@@ -20,6 +20,7 @@ import { useRouter } from 'expo-router';
 import { getAvatarSource } from '@/lib/avatar-map';
 import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, type AqidahLeafItem, type AqidahPillar, type AqidahLevel } from '@/lib/aqidah-data';
 import PremiumOverlay from '@/components/PremiumOverlay';
+import { gregorianToHijri, getHijriMonthName, getCurrentHijriYear } from '@/lib/hijri';
 
 const PASTEL_COLORS = [
   '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFC1CC',
@@ -348,11 +349,9 @@ export default function DashboardScreen() {
   const [akhlaqNoteText, setAkhlaqNoteText] = useState('');
 
   const trackRamadan = (selectedChild as any)?.trackRamadan === true;
-  const [ramadanYear, setRamadanYear] = useState(() => {
-    const now = new Date();
-    const gYear = now.getFullYear();
-    return String(gYear <= 2024 ? 1446 : gYear <= 2025 ? 1446 : gYear <= 2026 ? 1447 : 1448);
-  });
+  const useHijri = (user as any)?.preferredHijriCalendar === true;
+  const currentHijriYear = getCurrentHijriYear();
+  const [ramadanYear, setRamadanYear] = useState(() => String(currentHijriYear));
   const [ramadanLogs, setRamadanLogs] = useState<Record<string, boolean>>({});
   const [ramadanLoading, setRamadanLoading] = useState(false);
 
@@ -586,11 +585,27 @@ export default function DashboardScreen() {
 
   const updateFasting = async (status: string) => {
     if (!childId) return;
-    setFasting(prev => ({ ...prev, status }));
+    const newStatus = fasting.status === status ? 'no' : status;
+    setFasting(prev => ({ ...prev, status: newStatus }));
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      await apiRequest('POST', `/api/children/${childId}/fasting`, { date: dateStr, status, note: fasting.note });
+      await apiRequest('POST', `/api/children/${childId}/fasting`, { date: dateStr, status: newStatus, note: fasting.note });
     } catch {}
+    if (trackRamadan && useHijri) {
+      const hijri = gregorianToHijri(currentDate);
+      if (hijri.month === 9 && hijri.day >= 1 && hijri.day <= 30) {
+        const dayStr = String(hijri.day);
+        const fasted = newStatus === 'yes';
+        setRamadanLogs(prev => ({ ...prev, [dayStr]: fasted }));
+        try {
+          await apiRequest('POST', `/api/children/${childId}/ramadan`, {
+            ramadanYear: String(hijri.year),
+            day: dayStr,
+            fasted,
+          });
+        } catch {}
+      }
+    }
   };
 
   const toggleQuranToday = async () => {
@@ -1023,7 +1038,9 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
           <View style={s.dateBarHeader}>
             <Text style={s.dateBarMonth}>
-              {getMonthName(currentDate, lang)} {currentDate.getFullYear()}
+              {useHijri
+                ? `${gregorianToHijri(currentDate, lang).monthName} ${gregorianToHijri(currentDate, lang).year}`
+                : `${getMonthName(currentDate, lang)} ${currentDate.getFullYear()}`}
             </Text>
             {dateStr !== todayStr && (
               <Pressable onPress={goToToday} style={[s.todayBtn, { backgroundColor: cardColor }]}>
@@ -1056,7 +1073,7 @@ export default function DashboardScreen() {
                     {getDayName(item, lang)}
                   </Text>
                   <Text style={[s.dateNum, isSelected && s.dateNumActive]}>
-                    {item.getDate()}
+                    {useHijri ? gregorianToHijri(item, lang).day : item.getDate()}
                   </Text>
                 </Pressable>
               );
@@ -1121,7 +1138,7 @@ export default function DashboardScreen() {
 
           {(salahEnabled || fastingEnabled) && (
             <Animated.View entering={FadeInDown.delay(300).duration(300)}>
-              <Text style={s.sectionTitle}>{t('todayActivities')}</Text>
+              <Text style={s.sectionTitle}>{t('salahFastingToday')}</Text>
               <View style={s.dailyCard}>
                 {salahEnabled && (
                   <View style={s.dailySubsection}>
@@ -1173,13 +1190,15 @@ export default function DashboardScreen() {
                         <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? Colors.mintGreen : Colors.textMuted} />
                         <Text style={[s.fastingBtnText, fasting.status === 'yes' && { color: Colors.mintGreen }]}>{t('yes')}</Text>
                       </Pressable>
-                      <Pressable
-                        onPress={() => updateFasting('partial')}
-                        style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: '#F4C430' + '20', borderColor: '#F4C430' }]}
-                      >
-                        <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? '#F4C430' : Colors.textMuted} />
-                        <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: '#F4C430' }]}>{t('partial')}</Text>
-                      </Pressable>
+                      {!trackRamadan && (
+                        <Pressable
+                          onPress={() => updateFasting('partial')}
+                          style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: '#F4C430' + '20', borderColor: '#F4C430' }]}
+                        >
+                          <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? '#F4C430' : Colors.textMuted} />
+                          <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: '#F4C430' }]}>{t('partial')}</Text>
+                        </Pressable>
+                      )}
                     </View>
                   </View>
                 )}
@@ -1189,51 +1208,77 @@ export default function DashboardScreen() {
 
           {trackRamadan && (
             <Animated.View entering={FadeInDown.delay(450).duration(300)}>
-              <View style={s.sectionTitleRow}>
-                <Ionicons name="moon" size={20} color="#D4A03C" />
-                <Text style={s.sectionTitle}>{t('ramadanTracker')}</Text>
-              </View>
+              <Text style={s.sectionTitle}>{t('ramadanTracker')}</Text>
               <View style={[s.subjectCard, { padding: 16 }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <Pressable onPress={() => setRamadanYear(String(Number(ramadanYear) - 1))} hitSlop={12}>
-                    <Ionicons name="chevron-back" size={20} color={Colors.textMuted} />
-                  </Pressable>
+                  <View style={{ width: 32 }} />
                   <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary }}>
-                    {t('ramadanYear')} {ramadanYear}
+                    {t('ramadanTracker')} {ramadanYear}
                   </Text>
-                  <Pressable onPress={() => setRamadanYear(String(Number(ramadanYear) + 1))} hitSlop={12}>
+                  <Pressable
+                    onPress={() => {
+                      const next = Number(ramadanYear) + 1;
+                      setRamadanYear(String(next));
+                    }}
+                    hitSlop={12}
+                  >
                     <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
                   </Pressable>
-                </View>
-
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 8 }}>
-                  <View style={{ flex: 1, height: 8, backgroundColor: Colors.creamBeige, borderRadius: 4, overflow: 'hidden' }}>
-                    <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: '#D4A03C', borderRadius: 4 }} />
-                  </View>
-                  <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textMuted }}>
-                    {ramadanFastedCount}/30
-                  </Text>
                 </View>
 
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                   {Array.from({ length: 30 }, (_, i) => i + 1).map(day => {
                     const dayStr = String(day);
+                    const hasLog = dayStr in ramadanLogs;
                     const fasted = ramadanLogs[dayStr] === true;
+                    const notFasted = hasLog && !fasted;
+                    const hijriNow = gregorianToHijri(new Date());
+                    const isCurrentRamadanYear = Number(ramadanYear) === hijriNow.year;
+                    const isFutureDay = isCurrentRamadanYear && hijriNow.month <= 9 && day > hijriNow.day && hijriNow.month === 9;
+                    const isPastRamadan = isCurrentRamadanYear && hijriNow.month > 9;
+                    const isBeforeRamadan = isCurrentRamadanYear && hijriNow.month < 9;
+                    const isFuture = isBeforeRamadan || (!isPastRamadan && isFutureDay);
+                    const isDay30 = day === 30;
+
+                    let bgColor = Colors.creamBeige + '50';
+                    let borderColor = Colors.creamBeige;
+                    let textColor = Colors.textMuted;
+                    let borderStyle: 'solid' | 'dashed' = 'solid';
+
+                    if (fasted) {
+                      bgColor = Colors.mintGreen + '25';
+                      borderColor = Colors.mintGreen;
+                      textColor = Colors.mintGreenDark || '#2E7D32';
+                    } else if (notFasted) {
+                      bgColor = '#FF6B6B' + '15';
+                      borderColor = '#FF6B6B';
+                      textColor = '#D32F2F';
+                    } else if (isFuture && !hasLog) {
+                      bgColor = Colors.textMuted + '10';
+                      borderColor = Colors.textMuted + '30';
+                      textColor = Colors.textMuted + '60';
+                    }
+
+                    if (isDay30) {
+                      borderStyle = 'dashed';
+                    }
+
                     return (
                       <Pressable
                         key={day}
                         onPress={() => toggleRamadanDay(day)}
                         style={{
                           width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
-                          backgroundColor: fasted ? '#D4A03C' + '20' : Colors.creamBeige + '80',
+                          backgroundColor: bgColor,
                           borderWidth: 1.5,
-                          borderColor: fasted ? '#D4A03C' : Colors.creamBeige,
+                          borderColor: borderColor,
+                          borderStyle: borderStyle,
                         }}
                       >
                         <Text style={{
-                          fontFamily: fasted ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
+                          fontFamily: fasted || notFasted ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
                           fontSize: 13,
-                          color: fasted ? '#D4A03C' : Colors.textMuted,
+                          color: textColor,
                         }}>
                           {day}
                         </Text>
@@ -1242,14 +1287,27 @@ export default function DashboardScreen() {
                   })}
                 </View>
 
-                <View style={{ flexDirection: 'row', gap: 16, marginTop: 12, justifyContent: 'center' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 8 }}>
+                  <View style={{ flex: 1, height: 10, backgroundColor: Colors.creamBeige, borderRadius: 5, overflow: 'hidden' }}>
+                    <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: Colors.mintGreen, borderRadius: 5 }} />
+                  </View>
+                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textPrimary }}>
+                    {ramadanFastedCount}/30
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', gap: 12, marginTop: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#D4A03C' + '20', borderWidth: 1, borderColor: '#D4A03C' }} />
-                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted }}>{t('ramadanFasted')}</Text>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: Colors.mintGreen + '25', borderWidth: 1, borderColor: Colors.mintGreen }} />
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanFasted')}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: Colors.creamBeige + '80', borderWidth: 1, borderColor: Colors.creamBeige }} />
-                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted }}>{t('ramadanNotTracked')}</Text>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#FF6B6B' + '15', borderWidth: 1, borderColor: '#FF6B6B' }} />
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanMissed')}</Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: Colors.textMuted + '10', borderWidth: 1, borderColor: Colors.textMuted + '30' }} />
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanNotTracked')}</Text>
                   </View>
                 </View>
               </View>
