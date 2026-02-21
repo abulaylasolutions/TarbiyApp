@@ -1047,7 +1047,7 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
           <View style={s.dateBarHeader}>
             <View style={s.dateBarTitleRow}>
-              <Text style={s.dateBarTitle}>{lang === 'ar' ? 'التقويم' : lang === 'en' ? 'Calendar' : 'Calendario'}</Text>
+              <Text style={s.dateBarTitle}>{t('calendarTitle')}</Text>
               <Pressable
                 onPress={async () => {
                   const newVal = !useHijri;
