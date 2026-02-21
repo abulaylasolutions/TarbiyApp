@@ -19,6 +19,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useTheme } from '@/lib/theme-context';
 import Colors from '@/constants/colors';
 import { useI18n, getLanguageLabel, type Language } from '@/lib/i18n';
 
@@ -28,6 +29,7 @@ export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const { login, register } = useAuth();
   const { t, lang, setLang } = useI18n();
+  const { colors, isDark } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -89,9 +91,9 @@ export default function AuthScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={[Colors.mintGreenLight, Colors.creamBeige, Colors.background] as const}
+        colors={[colors.mintGreenLight, colors.creamBeige, colors.background] as const}
         style={StyleSheet.absoluteFill}
       />
 
@@ -106,10 +108,10 @@ export default function AuthScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.langSwitcherRow}>
-            <Pressable onPress={cycleLang} style={styles.langSwitcherBtn}>
-              <Ionicons name="globe-outline" size={18} color={Colors.mintGreenDark} />
-              <Text style={styles.langSwitcherText}>{getLanguageLabel(lang as Language)}</Text>
-              <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
+            <Pressable onPress={cycleLang} style={[styles.langSwitcherBtn, { backgroundColor: colors.cardBackground, borderColor: colors.mintGreenLight }]}>
+              <Ionicons name="globe-outline" size={18} color={colors.mintGreenDark} />
+              <Text style={[styles.langSwitcherText, { color: colors.textPrimary }]}>{getLanguageLabel(lang as Language)}</Text>
+              <Ionicons name="chevron-down" size={14} color={colors.textMuted} />
             </Pressable>
           </Animated.View>
 
@@ -118,42 +120,42 @@ export default function AuthScreen() {
               <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
             </View>
             <Text style={styles.brandName}>
-              <Text style={styles.brandTarbiy}>Tarbiy</Text>
-              <Text style={styles.brandApp}>App</Text>
+              <Text style={[styles.brandTarbiy, { color: colors.mintGreen }]}>Tarbiy</Text>
+              <Text style={[styles.brandApp, { color: colors.textPrimary }]}>App</Text>
             </Text>
-            <Text style={styles.tagline}>{t('authTagline')}</Text>
+            <Text style={[styles.tagline, { color: colors.textSecondary }]}>{t('authTagline')}</Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.formCard}>
-            <View style={styles.tabRow}>
+          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={[styles.formCard, { backgroundColor: colors.cardBackground, shadowOpacity: colors.shadowOpacity }]}>
+            <View style={[styles.tabRow, { backgroundColor: colors.creamBeige }]}>
               <Pressable
                 onPress={() => { setIsLogin(true); setErrorMessage(''); }}
-                style={[styles.tab, isLogin && styles.tabActive]}
+                style={[styles.tab, isLogin && [styles.tabActive, { backgroundColor: colors.cardBackground }]]}
               >
-                <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>{t('authLogin')}</Text>
+                <Text style={[styles.tabText, { color: colors.textMuted }, isLogin && [styles.tabTextActive, { color: colors.mintGreenDark }]]}>{t('authLogin')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => { setIsLogin(false); setErrorMessage(''); }}
-                style={[styles.tab, !isLogin && styles.tabActive]}
+                style={[styles.tab, !isLogin && [styles.tabActive, { backgroundColor: colors.cardBackground }]]}
               >
-                <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>{t('authSignUp')}</Text>
+                <Text style={[styles.tabText, { color: colors.textMuted }, !isLogin && [styles.tabTextActive, { color: colors.mintGreenDark }]]}>{t('authSignUp')}</Text>
               </Pressable>
             </View>
 
             {errorMessage ? (
-              <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-                <Text style={styles.errorText}>{errorMessage}</Text>
+              <View style={[styles.errorBox, { backgroundColor: colors.dangerLight }]}>
+                <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                <Text style={[styles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
               </View>
             ) : null}
 
             <View style={styles.inputGroup}>
-              <View style={styles.inputWrapper}>
-                <Ionicons name="mail-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+              <View style={[styles.inputWrapper, { backgroundColor: colors.inputBackground }]}>
+                <Ionicons name="mail-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   placeholder="Email"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={email}
                   onChangeText={setEmail}
                   keyboardType="email-address"
@@ -162,29 +164,29 @@ export default function AuthScreen() {
                 />
               </View>
 
-              <View style={styles.inputWrapper}>
-                <Ionicons name="lock-closed-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+              <View style={[styles.inputWrapper, { backgroundColor: colors.inputBackground }]}>
+                <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, { color: colors.textPrimary }]}
                   placeholder="Password"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={password}
                   onChangeText={setPassword}
                   secureTextEntry={!showPassword}
                   autoComplete="password"
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
-                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={Colors.textMuted} />
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={colors.textMuted} />
                 </Pressable>
               </View>
 
               {!isLogin && (
-                <View style={styles.inputWrapper}>
-                  <Ionicons name="lock-closed-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+                <View style={[styles.inputWrapper, { backgroundColor: colors.inputBackground }]}>
+                  <Ionicons name="lock-closed-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
                   <TextInput
-                    style={styles.input}
+                    style={[styles.input, { color: colors.textPrimary }]}
                     placeholder={t('authConfirmPassword')}
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
                     secureTextEntry={!showPassword}
@@ -203,13 +205,13 @@ export default function AuthScreen() {
               ]}
             >
               <LinearGradient
-                colors={[Colors.mintGreen, Colors.mintGreenDark] as const}
+                colors={[colors.mintGreen, colors.mintGreenDark] as const}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.submitGradient}
               >
                 {loading ? (
-                  <ActivityIndicator color={Colors.white} />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
                   <Text style={styles.submitText}>
                     {isLogin ? t('authLogin') : t('authSignUp')}
@@ -219,31 +221,31 @@ export default function AuthScreen() {
             </Pressable>
 
             <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>{t('authOr')}</Text>
-              <View style={styles.dividerLine} />
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
+              <Text style={[styles.dividerText, { color: colors.textMuted }]}>{t('authOr')}</Text>
+              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
             </View>
 
             <View style={styles.socialRow}>
               <Pressable
                 onPress={() => handleSocialLogin('Google')}
-                style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.8 }]}
+                style={({ pressed }) => [styles.socialBtn, { backgroundColor: colors.inputBackground }, pressed && { opacity: 0.8 }]}
               >
                 <FontAwesome name="google" size={20} color="#DB4437" />
-                <Text style={styles.socialBtnText}>Google</Text>
+                <Text style={[styles.socialBtnText, { color: colors.textPrimary }]}>Google</Text>
               </Pressable>
               <Pressable
                 onPress={() => handleSocialLogin('Facebook')}
-                style={({ pressed }) => [styles.socialBtn, pressed && { opacity: 0.8 }]}
+                style={({ pressed }) => [styles.socialBtn, { backgroundColor: colors.inputBackground }, pressed && { opacity: 0.8 }]}
               >
                 <FontAwesome name="facebook" size={20} color="#4267B2" />
-                <Text style={styles.socialBtnText}>Facebook</Text>
+                <Text style={[styles.socialBtnText, { color: colors.textPrimary }]}>Facebook</Text>
               </Pressable>
             </View>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(300).duration(500)}>
-            <Text style={styles.footerText}>
+            <Text style={[styles.footerText, { color: colors.textMuted }]}>
               {t('authDataSecure')}
             </Text>
           </Animated.View>

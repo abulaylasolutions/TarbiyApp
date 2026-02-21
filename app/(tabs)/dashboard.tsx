@@ -16,6 +16,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest, getApiUrl } from '@/lib/query-client';
 import Colors from '@/constants/colors';
+import { useTheme } from '@/lib/theme-context';
 import { useRouter } from 'expo-router';
 import { getAvatarSource } from '@/lib/avatar-map';
 import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, type AqidahLeafItem, type AqidahPillar, type AqidahLevel } from '@/lib/aqidah-data';
@@ -269,6 +270,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
   selectedChildId: string | null;
   selectChild: (id: string) => void;
 }) {
+  const { colors } = useTheme();
   if (childList.length <= 1) return null;
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.selectorRow}>
@@ -277,7 +279,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
         const color = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
         return (
           <Pressable key={`${child.id}-${child.avatarAsset || 'none'}`} onPress={() => selectChild(child.id)} style={s.selectorItem}>
-            <View style={[s.selectorCircle, isSelected && { borderColor: color, borderWidth: 3 }]}>
+            <View style={[s.selectorCircle, { backgroundColor: colors.creamBeige }, isSelected && { borderColor: color, borderWidth: 3 }]}>
               {child.avatarAsset && getAvatarSource(child.avatarAsset) ? (
                 <Image
                   source={getAvatarSource(child.avatarAsset)}
@@ -286,10 +288,10 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
                   transition={0}
                 />
               ) : (
-                <Text style={s.selectorInitial}>{child.name.charAt(0).toUpperCase()}</Text>
+                <Text style={[s.selectorInitial, { color: colors.textPrimary }]}>{child.name.charAt(0).toUpperCase()}</Text>
               )}
             </View>
-            <Text style={[s.selectorName, isSelected && { color: Colors.textPrimary, fontFamily: 'Nunito_700Bold' }]} numberOfLines={1}>
+            <Text style={[s.selectorName, { color: colors.textMuted }, isSelected && { color: colors.textPrimary, fontFamily: 'Nunito_700Bold' }]} numberOfLines={1}>
               {child.name}
             </Text>
           </Pressable>
@@ -304,6 +306,7 @@ export default function DashboardScreen() {
   const { children, selectedChildId, selectChild, cogenitori, refreshChildren } = useApp();
   const { user, refreshUser } = useAuth();
   const { t, lang, isRTL } = useI18n();
+  const { colors, isDark } = useTheme();
   const queryClient = useQueryClient();
   const premiumRouter = useRouter();
   const isPremium = user?.isPremium;
@@ -969,11 +972,11 @@ export default function DashboardScreen() {
 
   if (!selectedChild) {
     return (
-      <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+      <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr', backgroundColor: colors.background }]}>
         <View style={[s.emptyState, { paddingTop: topPadding + 80 }]}>
-          <Ionicons name="people" size={64} color={Colors.textMuted} />
-          <Text style={s.emptyText}>{t('addChildFromHome')}</Text>
-          <Text style={s.emptySub}>{t('toViewDashboard')}</Text>
+          <Ionicons name="people" size={64} color={colors.textMuted} />
+          <Text style={[s.emptyText, { color: colors.textSecondary }]}>{t('addChildFromHome')}</Text>
+          <Text style={[s.emptySub, { color: colors.textMuted }]}>{t('toViewDashboard')}</Text>
         </View>
       </View>
     );
@@ -982,7 +985,7 @@ export default function DashboardScreen() {
   const prayerCount = PRAYER_NAMES.filter(p => prayers[p]).length;
 
   return (
-    <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+    <View style={[s.container, { direction: isRTL ? 'rtl' : 'ltr', backgroundColor: colors.background }]}>
       <ScrollView style={s.scroll} contentContainerStyle={{ paddingBottom: Platform.OS === 'web' ? 34 : 100 }} showsVerticalScrollIndicator={false}>
         <View style={{ paddingTop: topPadding + 8 }} />
 
@@ -1019,11 +1022,11 @@ export default function DashboardScreen() {
               )}
               <View style={s.headerInfo}>
                 <Text style={[s.headerName, { color: nameColor }]}>{selectedChild.name}</Text>
-                <Text style={s.headerAge}>{getAge(selectedChild.birthDate, t)}</Text>
+                <Text style={[s.headerAge, { color: isDark ? colors.textSecondary : Colors.textPrimary }]}>{getAge(selectedChild.birthDate, t)}</Text>
                 {coParentName && (
-                  <Text style={s.headerCoParent}>
+                  <Text style={[s.headerCoParent, { color: isDark ? colors.textSecondary : Colors.textPrimary }]}>
                     {isFemale ? t('daughterOf') : t('sonOf')}{' '}
-                    <Text style={{ color: '#333', fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
+                    <Text style={{ color: colors.textPrimary, fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
                   </Text>
                 )}
               </View>
@@ -1046,7 +1049,7 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
           <View style={s.dateBarHeader}>
             <View style={s.dateBarTitleRow}>
-              <Text style={s.dateBarTitle}>{t('calendarTitle')}</Text>
+              <Text style={[s.dateBarTitle, { color: colors.mintGreen }]}>{t('calendarTitle')}</Text>
               <Pressable
                 onPress={async () => {
                   const newVal = !useHijri;
@@ -1063,7 +1066,7 @@ export default function DashboardScreen() {
               >
                 <View style={[s.calSwitchThumb, { alignSelf: useHijri ? 'flex-end' : 'flex-start' }]} />
               </Pressable>
-              <Text style={s.calSwitchLabel}>{useHijri ? t('hijriOn') : t('hijriOff')}</Text>
+              <Text style={[s.calSwitchLabel, { color: colors.textMuted }]}>{useHijri ? t('hijriOn') : t('hijriOff')}</Text>
             </View>
             {dateStr !== todayStr && (
               <Pressable onPress={goToToday} style={[s.todayBtn, { backgroundColor: cardColor }]}>
@@ -1093,17 +1096,18 @@ export default function DashboardScreen() {
                   onPress={() => setCurrentDate(new Date(item))}
                   style={[
                     s.dateItem,
+                    { backgroundColor: colors.cardBackground },
                     isSelected && [s.dateItemActive, { backgroundColor: cardColor }],
                     isToday && !isSelected && s.dateItemToday,
                   ]}
                 >
-                  <Text style={[s.dateDayName, isSelected && s.dateDayNameActive]}>
+                  <Text style={[s.dateDayName, { color: colors.textMuted }, isSelected && s.dateDayNameActive]}>
                     {getDayName(item, lang)}
                   </Text>
-                  <Text style={[s.dateNum, isSelected && s.dateNumActive]}>
+                  <Text style={[s.dateNum, { color: colors.textPrimary }, isSelected && s.dateNumActive]}>
                     {displayDay}
                   </Text>
-                  <Text style={[s.dateMonthSub, isSelected && s.dateMonthSubActive]} numberOfLines={1}>
+                  <Text style={[s.dateMonthSub, { color: colors.textMuted }, isSelected && s.dateMonthSubActive]} numberOfLines={1}>
                     {displaySub}
                   </Text>
                 </Pressable>
@@ -1116,7 +1120,7 @@ export default function DashboardScreen() {
         <View style={s.sectionsWrap}>
           <Animated.View entering={FadeInDown.delay(200).duration(300)}>
             <View style={s.sectionTitleRow}>
-              <Text style={s.sectionTitle}>{t('todayEvents')}</Text>
+              <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('todayEvents')}</Text>
               <Pressable onPress={() => {
                 if (!isPremium) {
                   setShowEventPremiumOverlay(true);
@@ -1124,11 +1128,11 @@ export default function DashboardScreen() {
                 }
                 setShowAddTask(true);
               }} hitSlop={8}>
-                <Ionicons name="add-circle" size={26} color={isPremium ? cardColor : Colors.textMuted} />
+                <Ionicons name="add-circle" size={26} color={isPremium ? cardColor : colors.textMuted} />
               </Pressable>
             </View>
             {todayTasks.length > 0 ? (
-              <View style={s.card}>
+              <View style={[s.card, { backgroundColor: colors.cardBackground }]}>
                 {todayTasks.map((task, i) => {
                   const comp = completions[task.id];
                   const timeDisplay = task.time && task.endTime
@@ -1139,95 +1143,95 @@ export default function DashboardScreen() {
                       key={task.id}
                       onLongPress={() => handleLongPressTask(task)}
                       delayLongPress={400}
-                      style={[s.taskRow, i > 0 && s.taskRowBorder]}
+                      style={[s.taskRow, i > 0 && [s.taskRowBorder, { borderTopColor: colors.border }]]}
                     >
                       <Pressable onPress={() => toggleTaskCompletion(task.id)} style={s.taskCheck}>
-                        <View style={[s.checkBox, comp?.completed && { backgroundColor: cardColor, borderColor: cardColor }]}>
+                        <View style={[s.checkBox, { borderColor: colors.textMuted }, comp?.completed && { backgroundColor: cardColor, borderColor: cardColor }]}>
                           {comp?.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
                         </View>
                       </Pressable>
                       <View style={s.taskInfo}>
-                        <Text style={[s.taskName, comp?.completed && s.taskNameDone]}>{task.name}</Text>
-                        {timeDisplay && <Text style={s.taskTime}>{timeDisplay}</Text>}
-                        <Text style={s.taskFreqLabel}>{t(task.frequency as any)}</Text>
+                        <Text style={[s.taskName, { color: colors.textPrimary }, comp?.completed && { textDecorationLine: 'line-through', color: colors.textMuted }]}>{task.name}</Text>
+                        {timeDisplay && <Text style={[s.taskTime, { color: colors.textMuted }]}>{timeDisplay}</Text>}
+                        <Text style={[s.taskFreqLabel, { color: colors.textMuted }]}>{t(task.frequency as any)}</Text>
                       </View>
                       <Pressable onPress={() => handleDeleteTask(task.id, task.name, task.frequency)} hitSlop={8}>
-                        <Ionicons name="trash-outline" size={18} color={Colors.textMuted} />
+                        <Ionicons name="trash-outline" size={18} color={colors.textMuted} />
                       </Pressable>
                     </Pressable>
                   );
                 })}
               </View>
             ) : (
-              <View style={s.emptyCard}>
-                <Ionicons name="calendar-outline" size={32} color={Colors.textMuted} />
-                <Text style={s.emptyCardText}>{t('noEventsToday')}</Text>
-                <Text style={s.emptyCardSub}>{t('addWithPlus')}</Text>
+              <View style={[s.emptyCard, { backgroundColor: colors.cardBackground }]}>
+                <Ionicons name="calendar-outline" size={32} color={colors.textMuted} />
+                <Text style={[s.emptyCardText, { color: colors.textMuted }]}>{t('noEventsToday')}</Text>
+                <Text style={[s.emptyCardSub, { color: colors.textMuted }]}>{t('addWithPlus')}</Text>
               </View>
             )}
           </Animated.View>
 
           {(salahEnabled || fastingEnabled) && (
             <Animated.View entering={FadeInDown.delay(300).duration(300)}>
-              <Text style={s.sectionTitle}>{t('salahFastingToday')}</Text>
-              <View style={s.dailyCard}>
+              <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('salahFastingToday')}</Text>
+              <View style={[s.dailyCard, { backgroundColor: colors.cardBackground }]}>
                 {salahEnabled && (
                   <View style={s.dailySubsection}>
                     <View style={s.dailySubHeader}>
                       <MaterialCommunityIcons name="mosque" size={18} color={cardColor} />
-                      <Text style={s.dailySubTitle}>{t('salahSection')}</Text>
+                      <Text style={[s.dailySubTitle, { color: colors.textSecondary }]}>{t('salahSection')}</Text>
                     </View>
                     <View style={s.prayerGrid}>
                       {PRAYER_NAMES.map((prayer) => {
                         const done = prayers[prayer];
                         return (
                           <Pressable key={prayer} onPress={() => togglePrayer(prayer)} style={s.prayerItem}>
-                            <View style={[s.prayerCircle, done && { backgroundColor: cardColor, borderColor: cardColor }]}>
+                            <View style={[s.prayerCircle, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, done && { backgroundColor: cardColor, borderColor: cardColor }]}>
                               {done ? (
                                 <Ionicons name="checkmark" size={20} color={Colors.white} />
                               ) : (
-                                <MaterialCommunityIcons name="mosque" size={18} color={Colors.textMuted} />
+                                <MaterialCommunityIcons name="mosque" size={18} color={colors.textMuted} />
                               )}
                             </View>
-                            <Text style={[s.prayerLabel, done && s.prayerLabelDone]}>{t(prayer)}</Text>
+                            <Text style={[s.prayerLabel, { color: colors.textSecondary }, done && { color: colors.mintGreenDark, fontFamily: 'Nunito_700Bold' }]}>{t(prayer)}</Text>
                           </Pressable>
                         );
                       })}
                     </View>
                     <View style={s.prayerSummary}>
-                      <View style={[s.prayerBar, { width: '100%' }]}>
+                      <View style={[s.prayerBar, { width: '100%', backgroundColor: colors.creamBeige }]}>
                         <View style={[s.prayerBarFill, { width: `${(prayerCount / 5) * 100}%`, backgroundColor: cardColor }]} />
                       </View>
-                      <Text style={s.prayerCountText}>{prayerCount}/5</Text>
+                      <Text style={[s.prayerCountText, { color: colors.textSecondary }]}>{prayerCount}/5</Text>
                     </View>
                   </View>
                 )}
 
                 {fastingEnabled && salahEnabled && (
-                  <View style={s.dailyDivider} />
+                  <View style={[s.dailyDivider, { backgroundColor: colors.border }]} />
                 )}
 
                 {fastingEnabled && (
                   <View style={s.dailySubsection}>
                     <View style={s.dailySubHeader}>
                       <Ionicons name="moon-outline" size={16} color={cardColor} />
-                      <Text style={s.dailySubTitle}>{t('fastingSection')}</Text>
+                      <Text style={[s.dailySubTitle, { color: colors.textSecondary }]}>{t('fastingSection')}</Text>
                     </View>
                     <View style={s.fastingRow}>
                       <Pressable
                         onPress={() => updateFasting('yes')}
-                        style={[s.fastingBtn, { flex: 1 }, fasting.status === 'yes' && { backgroundColor: cardColor + '20', borderColor: cardColor }]}
+                        style={[s.fastingBtn, { flex: 1, backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, fasting.status === 'yes' && { backgroundColor: cardColor + '20', borderColor: cardColor }]}
                       >
-                        <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? cardColor : Colors.textMuted} />
-                        <Text style={[s.fastingBtnText, fasting.status === 'yes' && { color: cardColor }]}>{t('yes')}</Text>
+                        <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? cardColor : colors.textMuted} />
+                        <Text style={[s.fastingBtnText, { color: colors.textSecondary }, fasting.status === 'yes' && { color: cardColor }]}>{t('yes')}</Text>
                       </Pressable>
                       {!trackRamadan && (
                         <Pressable
                           onPress={() => updateFasting('partial')}
-                          style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: cardColor + '20', borderColor: cardColor }]}
+                          style={[s.fastingBtn, { flex: 1, backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, fasting.status === 'partial' && { backgroundColor: cardColor + '20', borderColor: cardColor }]}
                         >
-                          <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? cardColor : Colors.textMuted} />
-                          <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: cardColor }]}>{t('partial')}</Text>
+                          <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? cardColor : colors.textMuted} />
+                          <Text style={[s.fastingBtnText, { color: colors.textSecondary }, fasting.status === 'partial' && { color: cardColor }]}>{t('partial')}</Text>
                         </Pressable>
                       )}
                     </View>
@@ -1239,11 +1243,11 @@ export default function DashboardScreen() {
 
           {trackRamadan && (
             <Animated.View entering={FadeInDown.delay(450).duration(300)}>
-              <Text style={s.sectionTitle}>{t('ramadanTracker')}</Text>
-              <View style={[s.subjectCard, { padding: 16 }]}>
+              <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('ramadanTracker')}</Text>
+              <View style={[s.subjectCard, { padding: 16, backgroundColor: colors.cardBackground }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <View style={{ width: 32 }} />
-                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary }}>
+                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 16, color: colors.textPrimary }}>
                     {t('ramadanTracker')} {ramadanYear}
                   </Text>
                   <Pressable
@@ -1253,7 +1257,7 @@ export default function DashboardScreen() {
                     }}
                     hitSlop={12}
                   >
-                    <Ionicons name="chevron-forward" size={20} color={Colors.textMuted} />
+                    <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                   </Pressable>
                 </View>
 
@@ -1322,10 +1326,10 @@ export default function DashboardScreen() {
                 </View>
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 8 }}>
-                  <View style={{ flex: 1, height: 10, backgroundColor: Colors.creamBeige, borderRadius: 5, overflow: 'hidden' }}>
+                  <View style={{ flex: 1, height: 10, backgroundColor: colors.creamBeige, borderRadius: 5, overflow: 'hidden' }}>
                     <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: '#4CAF50', borderRadius: 5 }} />
                   </View>
-                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textPrimary }}>
+                  <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: colors.textPrimary }}>
                     {ramadanFastedCount}/30
                   </Text>
                 </View>
@@ -1333,15 +1337,15 @@ export default function DashboardScreen() {
                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4CAF50' + '20', borderWidth: 1, borderColor: '#4CAF50' }} />
-                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanFasted')}</Text>
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: colors.textMuted }}>{t('ramadanFasted')}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#F44336' + '18', borderWidth: 1, borderColor: '#F44336' }} />
-                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanMissed')}</Text>
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: colors.textMuted }}>{t('ramadanMissed')}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#B0BEC5' + '10', borderWidth: 1, borderColor: '#B0BEC5' + '40' }} />
-                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanNotTracked')}</Text>
+                    <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: colors.textMuted }}>{t('ramadanNotTracked')}</Text>
                   </View>
                 </View>
               </View>
@@ -1364,10 +1368,10 @@ export default function DashboardScreen() {
               return (
                 <>
                   <View style={s.eduTitleRow}>
-                    <Text style={s.sectionTitle}>{t('subjects')}</Text>
-                    <Text style={s.eduPctText}>{eduPct}%</Text>
+                    <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('subjects')}</Text>
+                    <Text style={[s.eduPctText, { color: colors.textSecondary }]}>{eduPct}%</Text>
                   </View>
-                  <View style={s.eduBarContainer}>
+                  <View style={[s.eduBarContainer, { backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)' }]}>
                     {SUBJECTS.map((sub) => {
                       const sp = subjectProgress[sub.key];
                       const widthPct = eduTotal > 0 ? (sp.done / eduTotal) * 100 : 0;
@@ -1381,36 +1385,36 @@ export default function DashboardScreen() {
                     {SUBJECTS.map((sub) => (
                       <View key={sub.key} style={s.eduLegendItem}>
                         <View style={[s.eduLegendDot, { backgroundColor: sub.color }]} />
-                        <Text style={s.eduLegendLabel}>{t(sub.key)}</Text>
+                        <Text style={[s.eduLegendLabel, { color: colors.textMuted }]}>{t(sub.key)}</Text>
                       </View>
                     ))}
                   </View>
                 </>
               );
             })()}
-            <View style={s.card}>
+            <View style={[s.card, { backgroundColor: colors.cardBackground }]}>
               {SUBJECTS.map((subject, i) => {
                 const isExpanded = expandedSubjects.includes(subject.key);
                 return (
                   <View key={subject.key}>
                     <Pressable
                       onPress={() => toggleSubject(subject.key)}
-                      style={[s.subjectRow, i > 0 && s.taskRowBorder]}
+                      style={[s.subjectRow, i > 0 && [s.taskRowBorder, { borderTopColor: colors.border }]]}
                     >
                       <Ionicons name={subject.icon as any} size={20} color={subject.color} />
-                      <Text style={s.subjectName}>{t(subject.key)}</Text>
-                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={Colors.textMuted} />
+                      <Text style={[s.subjectName, { color: colors.textPrimary }]}>{t(subject.key)}</Text>
+                      <Ionicons name={isExpanded ? 'chevron-up' : 'chevron-down'} size={18} color={colors.textMuted} />
                     </Pressable>
                     {isExpanded && subject.key === 'arabo' && (
                       <View style={s.subjectContent}>
-                        <Text style={s.aqidahIntro}>
+                        <Text style={[s.aqidahIntro, { color: colors.textSecondary, backgroundColor: isDark ? 'rgba(200,206,234,0.08)' : 'rgba(200,206,234,0.15)' }]}>
                           {lang === 'ar'
                             ? 'تعلم الحروف العربية هو الخطوة الأولى لقراءة القرآن الكريم. يتتبع هذا القسم الحروف الـ 28 والمهارات الأساسية.'
                             : lang === 'en'
                             ? 'Learning the Arabic alphabet is the first step to reading the Holy Quran. This section tracks the 28 letters and basic reading skills.'
                             : "Imparare l'alfabeto arabo e' il primo passo per leggere il Sacro Corano. Questa sezione traccia le 28 lettere e le competenze di base."}
                         </Text>
-                        <Text style={s.arabicCountLabel}>{t('learnedLetters')}: {localArabicLetters.length} / 28</Text>
+                        <Text style={[s.arabicCountLabel, { color: colors.textSecondary }]}>{t('learnedLetters')}: {localArabicLetters.length} / 28</Text>
                         <View style={s.arabicLettersGrid}>
                           {ARABIC_LETTERS.map((letter) => {
                             const isSelected = localArabicLetters.includes(letter);
@@ -1418,42 +1422,42 @@ export default function DashboardScreen() {
                               <Pressable
                                 key={letter}
                                 onPress={() => toggleArabicLetter(letter)}
-                                style={[s.arabicLetterChip, isSelected && { backgroundColor: cardColor }]}
+                                style={[s.arabicLetterChip, { backgroundColor: colors.creamBeige }, isSelected && { backgroundColor: cardColor }]}
                               >
-                                <Text style={[s.arabicLetterText, isSelected && { color: Colors.white }]}>{letter}</Text>
+                                <Text style={[s.arabicLetterText, { color: colors.textPrimary }, isSelected && { color: Colors.white }]}>{letter}</Text>
                               </Pressable>
                             );
                           })}
                         </View>
                         <View style={s.arabicToggleRow}>
-                          <Text style={s.arabicToggleLabel}>{t('harakat')}</Text>
+                          <Text style={[s.arabicToggleLabel, { color: colors.textSecondary }]}>{t('harakat')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('hasHarakat')}
-                            style={[s.arabicPill, localHarakat && { backgroundColor: cardColor, borderColor: cardColor }]}
+                            style={[s.arabicPill, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, localHarakat && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
-                            <Text style={[s.arabicPillText, localHarakat && { color: Colors.white }]}>
+                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localHarakat && { color: Colors.white }]}>
                               {localHarakat ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
                         </View>
                         <View style={s.arabicToggleRow}>
-                          <Text style={s.arabicToggleLabel}>{t('canReadArabic')}</Text>
+                          <Text style={[s.arabicToggleLabel, { color: colors.textSecondary }]}>{t('canReadArabic')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('canReadArabic')}
-                            style={[s.arabicPill, localCanRead && { backgroundColor: cardColor, borderColor: cardColor }]}
+                            style={[s.arabicPill, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, localCanRead && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
-                            <Text style={[s.arabicPillText, localCanRead && { color: Colors.white }]}>
+                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localCanRead && { color: Colors.white }]}>
                               {localCanRead ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
                         </View>
                         <View style={s.arabicToggleRow}>
-                          <Text style={s.arabicToggleLabel}>{t('canWriteArabic')}</Text>
+                          <Text style={[s.arabicToggleLabel, { color: colors.textSecondary }]}>{t('canWriteArabic')}</Text>
                           <Pressable
                             onPress={() => toggleArabicSetting('canWriteArabic')}
-                            style={[s.arabicPill, localCanWrite && { backgroundColor: cardColor, borderColor: cardColor }]}
+                            style={[s.arabicPill, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, localCanWrite && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
-                            <Text style={[s.arabicPillText, localCanWrite && { color: Colors.white }]}>
+                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localCanWrite && { color: Colors.white }]}>
                               {localCanWrite ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
@@ -1462,24 +1466,24 @@ export default function DashboardScreen() {
                     )}
                     {isExpanded && subject.key === 'akhlaq' && (
                       <View style={s.subjectContent}>
-                        <Text style={s.aqidahIntro}>
+                        <Text style={[s.aqidahIntro, { color: colors.textSecondary, backgroundColor: isDark ? 'rgba(200,206,234,0.08)' : 'rgba(200,206,234,0.15)' }]}>
                           {lang === 'ar'
                             ? 'الأخلاق هي الآداب والسلوك الحسن. علّم أطفالك حسن الخلق والأدب مع الآخرين كما أمر الإسلام.'
                             : lang === 'en'
                             ? 'Akhlaq means good character and manners. Teach your children beautiful conduct and etiquette as Islam commands.'
                             : "Akhlaq significa buon carattere e buone maniere. Insegna ai tuoi figli la bella condotta e l'etichetta come comanda l'Islam."}
                         </Text>
-                        <Text style={s.arabicCountLabel}>{lang === 'it' ? 'Completati' : lang === 'ar' ? 'مكتمل' : 'Completed'}: {akhlaqCheckedCount} / {akhlaqTotalItems}</Text>
+                        <Text style={[s.arabicCountLabel, { color: colors.textSecondary }]}>{lang === 'it' ? 'Completati' : lang === 'ar' ? 'مكتمل' : 'Completed'}: {akhlaqCheckedCount} / {akhlaqTotalItems}</Text>
                         {AKHLAQ_CATEGORIES.map((cat) => {
                           const isCatExpanded = expandedAkhlaqCats.includes(cat.key);
                           const catChecked = cat.items.filter(i => localAkhlaqChecked.includes(i.key)).length;
                           return (
                             <View key={cat.key}>
-                              <Pressable onPress={() => toggleAkhlaqCategory(cat.key)} style={s.akhlaqCatRow}>
+                              <Pressable onPress={() => toggleAkhlaqCategory(cat.key)} style={[s.akhlaqCatRow, { borderBottomColor: colors.border }]}>
                                 <Ionicons name={cat.icon as any} size={18} color={cardColor} />
-                                <Text style={s.akhlaqCatName}>{getCatLabel(cat)}</Text>
-                                <Text style={s.akhlaqCatCount}>{catChecked}/{cat.items.length}</Text>
-                                <Ionicons name={isCatExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+                                <Text style={[s.akhlaqCatName, { color: colors.textPrimary }]}>{getCatLabel(cat)}</Text>
+                                <Text style={[s.akhlaqCatCount, { color: colors.textMuted }]}>{catChecked}/{cat.items.length}</Text>
+                                <Ionicons name={isCatExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
                               </Pressable>
                               {isCatExpanded && cat.items.map((item) => {
                                 const isChecked = localAkhlaqChecked.includes(item.key);
@@ -1489,10 +1493,10 @@ export default function DashboardScreen() {
                                   <View key={item.key} style={s.aqidahItemContainer}>
                                     <View style={s.aqidahLeafRow}>
                                       <Pressable onPress={() => toggleAkhlaqItem(item.key)} style={s.aqidahLeafCheckArea}>
-                                        <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: cardColor, borderColor: cardColor }]}>
+                                        <View style={[s.akhlaqCheckBox, { borderColor: colors.textMuted }, isChecked && { backgroundColor: cardColor, borderColor: cardColor }]}>
                                           {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
                                         </View>
-                                        <Text style={[s.akhlaqItemText, isChecked && { color: Colors.textMuted, textDecorationLine: 'line-through' as const }]}>{getAkhlaqLabel(item)}</Text>
+                                        <Text style={[s.akhlaqItemText, { color: colors.textPrimary }, isChecked && { color: colors.textMuted, textDecorationLine: 'line-through' as const }]}>{getAkhlaqLabel(item)}</Text>
                                       </Pressable>
                                       <View style={s.aqidahLeafActions}>
                                         <Pressable
@@ -1509,7 +1513,7 @@ export default function DashboardScreen() {
                                           <Ionicons
                                             name={akhlaqHasNote ? 'chatbubble' : 'chatbubble-outline'}
                                             size={15}
-                                            color={akhlaqHasNote ? cardColor : Colors.textMuted}
+                                            color={akhlaqHasNote ? cardColor : colors.textMuted}
                                           />
                                         </Pressable>
                                       </View>
@@ -1517,11 +1521,11 @@ export default function DashboardScreen() {
                                     {isEditingAkhlaq && (
                                       <View style={s.aqidahNoteRow}>
                                         <TextInput
-                                          style={s.aqidahNoteInput}
+                                          style={[s.aqidahNoteInput, { color: colors.textPrimary, backgroundColor: colors.creamBeige }]}
                                           value={akhlaqNoteText}
                                           onChangeText={setAkhlaqNoteText}
                                           placeholder={lang === 'it' ? 'Nota del genitore...' : lang === 'ar' ? 'ملاحظة الوالد...' : 'Parent note...'}
-                                          placeholderTextColor={Colors.textMuted}
+                                          placeholderTextColor={colors.textMuted}
                                           multiline
                                         />
                                         <Pressable onPress={() => saveAkhlaqNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: cardColor }]}>
@@ -1530,7 +1534,7 @@ export default function DashboardScreen() {
                                       </View>
                                     )}
                                     {!isEditingAkhlaq && akhlaqHasNote && (
-                                      <Text style={s.aqidahNotePreview}>{akhlaqNotesMap[item.key]}</Text>
+                                      <Text style={[s.aqidahNotePreview, { color: colors.textMuted }]}>{akhlaqNotesMap[item.key]}</Text>
                                     )}
                                   </View>
                                 );
@@ -1542,14 +1546,14 @@ export default function DashboardScreen() {
                     )}
                     {isExpanded && subject.key === 'aqidah' && (
                       <View style={s.subjectContent}>
-                        <Text style={s.aqidahIntro}>
+                        <Text style={[s.aqidahIntro, { color: colors.textSecondary, backgroundColor: isDark ? 'rgba(200,206,234,0.08)' : 'rgba(200,206,234,0.15)' }]}>
                           {lang === 'ar'
                             ? 'العقيدة هي ما نؤمن به في قلوبنا. علّمنا النبي ﷺ ثلاثة مستويات: الإسلام، الإيمان، الإحسان (من حديث جبريل).'
                             : lang === 'en'
                             ? "Aqidah is what we believe in our hearts. The Prophet \uFDFA taught us 3 levels: Islam, Iman, Ihsan (from the Hadith of Jibreel)."
                             : "L'Aqidah e' cio' in cui crediamo con il cuore. Il Profeta \uFDFA ci ha insegnato 3 livelli: Islam, Iman, Ihsan (dal Hadith di Gabriele)."}
                         </Text>
-                        <Text style={s.arabicCountLabel}>
+                        <Text style={[s.arabicCountLabel, { color: colors.textSecondary }]}>
                           {lang === 'it' ? 'Completati' : lang === 'ar' ? 'مكتمل' : 'Completed'}: {aqidahCheckedCount} / {aqidahTotalItems}
                         </Text>
                         {AQIDAH_LEVELS.map((level) => {
@@ -1558,26 +1562,26 @@ export default function DashboardScreen() {
                           const levelChecked = level.pillars.reduce((s, p) => s + p.items.filter(i => aqidahItems[i.key]?.checked).length, 0);
                           return (
                             <View key={level.key}>
-                              <Pressable onPress={() => toggleAqidahSection(level.key)} style={s.akhlaqCatRow}>
+                              <Pressable onPress={() => toggleAqidahSection(level.key)} style={[s.akhlaqCatRow, { borderBottomColor: colors.border }]}>
                                 <MaterialCommunityIcons name={level.icon as any} size={20} color={level.iconColor} />
-                                <Text style={s.akhlaqCatName}>{getLabel(level, lang)}</Text>
-                                <Text style={s.akhlaqCatCount}>{levelChecked}/{levelTotal}</Text>
-                                <Ionicons name={isLevelExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={Colors.textMuted} />
+                                <Text style={[s.akhlaqCatName, { color: colors.textPrimary }]}>{getLabel(level, lang)}</Text>
+                                <Text style={[s.akhlaqCatCount, { color: colors.textMuted }]}>{levelChecked}/{levelTotal}</Text>
+                                <Ionicons name={isLevelExpanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
                               </Pressable>
                               {isLevelExpanded && level.pillars.map((pillar) => {
                                 const isPillarExpanded = expandedAqidahPillars.includes(pillar.key);
                                 const pillarChecked = pillar.items.filter(i => aqidahItems[i.key]?.checked).length;
                                 return (
-                                  <View key={pillar.key} style={s.aqidahPillarContainer}>
+                                  <View key={pillar.key} style={[s.aqidahPillarContainer, { borderLeftColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)' }]}>
                                     <Pressable onPress={() => toggleAqidahPillar(pillar.key)} style={s.aqidahPillarRow}>
                                       {pillar.iconLib === 'ionicons' ? (
                                         <Ionicons name={pillar.icon as any} size={17} color={pillar.iconColor} />
                                       ) : (
                                         <MaterialCommunityIcons name={pillar.icon as any} size={17} color={pillar.iconColor} />
                                       )}
-                                      <Text style={s.aqidahPillarName}>{getLabel(pillar, lang)}</Text>
-                                      <Text style={s.aqidahPillarCount}>{pillarChecked}/{pillar.items.length}</Text>
-                                      <Ionicons name={isPillarExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={Colors.textMuted} />
+                                      <Text style={[s.aqidahPillarName, { color: colors.textPrimary }]}>{getLabel(pillar, lang)}</Text>
+                                      <Text style={[s.aqidahPillarCount, { color: colors.textMuted }]}>{pillarChecked}/{pillar.items.length}</Text>
+                                      <Ionicons name={isPillarExpanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.textMuted} />
                                     </Pressable>
                                     {isPillarExpanded && pillar.items.map((item) => {
                                       const progress = aqidahItems[item.key];
@@ -1588,10 +1592,10 @@ export default function DashboardScreen() {
                                         <View key={item.key} style={s.aqidahItemContainer}>
                                           <View style={s.aqidahLeafRow}>
                                             <Pressable onPress={() => toggleAqidahItem(item.key)} style={s.aqidahLeafCheckArea}>
-                                              <View style={[s.akhlaqCheckBox, isChecked && { backgroundColor: pillar.iconColor, borderColor: pillar.iconColor }]}>
+                                              <View style={[s.akhlaqCheckBox, { borderColor: colors.textMuted }, isChecked && { backgroundColor: pillar.iconColor, borderColor: pillar.iconColor }]}>
                                                 {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
                                               </View>
-                                              <Text style={[s.aqidahLeafText, isChecked && { color: Colors.textMuted, textDecorationLine: 'line-through' as const }]}>
+                                              <Text style={[s.aqidahLeafText, { color: colors.textPrimary }, isChecked && { color: colors.textMuted, textDecorationLine: 'line-through' as const }]}>
                                                 {getLabel(item, lang)}
                                               </Text>
                                             </Pressable>
@@ -1615,7 +1619,7 @@ export default function DashboardScreen() {
                                                 <Ionicons
                                                   name={hasNote ? 'chatbubble' : 'chatbubble-outline'}
                                                   size={15}
-                                                  color={hasNote ? pillar.iconColor : Colors.textMuted}
+                                                  color={hasNote ? pillar.iconColor : colors.textMuted}
                                                 />
                                               </Pressable>
                                             </View>
@@ -1623,11 +1627,11 @@ export default function DashboardScreen() {
                                           {isEditingThis && (
                                             <View style={s.aqidahNoteRow}>
                                               <TextInput
-                                                style={s.aqidahNoteInput}
+                                                style={[s.aqidahNoteInput, { color: colors.textPrimary, backgroundColor: colors.creamBeige }]}
                                                 value={aqidahNoteText}
                                                 onChangeText={setAqidahNoteText}
                                                 placeholder={lang === 'it' ? 'Nota del genitore...' : lang === 'ar' ? 'ملاحظة الوالد...' : 'Parent note...'}
-                                                placeholderTextColor={Colors.textMuted}
+                                                placeholderTextColor={colors.textMuted}
                                                 multiline
                                               />
                                               <Pressable onPress={() => saveAqidahNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: pillar.iconColor }]}>
@@ -1636,7 +1640,7 @@ export default function DashboardScreen() {
                                             </View>
                                           )}
                                           {!isEditingThis && hasNote && (
-                                            <Text style={s.aqidahNotePreview}>{progress?.note}</Text>
+                                            <Text style={[s.aqidahNotePreview, { color: colors.textMuted }]}>{progress?.note}</Text>
                                           )}
                                         </View>
                                       );
@@ -1651,7 +1655,7 @@ export default function DashboardScreen() {
                     )}
                     {isExpanded && subject.key === 'quran' && (
                       <View style={s.subjectContent}>
-                        <Text style={s.aqidahIntro}>
+                        <Text style={[s.aqidahIntro, { color: colors.textSecondary, backgroundColor: isDark ? 'rgba(200,206,234,0.08)' : 'rgba(200,206,234,0.15)' }]}>
                           {lang === 'ar'
                             ? 'حفظ القرآن الكريم من أعظم الأعمال. تتبع تقدم طفلك في حفظ السور الـ 114.'
                             : lang === 'en'
@@ -1660,8 +1664,8 @@ export default function DashboardScreen() {
                         </Text>
                         <Pressable onPress={() => setShowQuranModal(true)} style={s.quranInlineRow}>
                           <Ionicons name="library-outline" size={20} color={cardColor} />
-                          <Text style={s.quranTapText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
-                          <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
+                          <Text style={[s.quranTapText, { color: colors.textPrimary }]}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
+                          <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
                         </Pressable>
                       </View>
                     )}
@@ -1672,25 +1676,25 @@ export default function DashboardScreen() {
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(600).duration(300)}>
-            <Text style={s.sectionTitle}>{t('recentActivityLog')}</Text>
+            <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('recentActivityLog')}</Text>
             {educationFeed.length > 0 ? (
-              <View style={s.card}>
+              <View style={[s.card, { backgroundColor: colors.cardBackground }]}>
                 {educationFeed.map((item, i) => (
-                  <View key={`feed-${i}`} style={[s.activityRow, i > 0 && s.taskRowBorder]}>
+                  <View key={`feed-${i}`} style={[s.activityRow, i > 0 && [s.taskRowBorder, { borderTopColor: colors.border }]]}>
                     <Ionicons name={item.icon as any} size={18} color={item.iconColor} />
                     <View style={s.activityInfo}>
-                      <Text style={s.activityText}>{item.text}</Text>
+                      <Text style={[s.activityText, { color: colors.textPrimary }]}>{item.text}</Text>
                       {item.dateTime ? (
-                        <Text style={s.activityMeta}>{item.dateTime}</Text>
+                        <Text style={[s.activityMeta, { color: colors.textMuted }]}>{item.dateTime}</Text>
                       ) : null}
                     </View>
                   </View>
                 ))}
               </View>
             ) : (
-              <View style={s.emptyCard}>
-                <Ionicons name="time-outline" size={32} color={Colors.textMuted} />
-                <Text style={s.emptyCardText}>{t('noActivity')}</Text>
+              <View style={[s.emptyCard, { backgroundColor: colors.cardBackground }]}>
+                <Ionicons name="time-outline" size={32} color={colors.textMuted} />
+                <Text style={[s.emptyCardText, { color: colors.textMuted }]}>{t('noActivity')}</Text>
               </View>
             )}
           </Animated.View>
@@ -1698,14 +1702,14 @@ export default function DashboardScreen() {
       </ScrollView>
 
       <Modal visible={!!prophetModal} animationType="fade" transparent onRequestClose={() => setProphetModal(null)}>
-        <Pressable style={s.prophetOverlay} onPress={() => setProphetModal(null)}>
-          <Pressable style={s.prophetCard} onPress={() => {}}>
+        <Pressable style={[s.prophetOverlay, { backgroundColor: colors.modalOverlay }]} onPress={() => setProphetModal(null)}>
+          <Pressable style={[s.prophetCard, { backgroundColor: colors.modalBackground }]} onPress={() => {}}>
             <View style={s.prophetHeader}>
               <Ionicons name="person-circle-outline" size={40} color="#FFD3B6" />
-              <Text style={s.prophetName}>{prophetModal ? getLabel(prophetModal, lang) : ''}</Text>
+              <Text style={[s.prophetName, { color: colors.textPrimary }]}>{prophetModal ? getLabel(prophetModal, lang) : ''}</Text>
             </View>
             {prophetModal?.prophetStory && (
-              <Text style={s.prophetStoryText}>
+              <Text style={[s.prophetStoryText, { color: colors.textSecondary }]}>
                 {getLabel(prophetModal.prophetStory, lang)}
               </Text>
             )}
@@ -1717,17 +1721,17 @@ export default function DashboardScreen() {
       </Modal>
 
       <Modal visible={showQuranModal} animationType="slide" transparent={false}>
-        <View style={[s.quranFullPage, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
-          <View style={s.quranAppBar}>
+        <View style={[s.quranFullPage, { paddingTop: Platform.OS === 'web' ? 67 : insets.top, backgroundColor: colors.background }]}>
+          <View style={[s.quranAppBar, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
             <Pressable testID="quran-back-btn" onPress={() => setShowQuranModal(false)} style={s.quranBackBtn}>
-              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </Pressable>
-            <Text style={s.quranAppBarTitle}>{t('quranMemorization')}</Text>
+            <Text style={[s.quranAppBarTitle, { color: colors.textPrimary }]}>{t('quranMemorization')}</Text>
             <View style={{ width: 40 }} />
           </View>
-          <View style={s.quranLearnedSummary}>
-            <Text style={s.quranLearnedText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
-            <View style={s.quranLearnedBar}>
+          <View style={[s.quranLearnedSummary, { backgroundColor: colors.cardBackground, borderBottomColor: colors.border }]}>
+            <Text style={[s.quranLearnedText, { color: colors.textSecondary }]}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
+            <View style={[s.quranLearnedBar, { backgroundColor: colors.creamBeige }]}>
               <View style={[s.quranLearnedBarFill, { width: `${(learnedCount / 114) * 100}%`, backgroundColor: '#4CAF50' }]} />
             </View>
           </View>
@@ -1739,9 +1743,9 @@ export default function DashboardScreen() {
                 <Pressable
                   key={f}
                   onPress={() => setQuranFilter(f)}
-                  style={[s.quranFilterBtn, isActive && { backgroundColor: filterBg + '20', borderColor: filterBg }]}
+                  style={[s.quranFilterBtn, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, isActive && { backgroundColor: filterBg + '20', borderColor: filterBg }]}
                 >
-                  <Text style={[s.quranFilterText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>
+                  <Text style={[s.quranFilterText, { color: colors.textSecondary }, isActive && { color: colors.textPrimary, fontFamily: 'Nunito_700Bold' }]}>
                     {f === 'all' ? (lang === 'ar' ? 'الكل' : lang === 'en' ? 'All' : 'Tutte') : t(f === 'learned' ? 'surahLearned' : f === 'in_progress' ? 'surahInProgress' : 'surahNotStarted')}
                   </Text>
                 </Pressable>
@@ -1759,41 +1763,41 @@ export default function DashboardScreen() {
               const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
               const badgeBg = item.status === 'learned' ? '#4CAF50' : item.status === 'in_progress' ? '#FBC02D' : '#B0BEC5';
               return (
-                <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
+                <Pressable onPress={() => cycleSurahStatus(item.number)} style={[s.surahRow, { backgroundColor: colors.cardBackground }]}>
                   <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
                     <Text style={[s.surahNum, badgeBg !== '#B0BEC5' && { color: '#333333' }]}>{item.number}</Text>
                   </View>
                   <View style={s.surahNameCol}>
-                    <Text style={s.surahArabicName}>{item.arabicName}</Text>
-                    <Text style={s.surahLatinName}>{item.number} - {item.name}</Text>
+                    <Text style={[s.surahArabicName, { color: colors.textPrimary }]}>{item.arabicName}</Text>
+                    <Text style={[s.surahLatinName, { color: colors.textMuted }]}>{item.number} - {item.name}</Text>
                   </View>
                   <Ionicons name={statusIcon as any} size={24} color={statusColor} />
                 </Pressable>
               );
             }}
-            ItemSeparatorComponent={() => <View style={s.taskRowBorder} />}
+            ItemSeparatorComponent={() => <View style={[s.taskRowBorder, { borderTopColor: colors.border }]} />}
           />
         </View>
       </Modal>
 
       <Modal visible={showAddTask} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={s.modalOverlay}>
+          <View style={[s.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
             <Pressable style={s.modalDismiss} onPress={() => setShowAddTask(false)} />
-            <ScrollView style={s.modalScroll} contentContainerStyle={[s.modalContent, { paddingBottom: insets.bottom + 16 }]}>
+            <ScrollView style={[s.modalScroll, { backgroundColor: colors.modalBackground }]} contentContainerStyle={[s.modalContent, { paddingBottom: insets.bottom + 16 }]}>
               <View style={s.modalHandle} />
-              <Text style={s.modalTitle}>{t('addEvent')}</Text>
+              <Text style={[s.modalTitle, { color: colors.textPrimary }]}>{t('addEvent')}</Text>
 
-              <Text style={s.inputLabel}>{t('eventName')}</Text>
+              <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('eventName')}</Text>
               <TextInput
-                style={s.input}
+                style={[s.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.textPrimary }]}
                 placeholder={t('eventNamePlaceholder')}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={newTaskName}
                 onChangeText={setNewTaskName}
               />
 
-              <Text style={s.inputLabel}>{t('frequency')}</Text>
+              <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('frequency')}</Text>
               <View style={s.freqRow}>
                 {(['daily', 'weekly', 'monthly', 'once'] as const).map((freq) => (
                   <Pressable
@@ -1803,16 +1807,16 @@ export default function DashboardScreen() {
                       setNewTaskDays([]);
                       setNewTaskDayOfMonth('');
                     }}
-                    style={[s.freqBtn, newTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
+                    style={[s.freqBtn, { borderColor: colors.border }, newTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
                   >
-                    <Text style={[s.freqBtnText, newTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
+                    <Text style={[s.freqBtnText, { color: colors.textSecondary }, newTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
                   </Pressable>
                 ))}
               </View>
 
               {newTaskFreq === 'weekly' && (
                 <>
-                  <Text style={s.inputLabel}>{t('selectDay')}</Text>
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('selectDay')}</Text>
                   <View style={s.dayPickerRow}>
                     {DAY_KEYS.map((dayKey, i) => {
                       const isActive = newTaskDays.includes(i);
@@ -1820,9 +1824,9 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleDayOfWeek(i)}
-                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                          style={[s.dayChip, { borderColor: colors.border }, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
                         >
-                          <Text style={[s.dayChipText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
+                          <Text style={[s.dayChipText, { color: colors.textSecondary }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
                       );
                     })}
@@ -1832,11 +1836,11 @@ export default function DashboardScreen() {
 
               {newTaskFreq === 'monthly' && (
                 <>
-                  <Text style={s.inputLabel}>{t('selectDayOfMonth')}</Text>
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('selectDayOfMonth')}</Text>
                   <TextInput
-                    style={s.input}
+                    style={[s.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.textPrimary }]}
                     placeholder="1-31"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={newTaskDayOfMonth}
                     onChangeText={(v) => {
                       const num = parseInt(v);
@@ -1850,8 +1854,8 @@ export default function DashboardScreen() {
 
               <View style={s.timeRow}>
                 <View style={s.timeCol}>
-                  <Text style={s.inputLabel}>{t('startTime')}</Text>
-                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>  
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('startTime')}</Text>
+                  <View style={[s.timeDropdown, { borderColor: cardColor, backgroundColor: colors.inputBackground }]}>  
                     <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
                       {TIME_SLOTS.map((slot) => (
                         <Pressable
@@ -1859,15 +1863,15 @@ export default function DashboardScreen() {
                           onPress={() => setNewTaskTime(slot)}
                           style={[s.timeSlotItem, newTaskTime === slot && { backgroundColor: cardColor }]}
                         >
-                          <Text style={[s.timeSlotText, newTaskTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                          <Text style={[s.timeSlotText, { color: colors.textSecondary }, newTaskTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
                   </View>
                 </View>
                 <View style={s.timeCol}>
-                  <Text style={s.inputLabel}>{t('endTimePicker')}</Text>
-                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('endTimePicker')}</Text>
+                  <View style={[s.timeDropdown, { borderColor: cardColor, backgroundColor: colors.inputBackground }]}>
                     <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
                       {TIME_SLOTS.map((slot) => (
                         <Pressable
@@ -1875,7 +1879,7 @@ export default function DashboardScreen() {
                           onPress={() => setNewTaskEndTime(slot)}
                           style={[s.timeSlotItem, newTaskEndTime === slot && { backgroundColor: cardColor }]}
                         >
-                          <Text style={[s.timeSlotText, newTaskEndTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                          <Text style={[s.timeSlotText, { color: colors.textSecondary }, newTaskEndTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -1896,15 +1900,15 @@ export default function DashboardScreen() {
       </Modal>
 
       <Modal visible={!!longPressTask} animationType="fade" transparent>
-        <Pressable style={s.popupOverlay} onPress={() => setLongPressTask(null)}>
-          <Animated.View entering={FadeIn.duration(200)} style={s.popupCard}>
-            <Text style={s.popupTitle}>{longPressTask?.name}</Text>
+        <Pressable style={[s.popupOverlay, { backgroundColor: colors.modalOverlay }]} onPress={() => setLongPressTask(null)}>
+          <Animated.View entering={FadeIn.duration(200)} style={[s.popupCard, { backgroundColor: colors.modalBackground }]}>
+            <Text style={[s.popupTitle, { color: colors.textPrimary }]}>{longPressTask?.name}</Text>
             <Pressable
               onPress={() => longPressTask && openEditTask(longPressTask)}
-              style={({ pressed }) => [s.popupBtn, pressed && { opacity: 0.7 }]}
+              style={({ pressed }) => [s.popupBtn, { borderBottomColor: colors.border }, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="create-outline" size={20} color={Colors.textPrimary} />
-              <Text style={s.popupBtnText}>{t('editEvent')}</Text>
+              <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
+              <Text style={[s.popupBtnText, { color: colors.textPrimary }]}>{t('editEvent')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -1915,8 +1919,8 @@ export default function DashboardScreen() {
               }}
               style={({ pressed }) => [s.popupBtn, s.popupBtnDanger, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="trash-outline" size={20} color={Colors.danger} />
-              <Text style={[s.popupBtnText, { color: Colors.danger }]}>{t('delete')}</Text>
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              <Text style={[s.popupBtnText, { color: colors.danger }]}>{t('delete')}</Text>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -1924,22 +1928,22 @@ export default function DashboardScreen() {
 
       <Modal visible={showEditTask} animationType="slide" transparent>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-          <View style={s.modalOverlay}>
+          <View style={[s.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
             <Pressable style={s.modalDismiss} onPress={() => setShowEditTask(false)} />
-            <ScrollView style={s.modalScroll} contentContainerStyle={[s.modalContent, { paddingBottom: insets.bottom + 16 }]}>
+            <ScrollView style={[s.modalScroll, { backgroundColor: colors.modalBackground }]} contentContainerStyle={[s.modalContent, { paddingBottom: insets.bottom + 16 }]}>
               <View style={s.modalHandle} />
-              <Text style={s.modalTitle}>{t('editEvent')}</Text>
+              <Text style={[s.modalTitle, { color: colors.textPrimary }]}>{t('editEvent')}</Text>
 
-              <Text style={s.inputLabel}>{t('eventName')}</Text>
+              <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('eventName')}</Text>
               <TextInput
-                style={s.input}
+                style={[s.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.textPrimary }]}
                 placeholder={t('eventNamePlaceholder')}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={editTaskName}
                 onChangeText={setEditTaskName}
               />
 
-              <Text style={s.inputLabel}>{t('frequency')}</Text>
+              <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('frequency')}</Text>
               <View style={s.freqRow}>
                 {(['daily', 'weekly', 'monthly', 'once'] as const).map((freq) => (
                   <Pressable
@@ -1949,16 +1953,16 @@ export default function DashboardScreen() {
                       setEditTaskDays([]);
                       setEditTaskDayOfMonth('');
                     }}
-                    style={[s.freqBtn, editTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
+                    style={[s.freqBtn, { borderColor: colors.border }, editTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
                   >
-                    <Text style={[s.freqBtnText, editTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
+                    <Text style={[s.freqBtnText, { color: colors.textSecondary }, editTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
                   </Pressable>
                 ))}
               </View>
 
               {editTaskFreq === 'weekly' && (
                 <>
-                  <Text style={s.inputLabel}>{t('selectDay')}</Text>
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('selectDay')}</Text>
                   <View style={s.dayPickerRow}>
                     {DAY_KEYS.map((dayKey, i) => {
                       const isActive = editTaskDays.includes(i);
@@ -1966,9 +1970,9 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleEditDayOfWeek(i)}
-                          style={[s.dayChip, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                          style={[s.dayChip, { borderColor: colors.border }, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
                         >
-                          <Text style={[s.dayChipText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
+                          <Text style={[s.dayChipText, { color: colors.textSecondary }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
                       );
                     })}
@@ -1978,11 +1982,11 @@ export default function DashboardScreen() {
 
               {editTaskFreq === 'monthly' && (
                 <>
-                  <Text style={s.inputLabel}>{t('selectDayOfMonth')}</Text>
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('selectDayOfMonth')}</Text>
                   <TextInput
-                    style={s.input}
+                    style={[s.input, { backgroundColor: colors.inputBackground, borderColor: colors.inputBorder, color: colors.textPrimary }]}
                     placeholder="1-31"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     value={editTaskDayOfMonth}
                     onChangeText={(v) => {
                       const num = parseInt(v);
@@ -1996,8 +2000,8 @@ export default function DashboardScreen() {
 
               <View style={s.timeRow}>
                 <View style={s.timeCol}>
-                  <Text style={s.inputLabel}>{t('startTime')}</Text>
-                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('startTime')}</Text>
+                  <View style={[s.timeDropdown, { borderColor: cardColor, backgroundColor: colors.inputBackground }]}>
                     <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
                       {TIME_SLOTS.map((slot) => (
                         <Pressable
@@ -2005,15 +2009,15 @@ export default function DashboardScreen() {
                           onPress={() => setEditTaskTime(slot)}
                           style={[s.timeSlotItem, editTaskTime === slot && { backgroundColor: cardColor }]}
                         >
-                          <Text style={[s.timeSlotText, editTaskTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                          <Text style={[s.timeSlotText, { color: colors.textSecondary }, editTaskTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
                   </View>
                 </View>
                 <View style={s.timeCol}>
-                  <Text style={s.inputLabel}>{t('endTimePicker')}</Text>
-                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>
+                  <Text style={[s.inputLabel, { color: colors.textSecondary }]}>{t('endTimePicker')}</Text>
+                  <View style={[s.timeDropdown, { borderColor: cardColor, backgroundColor: colors.inputBackground }]}>
                     <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
                       {TIME_SLOTS.map((slot) => (
                         <Pressable
@@ -2021,7 +2025,7 @@ export default function DashboardScreen() {
                           onPress={() => setEditTaskEndTime(slot)}
                           style={[s.timeSlotItem, editTaskEndTime === slot && { backgroundColor: cardColor }]}
                         >
-                          <Text style={[s.timeSlotText, editTaskEndTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                          <Text style={[s.timeSlotText, { color: colors.textSecondary }, editTaskEndTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
                         </Pressable>
                       ))}
                     </ScrollView>
@@ -2055,7 +2059,7 @@ export default function DashboardScreen() {
             onPress={() => setShowEventPremiumOverlay(false)}
             style={{ position: 'absolute', top: 60, right: 20, zIndex: 200 }}
           >
-            <Ionicons name="close-circle" size={32} color={Colors.textMuted} />
+            <Ionicons name="close-circle" size={32} color={colors.textMuted} />
           </Pressable>
         </View>
       </Modal>
@@ -2074,7 +2078,7 @@ export default function DashboardScreen() {
             onPress={() => setShowQuranPremiumOverlay(false)}
             style={{ position: 'absolute', top: 60, right: 20, zIndex: 200 }}
           >
-            <Ionicons name="close-circle" size={32} color={Colors.textMuted} />
+            <Ionicons name="close-circle" size={32} color={colors.textMuted} />
           </Pressable>
         </View>
       </Modal>

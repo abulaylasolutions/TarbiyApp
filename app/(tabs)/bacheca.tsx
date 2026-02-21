@@ -24,6 +24,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest } from '@/lib/query-client';
 import Colors from '@/constants/colors';
+import { useTheme } from '@/lib/theme-context';
 import PremiumOverlay from '@/components/PremiumOverlay';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -50,6 +51,7 @@ interface NoteCardProps {
 
 function NoteCard({ note, onPress, onDelete, onArchive, onEdit }: NoteCardProps) {
   const { t } = useI18n();
+  const { colors } = useTheme();
   const [showActions, setShowActions] = useState(false);
   const rotation = parseFloat(note.rotation) || 0;
 
@@ -98,26 +100,26 @@ function NoteCard({ note, onPress, onDelete, onArchive, onEdit }: NoteCardProps)
       </Animated.View>
 
       <Modal visible={showActions} transparent animationType="fade">
-        <Pressable style={styles.actionSheetOverlay} onPress={() => setShowActions(false)}>
-          <Animated.View entering={FadeInDown.duration(200)} style={styles.actionSheet}>
-            <View style={styles.actionSheetHandle} />
+        <Pressable style={[styles.actionSheetOverlay, { backgroundColor: colors.modalOverlay }]} onPress={() => setShowActions(false)}>
+          <Animated.View entering={FadeInDown.duration(200)} style={[styles.actionSheet, { backgroundColor: colors.modalBackground }]}>
+            <View style={[styles.actionSheetHandle, { backgroundColor: colors.textMuted }]} />
             <Pressable
               onPress={() => { setShowActions(false); onEdit(note); }}
-              style={styles.actionSheetItem}
+              style={[styles.actionSheetItem, { borderBottomColor: colors.border }]}
             >
-              <View style={[styles.actionSheetIcon, { backgroundColor: '#A8E6CF' }]}>
-                <Ionicons name="create-outline" size={20} color="#2D7D5F" />
+              <View style={[styles.actionSheetIcon, { backgroundColor: colors.mintGreenLight }]}>
+                <Ionicons name="create-outline" size={20} color={colors.mintGreenDark} />
               </View>
-              <Text style={styles.actionSheetText}>{t('editNote')}</Text>
+              <Text style={[styles.actionSheetText, { color: colors.textPrimary }]}>{t('editNote')}</Text>
             </Pressable>
             <Pressable
               onPress={() => { setShowActions(false); onArchive(note.id); }}
-              style={styles.actionSheetItem}
+              style={[styles.actionSheetItem, { borderBottomColor: colors.border }]}
             >
-              <View style={[styles.actionSheetIcon, { backgroundColor: Colors.mintGreenLight }]}>
-                <Ionicons name="archive-outline" size={20} color={Colors.mintGreenDark} />
+              <View style={[styles.actionSheetIcon, { backgroundColor: colors.mintGreenLight }]}>
+                <Ionicons name="archive-outline" size={20} color={colors.mintGreenDark} />
               </View>
-              <Text style={styles.actionSheetText}>{t('archive')}</Text>
+              <Text style={[styles.actionSheetText, { color: colors.textPrimary }]}>{t('archive')}</Text>
             </Pressable>
             <Pressable
               onPress={() => {
@@ -133,10 +135,10 @@ function NoteCard({ note, onPress, onDelete, onArchive, onEdit }: NoteCardProps)
               }}
               style={[styles.actionSheetItem, { borderBottomWidth: 0 }]}
             >
-              <View style={[styles.actionSheetIcon, { backgroundColor: '#FFD3D3' }]}>
-                <Ionicons name="trash-outline" size={20} color="#CC4444" />
+              <View style={[styles.actionSheetIcon, { backgroundColor: colors.dangerLight }]}>
+                <Ionicons name="trash-outline" size={20} color={colors.danger} />
               </View>
-              <Text style={[styles.actionSheetText, { color: '#CC4444' }]}>{t('delete')}</Text>
+              <Text style={[styles.actionSheetText, { color: colors.danger }]}>{t('delete')}</Text>
             </Pressable>
           </Animated.View>
         </Pressable>
@@ -152,20 +154,21 @@ interface ChildTagProps {
 }
 
 function ChildTag({ child, isSelected, onToggle }: ChildTagProps) {
-  const tagColor = child.cardColor || '#A8E6CF';
+  const { colors } = useTheme();
+  const tagColor = child.cardColor || colors.mintGreen;
   return (
     <Pressable
       onPress={() => onToggle(child.id)}
       style={[
         styles.childTag,
-        { backgroundColor: isSelected ? tagColor : Colors.creamBeige },
+        { backgroundColor: isSelected ? tagColor : colors.creamBeige },
         isSelected && { borderColor: tagColor, borderWidth: 2 },
       ]}
     >
-      <Text style={[styles.childTagText, isSelected && { color: Colors.textPrimary, fontFamily: 'Nunito_700Bold' }]}>
+      <Text style={[styles.childTagText, { color: colors.textSecondary }, isSelected && { color: colors.textPrimary, fontFamily: 'Nunito_700Bold' }]}>
         {child.name}
       </Text>
-      {isSelected && <Ionicons name="checkmark-circle" size={16} color={Colors.textPrimary} />}
+      {isSelected && <Ionicons name="checkmark-circle" size={16} color={colors.textPrimary} />}
     </Pressable>
   );
 }
@@ -177,6 +180,7 @@ interface CommentBubbleProps {
 }
 
 function CommentBubble({ comment, isMine, index }: CommentBubbleProps) {
+  const { colors } = useTheme();
   const formattedTime = new Date(comment.createdAt).toLocaleDateString('it-IT', {
     day: 'numeric',
     month: 'short',
@@ -189,13 +193,13 @@ function CommentBubble({ comment, isMine, index }: CommentBubbleProps) {
       <View style={[styles.bubbleRow, isMine && styles.bubbleRowMine]}>
         <View style={[
           styles.bubble,
-          isMine ? styles.bubbleMine : styles.bubbleOther,
+          isMine ? [styles.bubbleMine, { backgroundColor: colors.mintGreenLight }] : styles.bubbleOther,
         ]}>
           {!isMine && (
             <Text style={styles.bubbleAuthor}>{comment.authorName}</Text>
           )}
-          <Text style={styles.bubbleText}>{comment.text}</Text>
-          <Text style={[styles.bubbleTime, isMine && styles.bubbleTimeMine]}>{formattedTime}</Text>
+          <Text style={[styles.bubbleText, { color: colors.textPrimary }]}>{comment.text}</Text>
+          <Text style={[styles.bubbleTime, { color: colors.textMuted }, isMine && styles.bubbleTimeMine]}>{formattedTime}</Text>
         </View>
       </View>
     </Animated.View>
@@ -205,6 +209,7 @@ function CommentBubble({ comment, isMine, index }: CommentBubbleProps) {
 export default function BachecaScreen() {
   const insets = useSafeAreaInsets();
   const { t, isRTL } = useI18n();
+  const { colors, isDark } = useTheme();
   const { notes, children, addNote, updateNote, removeNote, refreshNotes } = useApp();
   const { user } = useAuth();
   const isPremium = user?.isPremium;
@@ -366,9 +371,9 @@ export default function BachecaScreen() {
   const rightColumn = notes.filter((_, i) => i % 2 === 1);
 
   return (
-    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr', backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={[Colors.creamBeige, Colors.background]}
+        colors={[colors.creamBeige, colors.background]}
         style={StyleSheet.absoluteFill}
       />
 
@@ -388,8 +393,8 @@ export default function BachecaScreen() {
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>{t('bacheca_title')}</Text>
-            <Text style={styles.headerSubtitle}>Note condivise tra genitori</Text>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('bacheca_title')}</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>Note condivise tra genitori</Text>
           </View>
           {isPremium && (
           <Pressable
@@ -397,18 +402,18 @@ export default function BachecaScreen() {
               loadArchivedNotes();
               setShowArchive(true);
             }}
-            style={styles.archiveBtn}
+            style={[styles.archiveBtn, { backgroundColor: colors.creamBeige }]}
           >
-            <Ionicons name="archive-outline" size={20} color={Colors.textSecondary} />
+            <Ionicons name="archive-outline" size={20} color={colors.textSecondary} />
           </Pressable>
           )}
         </View>
 
         {notes.length === 0 ? (
           <View style={styles.emptyState}>
-            <Ionicons name="document-text" size={64} color={Colors.textMuted} />
-            <Text style={styles.emptyText}>Nessuna nota</Text>
-            <Text style={styles.emptySubtext}>Aggiungi una nota per condividerla</Text>
+            <Ionicons name="document-text" size={64} color={colors.textMuted} />
+            <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nessuna nota</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>Aggiungi una nota per condividerla</Text>
           </View>
         ) : (
           <View style={styles.masonryContainer}>
@@ -444,7 +449,7 @@ export default function BachecaScreen() {
           },
         ]}
       >
-        <Ionicons name="add" size={28} color={Colors.white} />
+        <Ionicons name="add" size={28} color={colors.white} />
       </Pressable>
       )}
 
@@ -454,10 +459,10 @@ export default function BachecaScreen() {
           exiting={FadeOut.duration(200)}
           style={[styles.snackbar, { bottom: Platform.OS === 'web' ? 34 + 16 : insets.bottom + 72 }]}
         >
-          <Ionicons name="archive" size={18} color={Colors.white} />
+          <Ionicons name="archive" size={18} color={colors.white} />
           <Text style={styles.snackbarText}>{snackbar.message}</Text>
           <Pressable onPress={() => handleUndoArchive(snackbar.noteId)} style={styles.snackbarUndo}>
-            <Text style={styles.snackbarUndoText}>{t('undo')}</Text>
+            <Text style={[styles.snackbarUndoText, { color: colors.mintGreenLight }]}>{t('undo')}</Text>
           </Pressable>
         </Animated.View>
       )}
@@ -468,20 +473,20 @@ export default function BachecaScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={0}
         >
-          <View style={styles.modalOverlay}>
+          <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
             <Pressable style={styles.modalDismiss} onPress={() => setShowAddModal(false)} />
             <Animated.View
               entering={FadeIn.duration(200)}
               exiting={FadeOut.duration(150)}
-              style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
+              style={[styles.modalContent, { paddingBottom: insets.bottom + 16, backgroundColor: colors.modalBackground }]}
             >
               <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
-                <View style={styles.modalHandle} />
-                <Text style={styles.modalTitle}>{t('writeNote')}</Text>
+                <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
+                <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('writeNote')}</Text>
                 <TextInput
-                  style={styles.noteInput}
+                  style={[styles.noteInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   placeholder={t('writeNote')}
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   multiline
                   value={noteText}
                   onChangeText={setNoteText}
@@ -491,7 +496,7 @@ export default function BachecaScreen() {
 
                 {children.length > 0 && (
                   <>
-                    <Text style={styles.tagSectionTitle}>{t('tags')}</Text>
+                    <Text style={[styles.tagSectionTitle, { color: colors.textSecondary }]}>{t('tags')}</Text>
                     <View style={styles.tagContainer}>
                       {children.map(child => (
                         <ChildTag
@@ -505,7 +510,7 @@ export default function BachecaScreen() {
                   </>
                 )}
 
-                <Text style={styles.tagSectionTitle}>{t('noteColor')}</Text>
+                <Text style={[styles.tagSectionTitle, { color: colors.textSecondary }]}>{t('noteColor')}</Text>
                 <View style={styles.colorPickerRow}>
                   {NOTE_COLORS.map(color => (
                     <Pressable
@@ -526,14 +531,14 @@ export default function BachecaScreen() {
 
                 <View style={styles.modalActions}>
                   <Pressable onPress={() => setShowAddModal(false)} style={styles.modalCancelBtn}>
-                    <Text style={styles.modalCancelText}>{t('cancel')}</Text>
+                    <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>{t('cancel')}</Text>
                   </Pressable>
                   <Pressable
                     onPress={handleAddNote}
-                    style={[styles.modalSaveBtn, !noteText.trim() && styles.modalSaveBtnDisabled]}
+                    style={[styles.modalSaveBtn, { backgroundColor: colors.mintGreen }, !noteText.trim() && styles.modalSaveBtnDisabled]}
                     disabled={!noteText.trim()}
                   >
-                    <Ionicons name="checkmark" size={22} color={Colors.white} />
+                    <Ionicons name="checkmark" size={22} color={colors.white} />
                   </Pressable>
                 </View>
               </ScrollView>
@@ -548,15 +553,15 @@ export default function BachecaScreen() {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           keyboardVerticalOffset={0}
         >
-          <View style={styles.modalOverlay}>
+          <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
             <Pressable style={styles.modalDismiss} onPress={() => setShowDetailModal(false)} />
             <Animated.View
               entering={FadeIn.duration(200)}
               exiting={FadeOut.duration(150)}
-              style={[styles.detailContent, { paddingBottom: insets.bottom + 8 }]}
+              style={[styles.detailContent, { paddingBottom: insets.bottom + 8, backgroundColor: colors.modalBackground }]}
             >
               <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
-                <View style={styles.modalHandle} />
+                <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
 
                 {selectedNote && (
                   <View
@@ -565,8 +570,8 @@ export default function BachecaScreen() {
                       { backgroundColor: selectedNote.color },
                     ]}
                   >
-                    <Text style={styles.detailAuthor}>{selectedNote.author}</Text>
-                    <Text style={styles.detailDate}>
+                    <Text style={[styles.detailAuthor, { color: colors.textPrimary }]}>{selectedNote.author}</Text>
+                    <Text style={[styles.detailDate, { color: colors.textSecondary }]}>
                       {new Date(selectedNote.createdAt).toLocaleDateString('it-IT', {
                         day: 'numeric',
                         month: 'long',
@@ -585,9 +590,9 @@ export default function BachecaScreen() {
                   </View>
                 )}
 
-                <Text style={styles.detailEditLabel}>{t('noteDetail')}</Text>
+                <Text style={[styles.detailEditLabel, { color: colors.textSecondary }]}>{t('noteDetail')}</Text>
                 <TextInput
-                  style={styles.detailTextInput}
+                  style={[styles.detailTextInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={editText}
                   onChangeText={setEditText}
                   multiline
@@ -596,7 +601,7 @@ export default function BachecaScreen() {
 
                 {children.length > 0 && (
                   <>
-                    <Text style={styles.tagSectionTitle}>{t('tags')}</Text>
+                    <Text style={[styles.tagSectionTitle, { color: colors.textSecondary }]}>{t('tags')}</Text>
                     <View style={styles.tagContainer}>
                       {children.map(child => (
                         <ChildTag
@@ -610,7 +615,7 @@ export default function BachecaScreen() {
                   </>
                 )}
 
-                <Text style={styles.tagSectionTitle}>{t('noteColor')}</Text>
+                <Text style={[styles.tagSectionTitle, { color: colors.textSecondary }]}>{t('noteColor')}</Text>
                 <View style={styles.colorPickerRow}>
                   {NOTE_COLORS.map(color => (
                     <Pressable
@@ -632,11 +637,11 @@ export default function BachecaScreen() {
                 <View style={styles.detailActionsRow}>
                   <Pressable
                     onPress={handleSaveEdit}
-                    style={[styles.saveEditBtn, { flex: 1 }, !editText.trim() && { opacity: 0.5 }]}
+                    style={[styles.saveEditBtn, { flex: 1, backgroundColor: colors.mintGreen }, !editText.trim() && { opacity: 0.5 }]}
                     disabled={!editText.trim()}
                   >
-                    <Ionicons name="save" size={20} color={Colors.white} />
-                    <Text style={styles.saveEditText}>{t('save')}</Text>
+                    <Ionicons name="save" size={20} color={colors.white} />
+                    <Text style={[styles.saveEditText, { color: colors.white }]}>{t('save')}</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => {
@@ -645,24 +650,24 @@ export default function BachecaScreen() {
                         setShowDetailModal(false);
                       }
                     }}
-                    style={styles.archiveActionBtn}
+                    style={[styles.archiveActionBtn, { backgroundColor: colors.creamBeige }]}
                   >
-                    <Ionicons name="archive-outline" size={20} color={Colors.textSecondary} />
+                    <Ionicons name="archive-outline" size={20} color={colors.textSecondary} />
                   </Pressable>
                 </View>
 
                 <View style={styles.commentsSeparator}>
-                  <View style={styles.separatorLine} />
-                  <Text style={styles.separatorText}>{t('comments')}</Text>
-                  <View style={styles.separatorLine} />
+                  <View style={[styles.separatorLine, { backgroundColor: colors.border }]} />
+                  <Text style={[styles.separatorText, { color: colors.textSecondary }]}>{t('comments')}</Text>
+                  <View style={[styles.separatorLine, { backgroundColor: colors.border }]} />
                 </View>
 
                 {loadingComments ? (
-                  <ActivityIndicator size="small" color={Colors.mintGreen} style={{ marginVertical: 16 }} />
+                  <ActivityIndicator size="small" color={colors.mintGreen} style={{ marginVertical: 16 }} />
                 ) : commentsList.length === 0 ? (
                   <View style={styles.noCommentsWrap}>
-                    <Ionicons name="chatbubble-outline" size={24} color={Colors.textMuted} />
-                    <Text style={styles.noCommentsText}>{t('noComments')}</Text>
+                    <Ionicons name="chatbubble-outline" size={24} color={colors.textMuted} />
+                    <Text style={[styles.noCommentsText, { color: colors.textMuted }]}>{t('noComments')}</Text>
                   </View>
                 ) : (
                   <View style={styles.commentsListWrap}>
@@ -678,13 +683,13 @@ export default function BachecaScreen() {
                 )}
               </ScrollView>
 
-              <View style={styles.commentInputRow}>
+              <View style={[styles.commentInputRow, { borderTopColor: colors.border }]}>
                 <TextInput
-                  style={styles.commentInput}
+                  style={[styles.commentInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={newComment}
                   onChangeText={setNewComment}
                   placeholder={t('writeComment')}
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   maxLength={300}
                   multiline
                 />
@@ -693,13 +698,14 @@ export default function BachecaScreen() {
                   disabled={!newComment.trim() || sendingComment}
                   style={[
                     styles.commentSendBtn,
+                    { backgroundColor: colors.mintGreen },
                     (!newComment.trim() || sendingComment) && { opacity: 0.4 },
                   ]}
                 >
                   {sendingComment ? (
-                    <ActivityIndicator size="small" color={Colors.white} />
+                    <ActivityIndicator size="small" color={colors.white} />
                   ) : (
-                    <Ionicons name="send" size={18} color={Colors.white} />
+                    <Ionicons name="send" size={18} color={colors.white} />
                   )}
                 </Pressable>
               </View>
@@ -709,20 +715,20 @@ export default function BachecaScreen() {
       </Modal>
 
       <Modal visible={showArchive} animationType="slide" transparent={false}>
-        <View style={[styles.archiveFullPage, { paddingTop: Platform.OS === 'web' ? 67 : insets.top }]}>
+        <View style={[styles.archiveFullPage, { paddingTop: Platform.OS === 'web' ? 67 : insets.top, backgroundColor: colors.background }]}>
           <View style={styles.archiveAppBar}>
             <Pressable onPress={() => setShowArchive(false)} style={styles.archiveBackBtn}>
-              <Ionicons name="arrow-back" size={24} color={Colors.textPrimary} />
+              <Ionicons name="arrow-back" size={24} color={colors.textPrimary} />
             </Pressable>
-            <Text style={styles.archiveAppBarTitle}>{t('archivedNotes')}</Text>
+            <Text style={[styles.archiveAppBarTitle, { color: colors.textPrimary }]}>{t('archivedNotes')}</Text>
             <View style={{ width: 40 }} />
           </View>
           {loadingArchive ? (
-            <ActivityIndicator size="large" color={Colors.mintGreen} style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color={colors.mintGreen} style={{ marginTop: 40 }} />
           ) : archivedNotes.length === 0 ? (
             <View style={styles.archiveEmpty}>
-              <Ionicons name="archive-outline" size={48} color={Colors.textMuted} />
-              <Text style={styles.archiveEmptyText}>{t('noArchivedNotes')}</Text>
+              <Ionicons name="archive-outline" size={48} color={colors.textMuted} />
+              <Text style={[styles.archiveEmptyText, { color: colors.textMuted }]}>{t('noArchivedNotes')}</Text>
             </View>
           ) : (
             <ScrollView contentContainerStyle={styles.archiveList} showsVerticalScrollIndicator={false}>
@@ -740,8 +746,8 @@ export default function BachecaScreen() {
                           onPress={() => unarchiveNote(note.id)}
                           style={styles.unarchiveBtn}
                         >
-                          <Ionicons name="arrow-undo-outline" size={18} color={Colors.mintGreen} />
-                          <Text style={styles.unarchiveBtnText}>{t('unarchive')}</Text>
+                          <Ionicons name="arrow-undo-outline" size={18} color={colors.mintGreen} />
+                          <Text style={[styles.unarchiveBtnText, { color: colors.textPrimary }]}>{t('unarchive')}</Text>
                         </Pressable>
                       </View>
                     </View>

@@ -20,6 +20,7 @@ import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
+import { useTheme } from '@/lib/theme-context';
 import { useI18n } from '@/lib/i18n';
 import PremiumOverlay from '@/components/PremiumOverlay';
 import { apiRequest } from '@/lib/query-client';
@@ -44,6 +45,7 @@ interface ChildCardProps {
 
 function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDelete, onEdit, onPress, onSettings, onMove }: ChildCardProps) {
   const { t } = useI18n();
+  const { colors, isDark } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
   const cardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
@@ -96,40 +98,40 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
             />
           ) : (
             <View style={[styles.childAvatar, { backgroundColor: cardBgLight }]}>
-              <Text style={styles.childAvatarText}>
+              <Text style={[styles.childAvatarText, { color: colors.textPrimary }]}>
                 {child.name.charAt(0).toUpperCase()}
               </Text>
             </View>
           )}
           <View style={styles.childInfo}>
             <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
-            <Text style={styles.childAge}>{age}</Text>
+            <Text style={[styles.childAge, { color: colors.textPrimary }]}>{age}</Text>
             {coParentNames.length > 0 && child.gender ? (
               <Text style={styles.coParentLine}>
-                <Text style={styles.coParentPrefix}>{genderPrefix} </Text>
-                <Text style={[styles.coParentNameText, { color: '#333' }]}>
+                <Text style={[styles.coParentPrefix, { color: colors.textPrimary }]}>{genderPrefix} </Text>
+                <Text style={[styles.coParentNameText, { color: colors.textPrimary }]}>
                   {coParentNames.join(', ')}
                 </Text>
               </Text>
             ) : null}
           </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.25)" />
+          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
         </View>
       </Pressable>
 
       <Modal visible={showMenu} transparent animationType="fade">
-        <Pressable style={styles.popupOverlay} onPress={() => setShowMenu(false)}>
-          <View style={styles.popupMenu}>
+        <Pressable style={[styles.popupOverlay, { backgroundColor: colors.modalOverlay }]} onPress={() => setShowMenu(false)}>
+          <View style={[styles.popupMenu, { backgroundColor: colors.cardBackground }]}>
             {index > 0 && (
               <>
                 <Pressable
                   onPress={() => { setShowMenu(false); onMove(index, 'up'); }}
                   style={styles.popupItem}
                 >
-                  <Ionicons name="arrow-up" size={20} color={Colors.textPrimary} />
-                  <Text style={styles.popupItemText}>{t('moveUp')}</Text>
+                  <Ionicons name="arrow-up" size={20} color={colors.textPrimary} />
+                  <Text style={[styles.popupItemText, { color: colors.textPrimary }]}>{t('moveUp')}</Text>
                 </Pressable>
-                <View style={styles.popupDivider} />
+                <View style={[styles.popupDivider, { backgroundColor: colors.border }]} />
               </>
             )}
             {index < totalCount - 1 && (
@@ -138,10 +140,10 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
                   onPress={() => { setShowMenu(false); onMove(index, 'down'); }}
                   style={styles.popupItem}
                 >
-                  <Ionicons name="arrow-down" size={20} color={Colors.textPrimary} />
-                  <Text style={styles.popupItemText}>{t('moveDown')}</Text>
+                  <Ionicons name="arrow-down" size={20} color={colors.textPrimary} />
+                  <Text style={[styles.popupItemText, { color: colors.textPrimary }]}>{t('moveDown')}</Text>
                 </Pressable>
-                <View style={styles.popupDivider} />
+                <View style={[styles.popupDivider, { backgroundColor: colors.border }]} />
               </>
             )}
             <Pressable
@@ -151,10 +153,10 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
               }}
               style={styles.popupItem}
             >
-              <Ionicons name="create-outline" size={20} color={Colors.textPrimary} />
-              <Text style={styles.popupItemText}>{t('editProfile')}</Text>
+              <Ionicons name="create-outline" size={20} color={colors.textPrimary} />
+              <Text style={[styles.popupItemText, { color: colors.textPrimary }]}>{t('editProfile')}</Text>
             </Pressable>
-            <View style={styles.popupDivider} />
+            <View style={[styles.popupDivider, { backgroundColor: colors.border }]} />
             <Pressable
               onPress={() => {
                 setShowMenu(false);
@@ -162,10 +164,10 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
               }}
               style={styles.popupItem}
             >
-              <Ionicons name="settings-outline" size={20} color={Colors.textPrimary} />
-              <Text style={styles.popupItemText}>{t('childSettings')}</Text>
+              <Ionicons name="settings-outline" size={20} color={colors.textPrimary} />
+              <Text style={[styles.popupItemText, { color: colors.textPrimary }]}>{t('childSettings')}</Text>
             </Pressable>
-            <View style={styles.popupDivider} />
+            <View style={[styles.popupDivider, { backgroundColor: colors.border }]} />
             <Pressable
               onPress={() => {
                 setShowMenu(false);
@@ -180,8 +182,8 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
               }}
               style={styles.popupItem}
             >
-              <Ionicons name="trash-outline" size={20} color={Colors.danger} />
-              <Text style={[styles.popupItemText, { color: Colors.danger }]}>{t('deleteChild')}</Text>
+              <Ionicons name="trash-outline" size={20} color={colors.danger} />
+              <Text style={[styles.popupItemText, { color: colors.danger }]}>{t('deleteChild')}</Text>
             </Pressable>
           </View>
         </Pressable>
@@ -217,6 +219,7 @@ export default function HomeScreen() {
   const { children, selectedChildId, addChild, updateChild, removeChild, selectChild, cogenitori, getCogenitoreNameById, refreshChildren } = useApp();
   const { user } = useAuth();
   const { t, isRTL } = useI18n();
+  const { colors, isDark } = useTheme();
   const [showModal, setShowModal] = useState(false);
   const [editingChild, setEditingChild] = useState<Child | null>(null);
   const [form, setForm] = useState<ChildFormData>(EMPTY_FORM);
@@ -389,9 +392,9 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr', backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={[Colors.mintGreenLight, Colors.background]}
+        colors={[colors.mintGreenLight, colors.background]}
         start={{ x: 0, y: 0 }}
         end={{ x: 0, y: 0.3 }}
         style={StyleSheet.absoluteFill}
@@ -405,19 +408,19 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.brandName}>
-              <Text style={styles.brandTarbiy}>Tarbiy</Text>
-              <Text style={styles.brandApp}>App</Text>
+              <Text style={[styles.brandTarbiy, { color: colors.mintGreen }]}>Tarbiy</Text>
+              <Text style={[styles.brandApp, { color: colors.textPrimary }]}>App</Text>
             </Text>
-            <Text style={styles.headerSubtitle}>{t('hello')}, {user?.name || t('parent')}</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t('hello')}, {user?.name || t('parent')}</Text>
           </View>
         </View>
 
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>
+          <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
             {t('yourChildren')} ({children.length})
           </Text>
           {!canAddChild && (
-            <View style={styles.limitBadge}>
+            <View style={[styles.limitBadge, { backgroundColor: colors.creamBeige }]}>
               <Ionicons name="lock-closed" size={12} color={Colors.goldAccent} />
               <Text style={styles.limitText}>{t('limit')}</Text>
             </View>
@@ -426,11 +429,11 @@ export default function HomeScreen() {
 
         {children.length === 0 ? (
           <View style={styles.emptyState}>
-            <View style={styles.emptyIconWrap}>
-              <Ionicons name="people" size={48} color={Colors.mintGreen} />
+            <View style={[styles.emptyIconWrap, { backgroundColor: colors.mintGreenLight }]}>
+              <Ionicons name="people" size={48} color={colors.mintGreen} />
             </View>
-            <Text style={styles.emptyTitle}>{t('noChildrenTitle')}</Text>
-            <Text style={styles.emptySubtext}>
+            <Text style={[styles.emptyTitle, { color: colors.textSecondary }]}>{t('noChildrenTitle')}</Text>
+            <Text style={[styles.emptySubtext, { color: colors.textMuted }]}>
               {t('noChildrenSub')}
             </Text>
           </View>
@@ -467,14 +470,16 @@ export default function HomeScreen() {
           {
             bottom: Platform.OS === 'web' ? 34 + 24 : insets.bottom + 80,
             transform: [{ scale: pressed ? 0.9 : 1 }],
+            backgroundColor: colors.mintGreen,
+            shadowColor: colors.mintGreenDark,
           },
         ]}
       >
-        <Ionicons name="add" size={28} color={Colors.white} />
+        <Ionicons name="add" size={28} color={colors.white} />
       </Pressable>
 
       <Modal visible={showModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowModal(false)} />
           <ReAnimated.View
             entering={FadeIn.duration(200)}
@@ -482,83 +487,83 @@ export default function HomeScreen() {
             style={[styles.modalContent, { paddingBottom: insets.bottom + 16 }]}
           >
             <LinearGradient
-              colors={['#A8E6CF', '#C8F0E3']}
+              colors={[colors.headerGradient1, colors.headerGradient2]}
               start={{ x: 0.5, y: 0 }}
               end={{ x: 0.5, y: 1 }}
               style={styles.modalGradient}
             >
             <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
               <View style={styles.modalHandle} />
-              <Text style={styles.modalTitle}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>
                 {editingChild ? t('editChild') : t('addChild')}
               </Text>
 
               {errorMsg ? (
-                <View style={styles.errorBox}>
-                  <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-                  <Text style={styles.errorText}>{errorMsg}</Text>
+                <View style={[styles.errorBox, { backgroundColor: colors.dangerLight }]}>
+                  <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                  <Text style={[styles.errorText, { color: colors.danger }]}>{errorMsg}</Text>
                 </View>
               ) : null}
 
-              <Text style={styles.inputLabel}>{t('childName')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('childName')}</Text>
               <TextInput
-                style={styles.modalInput}
+                style={[styles.modalInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                 value={form.name}
                 onChangeText={(v) => setForm(p => ({ ...p, name: v }))}
                 placeholder={t('childNamePlaceholder')}
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
-              <Text style={styles.inputLabel}>{t('birthDate')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('birthDate')}</Text>
               <View style={styles.dateRow}>
                 <TextInput
-                  style={[styles.modalInput, styles.dateInput]}
+                  style={[styles.modalInput, styles.dateInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={form.birthDay}
                   onChangeText={(t) => { if (t.length <= 2) setForm(p => ({ ...p, birthDay: t })); }}
                   placeholder="GG"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="number-pad"
                   maxLength={2}
                 />
                 <TextInput
-                  style={[styles.modalInput, styles.dateInput]}
+                  style={[styles.modalInput, styles.dateInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={form.birthMonth}
                   onChangeText={(t) => { if (t.length <= 2) setForm(p => ({ ...p, birthMonth: t })); }}
                   placeholder="MM"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="number-pad"
                   maxLength={2}
                 />
                 <TextInput
-                  style={[styles.modalInput, styles.dateInputYear]}
+                  style={[styles.modalInput, styles.dateInputYear, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={form.birthYear}
                   onChangeText={(t) => { if (t.length <= 4) setForm(p => ({ ...p, birthYear: t })); }}
                   placeholder="AAAA"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   keyboardType="number-pad"
                   maxLength={4}
                 />
               </View>
 
-              <Text style={styles.inputLabel}>{t('gender')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('gender')}</Text>
               <View style={styles.genderRow}>
                 <Pressable
                   onPress={() => setForm(p => ({ ...p, gender: 'maschio', avatarAsset: p.gender !== 'maschio' ? '' : p.avatarAsset }))}
-                  style={[styles.genderBtn, form.gender === 'maschio' && styles.genderBtnActive]}
+                  style={[styles.genderBtn, { backgroundColor: colors.inputBackground }, form.gender === 'maschio' && styles.genderBtnActive]}
                 >
-                  <Ionicons name="man" size={20} color={form.gender === 'maschio' ? '#4A90E2' : Colors.textMuted} />
-                  <Text style={[styles.genderText, form.gender === 'maschio' && { color: '#4A90E2' }]}>{t('male')}</Text>
+                  <Ionicons name="man" size={20} color={form.gender === 'maschio' ? '#4A90E2' : colors.textMuted} />
+                  <Text style={[styles.genderText, { color: colors.textSecondary }, form.gender === 'maschio' && { color: '#4A90E2' }]}>{t('male')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setForm(p => ({ ...p, gender: 'femmina', avatarAsset: p.gender !== 'femmina' ? '' : p.avatarAsset }))}
-                  style={[styles.genderBtn, form.gender === 'femmina' && styles.genderBtnFemActive]}
+                  style={[styles.genderBtn, { backgroundColor: colors.inputBackground }, form.gender === 'femmina' && styles.genderBtnFemActive]}
                 >
-                  <Ionicons name="woman" size={20} color={form.gender === 'femmina' ? '#FF6B6B' : Colors.textMuted} />
-                  <Text style={[styles.genderText, form.gender === 'femmina' && { color: '#FF6B6B' }]}>{t('female')}</Text>
+                  <Ionicons name="woman" size={20} color={form.gender === 'femmina' ? '#FF6B6B' : colors.textMuted} />
+                  <Text style={[styles.genderText, { color: colors.textSecondary }, form.gender === 'femmina' && { color: '#FF6B6B' }]}>{t('female')}</Text>
                 </Pressable>
               </View>
 
-              <Text style={styles.inputLabel}>{t('coParent')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('coParent')}</Text>
               {cogenitori.length > 0 ? (
                 <View style={styles.cogSelectorWrap}>
                   {cogenitori.map(cog => {
@@ -567,18 +572,18 @@ export default function HomeScreen() {
                       <Pressable
                         key={cog.id}
                         onPress={() => selectCogenitore(cog.id)}
-                        style={[styles.cogChip, isSelected && styles.cogChipSelected]}
+                        style={[styles.cogChip, { backgroundColor: colors.inputBackground }, isSelected && [styles.cogChipSelected, { backgroundColor: colors.mintGreenLight, borderColor: colors.mintGreen }]]}
                       >
                         <View style={styles.cogChipAvatar}>
-                          <Text style={styles.cogChipAvatarText}>
+                          <Text style={[styles.cogChipAvatarText, { color: colors.textPrimary }]}>
                             {(cog.name || cog.email).charAt(0).toUpperCase()}
                           </Text>
                         </View>
-                        <Text style={[styles.cogChipName, isSelected && styles.cogChipNameSelected]}>
+                        <Text style={[styles.cogChipName, { color: colors.textSecondary }, isSelected && { fontFamily: 'Nunito_700Bold', color: colors.textPrimary }]}>
                           {cog.name || cog.email}
                         </Text>
                         {isSelected && (
-                          <Ionicons name="checkmark-circle" size={18} color={Colors.mintGreen} />
+                          <Ionicons name="checkmark-circle" size={18} color={colors.mintGreen} />
                         )}
                       </Pressable>
                     );
@@ -593,7 +598,7 @@ export default function HomeScreen() {
                 </View>
               )}
 
-              <Text style={styles.inputLabel}>{t('cardColor')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('cardColor')}</Text>
               <View style={styles.colorRow}>
                 {PASTEL_COLORS.map(color => (
                   <Pressable
@@ -617,7 +622,7 @@ export default function HomeScreen() {
 
               {(form.gender === 'maschio' || form.gender === 'femmina') && (
                 <>
-                  <Text style={styles.inputLabel}>Avatar</Text>
+                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Avatar</Text>
                   <View style={styles.avatarGrid}>
                     {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
                       const isSelected = form.avatarAsset === path;
@@ -646,13 +651,13 @@ export default function HomeScreen() {
 
               <View style={styles.modalActions}>
                 <Pressable onPress={() => setShowModal(false)} style={styles.modalCancelBtn}>
-                  <Text style={styles.modalCancelText}>{t('cancel')}</Text>
+                  <Text style={[styles.modalCancelText, { color: colors.textSecondary }]}>{t('cancel')}</Text>
                 </Pressable>
                 <Pressable
                   onPress={handleSave}
-                  style={[styles.modalSaveBtn, !form.name.trim() && styles.modalSaveBtnDisabled]}
+                  style={[styles.modalSaveBtn, { backgroundColor: colors.mintGreen }, !form.name.trim() && styles.modalSaveBtnDisabled]}
                 >
-                  <Ionicons name="checkmark" size={22} color={Colors.white} />
+                  <Ionicons name="checkmark" size={22} color={colors.white} />
                 </Pressable>
               </View>
             </ScrollView>
@@ -662,66 +667,66 @@ export default function HomeScreen() {
       </Modal>
 
       <Modal visible={showSettings} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowSettings(false)} />
-          <View style={[styles.settingsContent, { paddingBottom: insets.bottom + 16 }]}>
+          <View style={[styles.settingsContent, { paddingBottom: insets.bottom + 16, backgroundColor: colors.modalBackground }]}>
             <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>{t('childSettings')}</Text>
+            <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>{t('childSettings')}</Text>
             {settingsChild && (
-              <Text style={styles.settingsChildName}>{settingsChild.name}</Text>
+              <Text style={[styles.settingsChildName, { color: colors.textSecondary }]}>{settingsChild.name}</Text>
             )}
 
             <View style={styles.settingsRow}>
               <View style={styles.settingsLabelRow}>
-                <MaterialCommunityIcons name="mosque" size={22} color={Colors.mintGreen} />
-                <Text style={styles.settingsLabel}>{t('salahTracker')}</Text>
+                <MaterialCommunityIcons name="mosque" size={22} color={colors.mintGreen} />
+                <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{t('salahTracker')}</Text>
               </View>
               <Pressable
                 onPress={() => setSettingsSalah(!settingsSalah)}
-                style={[styles.toggleTrack, settingsSalah && styles.toggleTrackActive]}
+                style={[styles.toggleTrack, { backgroundColor: colors.creamBeige }, settingsSalah && { backgroundColor: colors.mintGreen }]}
               >
                 <View style={[styles.toggleThumb, settingsSalah && styles.toggleThumbActive]} />
               </Pressable>
             </View>
-            <Text style={styles.settingsHint}>
+            <Text style={[styles.settingsHint, { color: colors.textMuted }]}>
               {settingsSalah ? t('enabled') : t('disabled')}
             </Text>
 
             <View style={styles.settingsRow}>
               <View style={styles.settingsLabelRow}>
-                <Ionicons name="moon-outline" size={22} color={Colors.mintGreenDark} />
-                <Text style={styles.settingsLabel}>{t('fastingTracker')}</Text>
+                <Ionicons name="moon-outline" size={22} color={colors.mintGreenDark} />
+                <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{t('fastingTracker')}</Text>
               </View>
               <Pressable
                 onPress={() => setSettingsFasting(!settingsFasting)}
-                style={[styles.toggleTrack, settingsFasting && styles.toggleTrackActive]}
+                style={[styles.toggleTrack, { backgroundColor: colors.creamBeige }, settingsFasting && { backgroundColor: colors.mintGreen }]}
               >
                 <View style={[styles.toggleThumb, settingsFasting && styles.toggleThumbActive]} />
               </Pressable>
             </View>
-            <Text style={styles.settingsHint}>
+            <Text style={[styles.settingsHint, { color: colors.textMuted }]}>
               {settingsFasting ? t('enabled') : t('disabled')}
             </Text>
 
             <View style={styles.settingsRow}>
               <View style={styles.settingsLabelRow}>
-                <Ionicons name="calendar-outline" size={22} color={Colors.mintGreenDark} />
-                <Text style={styles.settingsLabel}>{t('trackRamadan')}</Text>
+                <Ionicons name="calendar-outline" size={22} color={colors.mintGreenDark} />
+                <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{t('trackRamadan')}</Text>
               </View>
               <Pressable
                 onPress={() => setSettingsRamadan(!settingsRamadan)}
-                style={[styles.toggleTrack, settingsRamadan && styles.toggleTrackActive]}
+                style={[styles.toggleTrack, { backgroundColor: colors.creamBeige }, settingsRamadan && { backgroundColor: colors.mintGreen }]}
               >
                 <View style={[styles.toggleThumb, settingsRamadan && styles.toggleThumbActive]} />
               </Pressable>
             </View>
-            <Text style={styles.settingsHint}>
+            <Text style={[styles.settingsHint, { color: colors.textMuted }]}>
               {settingsRamadan ? t('enabled') : t('disabled')}
             </Text>
 
-            <Pressable onPress={saveSettings} style={styles.settingsSaveBtn}>
-              <Ionicons name="checkmark" size={20} color={Colors.white} />
-              <Text style={styles.settingsSaveBtnText}>{t('save')}</Text>
+            <Pressable onPress={saveSettings} style={[styles.settingsSaveBtn, { backgroundColor: colors.mintGreen }]}>
+              <Ionicons name="checkmark" size={20} color={colors.white} />
+              <Text style={[styles.settingsSaveBtnText, { color: colors.white }]}>{t('save')}</Text>
             </Pressable>
           </View>
         </View>
@@ -741,7 +746,7 @@ export default function HomeScreen() {
             onPress={() => setShowChildLimitOverlay(false)}
             style={{ position: 'absolute', top: 60, right: 20, zIndex: 200 }}
           >
-            <Ionicons name="close-circle" size={32} color={Colors.textMuted} />
+            <Ionicons name="close-circle" size={32} color={colors.textMuted} />
           </Pressable>
         </View>
       </Modal>

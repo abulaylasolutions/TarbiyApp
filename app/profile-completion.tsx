@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
+import { useTheme } from '@/lib/theme-context';
 import Colors from '@/constants/colors';
 
 const GENDER_OPTIONS = [
@@ -27,6 +28,7 @@ const GENDER_OPTIONS = [
 export default function ProfileCompletionScreen() {
   const insets = useSafeAreaInsets();
   const { completeProfile, user } = useAuth();
+  const { colors, isDark } = useTheme();
   const [name, setName] = useState(user?.name || '');
   const [birthDay, setBirthDay] = useState('');
   const [birthMonth, setBirthMonth] = useState('');
@@ -81,9 +83,9 @@ export default function ProfileCompletionScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
       <LinearGradient
-        colors={[Colors.peachPinkLight, Colors.background] as const}
+        colors={[isDark ? colors.backgroundSecondary : Colors.peachPinkLight, colors.background] as const}
         style={StyleSheet.absoluteFill}
       />
 
@@ -98,65 +100,65 @@ export default function ProfileCompletionScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.headerSection}>
-            <View style={styles.headerIconWrap}>
-              <Ionicons name="person-add" size={32} color={Colors.peachPink} />
+            <View style={[styles.headerIconWrap, { backgroundColor: isDark ? 'rgba(46, 125, 50, 0.2)' : 'rgba(255, 211, 182, 0.3)' }]}>
+              <Ionicons name="person-add" size={32} color={colors.mintGreen} />
             </View>
-            <Text style={styles.headerTitle}>Completa il tuo profilo</Text>
-            <Text style={styles.headerSubtitle}>
+            <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Completa il tuo profilo</Text>
+            <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>
               Solo un momento per personalizzare la tua esperienza
             </Text>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.formCard}>
+          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={[styles.formCard, { backgroundColor: colors.cardBackground }]}>
             {errorMessage ? (
-              <View style={styles.errorBox}>
-                <Ionicons name="alert-circle" size={16} color={Colors.danger} />
-                <Text style={styles.errorText}>{errorMessage}</Text>
+              <View style={[styles.errorBox, { backgroundColor: colors.dangerLight }]}>
+                <Ionicons name="alert-circle" size={16} color={colors.danger} />
+                <Text style={[styles.errorText, { color: colors.danger }]}>{errorMessage}</Text>
               </View>
             ) : null}
 
-            <Text style={styles.inputLabel}>Il tuo nome *</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="person-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Il tuo nome *</Text>
+            <View style={[styles.inputWrapper, { backgroundColor: colors.inputBackground }]}>
+              <Ionicons name="person-outline" size={20} color={colors.textMuted} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.textPrimary }]}
                 placeholder="Come ti chiami?"
-                placeholderTextColor={Colors.textMuted}
+                placeholderTextColor={colors.textMuted}
                 value={name}
                 onChangeText={setName}
                 autoFocus
               />
             </View>
 
-            <Text style={styles.inputLabel}>Data di nascita *</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Data di nascita *</Text>
             <View style={styles.dateRow}>
-              <View style={[styles.inputWrapper, styles.dateInput]}>
+              <View style={[styles.inputWrapper, styles.dateInput, { backgroundColor: colors.inputBackground }]}>
                 <TextInput
-                  style={[styles.input, { textAlign: 'center' }]}
+                  style={[styles.input, { textAlign: 'center', color: colors.textPrimary }]}
                   placeholder="GG"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={birthDay}
                   onChangeText={(t) => { if (t.length <= 2) setBirthDay(t); }}
                   keyboardType="number-pad"
                   maxLength={2}
                 />
               </View>
-              <View style={[styles.inputWrapper, styles.dateInput]}>
+              <View style={[styles.inputWrapper, styles.dateInput, { backgroundColor: colors.inputBackground }]}>
                 <TextInput
-                  style={[styles.input, { textAlign: 'center' }]}
+                  style={[styles.input, { textAlign: 'center', color: colors.textPrimary }]}
                   placeholder="MM"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={birthMonth}
                   onChangeText={(t) => { if (t.length <= 2) setBirthMonth(t); }}
                   keyboardType="number-pad"
                   maxLength={2}
                 />
               </View>
-              <View style={[styles.inputWrapper, styles.dateInputYear]}>
+              <View style={[styles.inputWrapper, styles.dateInputYear, { backgroundColor: colors.inputBackground }]}>
                 <TextInput
-                  style={[styles.input, { textAlign: 'center' }]}
+                  style={[styles.input, { textAlign: 'center', color: colors.textPrimary }]}
                   placeholder="AAAA"
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                   value={birthYear}
                   onChangeText={(t) => { if (t.length <= 4) setBirthYear(t); }}
                   keyboardType="number-pad"
@@ -165,7 +167,7 @@ export default function ProfileCompletionScreen() {
               </View>
             </View>
 
-            <Text style={styles.inputLabel}>Sesso *</Text>
+            <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>Sesso *</Text>
             <View style={styles.genderOptions}>
               {GENDER_OPTIONS.map((option) => (
                 <Pressable
@@ -176,25 +178,28 @@ export default function ProfileCompletionScreen() {
                   }}
                   style={[
                     styles.genderOption,
-                    gender === option.value && styles.genderOptionSelected,
+                    { backgroundColor: colors.inputBackground },
+                    gender === option.value && [styles.genderOptionSelected, { backgroundColor: colors.mintGreenLight, borderColor: colors.mintGreen }],
                   ]}
                 >
                   <Ionicons
                     name={option.icon}
                     size={20}
-                    color={gender === option.value ? Colors.mintGreenDark : Colors.textMuted}
+                    color={gender === option.value ? colors.mintGreenDark : colors.textMuted}
                   />
                   <Text style={[
                     styles.genderText,
-                    gender === option.value && styles.genderTextSelected,
+                    { color: colors.textSecondary },
+                    gender === option.value && [styles.genderTextSelected, { color: colors.mintGreenDark }],
                   ]}>
                     {option.label}
                   </Text>
                   <View style={[
                     styles.radioOuter,
-                    gender === option.value && styles.radioOuterSelected,
+                    { borderColor: colors.textMuted },
+                    gender === option.value && { borderColor: colors.mintGreen },
                   ]}>
-                    {gender === option.value && <View style={styles.radioInner} />}
+                    {gender === option.value && <View style={[styles.radioInner, { backgroundColor: colors.mintGreen }]} />}
                   </View>
                 </Pressable>
               ))}
@@ -210,17 +215,17 @@ export default function ProfileCompletionScreen() {
               ]}
             >
               <LinearGradient
-                colors={[Colors.mintGreen, Colors.mintGreenDark] as const}
+                colors={[colors.mintGreen, colors.mintGreenDark] as const}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={styles.submitGradient}
               >
                 {loading ? (
-                  <ActivityIndicator color={Colors.white} />
+                  <ActivityIndicator color={colors.white} />
                 ) : (
                   <>
-                    <Text style={styles.submitText}>Completa profilo</Text>
-                    <Ionicons name="checkmark" size={20} color={Colors.white} />
+                    <Text style={[styles.submitText, { color: colors.white }]}>Completa profilo</Text>
+                    <Ionicons name="checkmark" size={20} color={colors.white} />
                   </>
                 )}
               </LinearGradient>
@@ -235,7 +240,6 @@ export default function ProfileCompletionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -254,7 +258,6 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: 'rgba(255, 211, 182, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -262,17 +265,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontFamily: 'Nunito_800ExtraBold',
     fontSize: 24,
-    color: Colors.textPrimary,
     marginBottom: 8,
   },
   headerSubtitle: {
     fontFamily: 'Nunito_400Regular',
     fontSize: 14,
-    color: Colors.textSecondary,
     textAlign: 'center',
   },
   formCard: {
-    backgroundColor: Colors.cardBackground,
     borderRadius: 28,
     padding: 24,
     shadowColor: Colors.shadow,
@@ -284,7 +284,6 @@ const styles = StyleSheet.create({
   errorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.dangerLight,
     borderRadius: 12,
     padding: 12,
     gap: 8,
@@ -293,19 +292,16 @@ const styles = StyleSheet.create({
   errorText: {
     fontFamily: 'Nunito_500Medium',
     fontSize: 13,
-    color: Colors.danger,
     flex: 1,
   },
   inputLabel: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 14,
-    color: Colors.textSecondary,
     marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.creamBeige,
     borderRadius: 16,
     paddingHorizontal: 16,
     marginBottom: 16,
@@ -317,7 +313,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Nunito_400Regular',
     fontSize: 16,
-    color: Colors.textPrimary,
     paddingVertical: 14,
   },
   dateRow: {
@@ -334,7 +329,6 @@ const styles = StyleSheet.create({
     marginBottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.creamBeige,
     borderRadius: 16,
     paddingHorizontal: 16,
   },
@@ -345,7 +339,6 @@ const styles = StyleSheet.create({
   genderOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.creamBeige,
     borderRadius: 16,
     padding: 16,
     gap: 12,
@@ -353,17 +346,14 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   genderOptionSelected: {
-    borderColor: Colors.mintGreen,
-    backgroundColor: Colors.mintGreenLight,
+    borderWidth: 2,
   },
   genderText: {
     fontFamily: 'Nunito_500Medium',
     fontSize: 15,
-    color: Colors.textSecondary,
     flex: 1,
   },
   genderTextSelected: {
-    color: Colors.mintGreenDark,
     fontFamily: 'Nunito_600SemiBold',
   },
   radioOuter: {
@@ -371,18 +361,16 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: Colors.textMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioOuterSelected: {
-    borderColor: Colors.mintGreen,
+    borderWidth: 2,
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: Colors.mintGreen,
   },
   submitBtn: {
     borderRadius: 16,
@@ -398,6 +386,5 @@ const styles = StyleSheet.create({
   submitText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 17,
-    color: Colors.white,
   },
 });
