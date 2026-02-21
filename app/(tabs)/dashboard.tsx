@@ -523,6 +523,15 @@ export default function DashboardScreen() {
     } catch {
       setRamadanLogs(prev => ({ ...prev, [dayStr]: !newVal }));
     }
+    const hijriNow = gregorianToHijri(new Date());
+    if (hijriNow.month === 9 && hijriNow.day === day && Number(ramadanYear) === hijriNow.year) {
+      const todayDateStr = formatDate(new Date());
+      const newFastingStatus = newVal ? 'yes' : 'no';
+      setFasting(prev => ({ ...prev, status: newFastingStatus }));
+      try {
+        await apiRequest('POST', `/api/children/${childId}/fasting`, { date: todayDateStr, status: newFastingStatus, note: fasting.note });
+      } catch {}
+    }
   };
 
   const ramadanFastedCount = Object.values(ramadanLogs).filter(v => v === true).length;
@@ -591,7 +600,7 @@ export default function DashboardScreen() {
     try {
       await apiRequest('POST', `/api/children/${childId}/fasting`, { date: dateStr, status: newStatus, note: fasting.note });
     } catch {}
-    if (trackRamadan && useHijri) {
+    if (trackRamadan) {
       const hijri = gregorianToHijri(currentDate);
       if (hijri.month === 9 && hijri.day >= 1 && hijri.day <= 30) {
         const dayStr = String(hijri.day);
@@ -1254,13 +1263,12 @@ export default function DashboardScreen() {
                     const dayStr = String(day);
                     const hasLog = dayStr in ramadanLogs;
                     const fasted = ramadanLogs[dayStr] === true;
-                    const notFasted = hasLog && !fasted;
                     const hijriNow = gregorianToHijri(new Date());
                     const isCurrentRamadanYear = Number(ramadanYear) === hijriNow.year;
-                    const isFutureDay = isCurrentRamadanYear && hijriNow.month <= 9 && day > hijriNow.day && hijriNow.month === 9;
-                    const isPastRamadan = isCurrentRamadanYear && hijriNow.month > 9;
-                    const isBeforeRamadan = isCurrentRamadanYear && hijriNow.month < 9;
-                    const isFuture = isBeforeRamadan || (!isPastRamadan && isFutureDay);
+                    const isFutureYear = Number(ramadanYear) > hijriNow.year;
+                    const isToday = isCurrentRamadanYear && hijriNow.month === 9 && hijriNow.day === day;
+                    const isPastDay = isCurrentRamadanYear && (hijriNow.month > 9 || (hijriNow.month === 9 && day < hijriNow.day));
+                    const isFutureDay = isFutureYear || (isCurrentRamadanYear && (hijriNow.month < 9 || (hijriNow.month === 9 && day > hijriNow.day)));
                     const isDay30 = day === 30;
 
                     let bgColor = Colors.creamBeige + '50';
@@ -1272,11 +1280,15 @@ export default function DashboardScreen() {
                       bgColor = Colors.mintGreen + '25';
                       borderColor = Colors.mintGreen;
                       textColor = Colors.mintGreenDark || '#2E7D32';
-                    } else if (notFasted) {
+                    } else if (isToday && !fasted) {
+                      bgColor = Colors.creamBeige + '50';
+                      borderColor = Colors.creamBeige;
+                      textColor = Colors.textMuted;
+                    } else if (isPastDay && !fasted) {
                       bgColor = '#FF6B6B' + '15';
                       borderColor = '#FF6B6B';
                       textColor = '#D32F2F';
-                    } else if (isFuture && !hasLog) {
+                    } else if (isFutureDay) {
                       bgColor = Colors.textMuted + '10';
                       borderColor = Colors.textMuted + '30';
                       textColor = Colors.textMuted + '60';
@@ -1299,7 +1311,7 @@ export default function DashboardScreen() {
                         }}
                       >
                         <Text style={{
-                          fontFamily: fasted || notFasted ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
+                          fontFamily: fasted || (isPastDay && !fasted) ? 'Nunito_700Bold' : 'Nunito_600SemiBold',
                           fontSize: 13,
                           color: textColor,
                         }}>
