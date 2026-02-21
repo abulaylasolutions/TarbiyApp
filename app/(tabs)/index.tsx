@@ -590,36 +590,6 @@ export default function HomeScreen() {
                 </View>
               )}
 
-              {(form.gender === 'maschio' || form.gender === 'femmina') && (
-                <>
-                  <Text style={styles.inputLabel}>Avatar</Text>
-                  <View style={styles.avatarGrid}>
-                    {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
-                      const isSelected = form.avatarAsset === path;
-                      return (
-                        <Pressable
-                          key={path}
-                          onPress={() => {
-                            const newVal = isSelected ? '' : path;
-                            setForm(p => ({ ...p, avatarAsset: newVal }));
-                            console.log("Avatar selezionato:", newVal || 'nessuno');
-                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                          }}
-                          style={[styles.avatarItem, isSelected && styles.avatarItemSelected]}
-                        >
-                          <Image
-                            source={getAvatarSource(path)}
-                            style={styles.avatarImage}
-                            contentFit="cover"
-                            transition={200}
-                          />
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </>
-              )}
-
               <Text style={styles.inputLabel}>{t('cardColor')}</Text>
               <View style={styles.colorRow}>
                 {PASTEL_COLORS.map(color => {
@@ -642,6 +612,35 @@ export default function HomeScreen() {
                   );
                 })}
               </View>
+
+              {(form.gender === 'maschio' || form.gender === 'femmina') && (
+                <>
+                  <Text style={styles.inputLabel}>Avatar</Text>
+                  <View style={styles.avatarGrid}>
+                    {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
+                      const isSelected = form.avatarAsset === path;
+                      return (
+                        <Pressable
+                          key={path}
+                          onPress={() => {
+                            const newVal = isSelected ? '' : path;
+                            setForm(p => ({ ...p, avatarAsset: newVal }));
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }}
+                          style={[styles.avatarItem, isSelected && styles.avatarItemSelected]}
+                        >
+                          <Image
+                            source={getAvatarSource(path)}
+                            style={styles.avatarImage}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                </>
+              )}
 
               <View style={styles.modalActions}>
                 <Pressable onPress={() => setShowModal(false)} style={styles.modalCancelBtn}>
@@ -927,7 +926,7 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%', height: '100%', borderRadius: 38,
   },
-  colorRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 10, marginBottom: 16, justifyContent: 'center' },
+  colorRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 8, marginBottom: 12, justifyContent: 'center' },
   colorSwatch: {
     width: 44, height: 44, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: 'transparent',

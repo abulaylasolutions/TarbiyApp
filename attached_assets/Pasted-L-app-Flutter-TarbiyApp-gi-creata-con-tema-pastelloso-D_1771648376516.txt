@@ -1,0 +1,40 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Dashboard con card figlio, sezione "Attività di oggi" (Salah, Digiuno, Lettura Qur'an), griglia colori tema figlio, impostazioni figlio, sezione Ramadan da aggiungere.
+
+ORA MODIFICA E AGGIUNGI SOLO QUESTE COSE, senza riscrivere l'intera app:
+
+1. Griglia colori tema figlio (in add_child_screen.dart):
+   - Riduci leggermente spazio tra i colori (spacing: 8–10 px invece di 16–24, crossAxisSpacing e mainAxisSpacing più stretti)
+
+2. Posizionamento colore card:
+   - Sposta selezione colore card **sopra** alla griglia avatar nella schermata aggiungi/modifica figlio
+
+3. Digiuno oggi:
+   - Rimuovi opzione "No" dal toggle
+   - Lascia solo "Sì" e "Parziale" in unica riga (Row con due pulsanti tappabili o Switch-like, Sì verde, Parziale giallo/arancione)
+   - Testo "Digiuno oggi?" sopra, pulsanti sotto
+
+4. Rimuovi "Lettura Qur'an oggi?":
+   - Togli completamente dalla sezione "Attività di oggi"
+   - Rimuovi toggle "Abilita tracker Qur'an oggi" dalle impostazioni figlio
+
+5. Switch calendario solare / islamico:
+   - Nelle Impostazioni (globali o per figlio): aggiungi SwitchListTile "Usa calendario islamico (Hijri)" (ON/OFF)
+   - Salva in users/preferredHijriCalendar bool
+   - Se ON: barra date e eventi usano date hijri (usa package hijri o intl per conversione gregoriana → hijri)
+   - Testo switch: "Calendario islamico" quando ON, "Calendario solare" quando OFF
+
+6. Sezione Ramadan:
+   - Aggiungi sotto "Attività di oggi" (o sotto Digiuno) una sezione espandibile "Ramadan" (solo se trackFasting true e età >=9 hijri circa)
+   - Switch nelle impostazioni figlio: "Monitora Ramadan" (ON/OFF, salva children/trackRamadan bool)
+   - Se ON: no "Parziale" per digiuno (solo Sì/No), barra tracker Ramadan 1447 (quest'anno iniziato 18 febbraio)
+     - Freccette < > per cambiare anno Ramadan (1447 default, +1/-1)
+     - Tabella 30 giorni (Row o GridView): 30 quadrati (30° tratteggiato)
+       - Giorno digiunato: verde pieno
+       - Giorno non digiunato: rosso (da recuperare)
+       - Giorno futuro/non ancora: grigio
+     - Barra progresso sotto (LinearProgressIndicator value: giorni digiunati / 30, colore verde)
+   - Salva digiuni per anno in children/ramadanDigests/{ramadanYear}: {day: int, fasted: bool}
+
+Mantieni responsive (griglia colori 4x2, barra Ramadan scrollabile orizzontale se necessario), animazioni soft (fade su switch calendario, check verde su digiuno). Usa intl e hijri package se manca per date islamiche (flutter pub add hijri).
+
+Modifica dashboard_screen.dart (sezione Ramadan, no "Lettura Qur'an", Digiuno solo Sì/Parziale), add_child_screen.dart (colore sopra avatar, no Qur'an toggle), settings_screen.dart (switch calendario + Ramadan). Inizia subito con queste integrazioni precise!
