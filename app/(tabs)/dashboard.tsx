@@ -21,8 +21,6 @@ import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, ty
 const PASTEL_COLORS = [
   '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
   '#E0BBE4', '#FFF5BA', '#FFDAC1', '#B2D8B2',
-  '#FFC1CC', '#B2F2E8', '#D7BDE2', '#FFD8A8',
-  '#AED9E0', '#8DAF8C',
 ];
 
 const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;

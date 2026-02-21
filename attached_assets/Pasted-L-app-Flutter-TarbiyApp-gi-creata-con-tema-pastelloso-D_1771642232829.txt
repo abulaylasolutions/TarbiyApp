@@ -1,0 +1,28 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Dashboard con swipe card per cambio figlio, sezione Eventi customizzati con frequenze (giornaliero, settimanale, mensile), Bacheca con archivio, sezione modifica figlio con griglia colori.
+
+ORA MODIFICA E AGGIUNGI SOLO QUESTE COSE NUOVE, senza riscrivere l'intera app:
+
+1. Attività customizzate in Dashboard:
+   - Tenendo premuto un evento (long-press su card evento): mostra popup pastello con opzioni "Modifica" o "Elimina"
+   - Per "Modifica": apri modale edit (nome, frequenza, orario inizio/fine, giorno se settimanale/mensile)
+     - Se ricorrente (settimanale/mensile): dopo modifica, dialog "Applica solo a questo evento o a tutti i prossimi?" (pulsanti "Solo questo" o "Tutti i prossimi" – aggiorna Firestore di conseguenza)
+   - Per "Elimina": dialog conferma, poi se ricorrente: "Elimina solo questo o tutti i prossimi?" (aggiorna Firestore)
+   - Aggiungi frequenza "Unico" (solo quel giorno) nel dropdown frequenza
+   - "Giornaliero" si ripete per sempre (mostra ogni giorno)
+
+2. Fix cambio figlio in Dashboard:
+   - Assicura che swipe orizzontale sulla card principale funzioni (GestureDetector o PageView con physics: PageScrollPhysics per scorrevole fluido)
+     - Animazione fluida: slide transition 300ms, con curve Curves.easeInOut
+     - Clic > / < già funziona, ma integra con swipe per coerenza
+     - Fixa se non funziona: verifica onHorizontalDragUpdate per detect swipe, chiama PageController.nextPage/previousPage con duration: 300ms
+
+3. Bacheca – archivio:
+   - Cambia colore testo "Ripristina" da verde a nero (TextStyle(color: Colors.black))
+
+4. Selezione colori tema figlio in add/edit child screen:
+   - Torna a 8 colori pastello originali (es. #A8E6CF verde menta, #FFD3B6 rosa pesca, #C7CEEA azzurro, #FFF5E1 beige, #E0BBE4 lavanda, #FFF5BA giallo, #FFDAC1 corallo, #B2D8B2 salvia)
+   - Griglia GridView.count(crossAxisCount: 4, childAspectRatio: 1.0) – 4 sopra + 4 sotto (2 righe x 4 colonne)
+
+Mantieni responsive, animazioni soft (easeInOut su swipe, fade su popup). Usa Provider per stato.
+
+Modifica dashboard_screen.dart (swipe card fluido, eventi long-press popup), bacheca_screen.dart (archivio Ripristina nero), add_child_screen.dart (frequenze Unico, griglia colori 4x2). Inizia subito con queste integrazioni precise!
