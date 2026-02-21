@@ -21,6 +21,7 @@ import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
+import PremiumOverlay from '@/components/PremiumOverlay';
 import { apiRequest } from '@/lib/query-client';
 import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
@@ -232,9 +233,11 @@ export default function HomeScreen() {
   const ownChildren = children.filter(c => c.userId === user?.id);
   const canAddChild = isPremium || ownChildren.length < 1;
 
+  const [showChildLimitOverlay, setShowChildLimitOverlay] = useState(false);
+
   const openAddModal = () => {
     if (!canAddChild) {
-      Alert.alert(t('limitReachedTitle'), t('limitReachedMsg'));
+      setShowChildLimitOverlay(true);
       return;
     }
     setEditingChild(null);
@@ -716,6 +719,25 @@ export default function HomeScreen() {
               <Text style={styles.settingsSaveBtnText}>{t('save')}</Text>
             </Pressable>
           </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showChildLimitOverlay} animationType="fade" transparent>
+        <View style={{ flex: 1 }}>
+          <PremiumOverlay
+            message={t('premiumBlockChildren')}
+            icon="people"
+            onDiscover={() => {
+              setShowChildLimitOverlay(false);
+              router.push('/(tabs)/settings');
+            }}
+          />
+          <Pressable
+            onPress={() => setShowChildLimitOverlay(false)}
+            style={{ position: 'absolute', top: 60, right: 20, zIndex: 200 }}
+          >
+            <Ionicons name="close-circle" size={32} color={Colors.textMuted} />
+          </Pressable>
         </View>
       </Modal>
     </View>

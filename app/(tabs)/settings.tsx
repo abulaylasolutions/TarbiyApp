@@ -25,6 +25,7 @@ import { useApp, CogenitoreInfo } from '@/lib/app-context';
 import { apiRequest } from '@/lib/query-client';
 import { useI18n, getLanguageLabel, Language } from '@/lib/i18n';
 import Colors from '@/constants/colors';
+import PremiumOverlay from '@/components/PremiumOverlay';
 
 interface SettingsRowProps {
   icon: string;
@@ -58,10 +59,11 @@ function SettingsRow({ icon, iconColor, iconBg, label, value, onPress, isLast }:
   );
 }
 
-function CogenitoriSection() {
+function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
   const { user, refreshUser } = useAuth();
   const { cogenitori, refreshCogenitori } = useApp();
   const { t } = useI18n();
+  const isPremium = user?.isPremium;
   const [inviteCodeInput, setInviteCodeInput] = useState('');
   const [pairing, setPairing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -173,6 +175,28 @@ function CogenitoriSection() {
         </View>
       )}
 
+      {!isPremium ? (
+        <View style={styles.addCogenitoreSection}>
+          <View style={{ alignItems: 'center', padding: 16, gap: 12 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center' }}>
+              <Ionicons name="lock-closed" size={22} color={Colors.mintGreenDark} />
+            </View>
+            <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textPrimary, textAlign: 'center', lineHeight: 20 }}>
+              {t('premiumBlockPairing')}
+            </Text>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onOpenPremium?.();
+              }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.mintGreen, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 10 }}
+            >
+              <Ionicons name="star" size={14} color={Colors.white} />
+              <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 14, color: Colors.white }}>{t('discoverPremium')}</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
       <View style={styles.addCogenitoreSection}>
         <Text style={styles.addCogLabel}>
           {cogenitori.length === 0
@@ -210,6 +234,7 @@ function CogenitoriSection() {
           </Pressable>
         </View>
       </View>
+      )}
     </View>
   );
 }
@@ -429,7 +454,7 @@ export default function SettingsScreen() {
         )}
 
         <PendingApprovalsSection />
-        <CogenitoriSection />
+        <CogenitoriSection onOpenPremium={() => setShowPremiumModal(true)} />
 
         <Text style={styles.sectionTitle}>{t('general')}</Text>
         <View style={styles.settingsCardWrap}>

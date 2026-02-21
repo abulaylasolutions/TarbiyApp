@@ -16,8 +16,10 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest, getApiUrl } from '@/lib/query-client';
 import Colors from '@/constants/colors';
+import { useRouter } from 'expo-router';
 import { getAvatarSource } from '@/lib/avatar-map';
 import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, type AqidahLeafItem, type AqidahPillar, type AqidahLevel } from '@/lib/aqidah-data';
+import PremiumOverlay from '@/components/PremiumOverlay';
 
 const PASTEL_COLORS = [
   '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
@@ -296,6 +298,9 @@ export default function DashboardScreen() {
   const { user } = useAuth();
   const { t, lang, isRTL } = useI18n();
   const queryClient = useQueryClient();
+  const premiumRouter = useRouter();
+  const isPremium = user?.isPremium;
+  const [showEventPremiumOverlay, setShowEventPremiumOverlay] = useState(false);
 
   const selectedChild = children.find(c => c.id === selectedChildId);
   const selectedIndex = children.findIndex(c => c.id === selectedChildId);
@@ -872,8 +877,14 @@ export default function DashboardScreen() {
     );
   };
 
+  const [showQuranPremiumOverlay, setShowQuranPremiumOverlay] = useState(false);
+
   const cycleSurahStatus = async (surahNumber: number) => {
     if (!childId) return;
+    if (!isPremium) {
+      setShowQuranPremiumOverlay(true);
+      return;
+    }
     const key = String(surahNumber);
     const current = quranLogs[key] || 'not_started';
     const next: SurahStatus = current === 'not_started' ? 'in_progress' : current === 'in_progress' ? 'learned' : 'not_started';
@@ -1021,8 +1032,14 @@ export default function DashboardScreen() {
           <Animated.View entering={FadeInDown.delay(200).duration(300)}>
             <View style={s.sectionTitleRow}>
               <Text style={s.sectionTitle}>{t('todayEvents')}</Text>
-              <Pressable onPress={() => setShowAddTask(true)} hitSlop={8}>
-                <Ionicons name="add-circle" size={26} color={Colors.mintGreen} />
+              <Pressable onPress={() => {
+                if (!isPremium) {
+                  setShowEventPremiumOverlay(true);
+                  return;
+                }
+                setShowAddTask(true);
+              }} hitSlop={8}>
+                <Ionicons name="add-circle" size={26} color={isPremium ? Colors.mintGreen : Colors.textMuted} />
               </Pressable>
             </View>
             {todayTasks.length > 0 ? (
@@ -1845,6 +1862,44 @@ export default function DashboardScreen() {
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={showEventPremiumOverlay} animationType="fade" transparent>
+        <View style={{ flex: 1 }}>
+          <PremiumOverlay
+            message={t('premiumBlockEvents')}
+            icon="calendar"
+            onDiscover={() => {
+              setShowEventPremiumOverlay(false);
+              premiumRouter.push('/(tabs)/settings');
+            }}
+          />
+          <Pressable
+            onPress={() => setShowEventPremiumOverlay(false)}
+            style={{ position: 'absolute', top: 60, right: 20, zIndex: 200 }}
+          >
+            <Ionicons name="close-circle" size={32} color={Colors.textMuted} />
+          </Pressable>
+        </View>
+      </Modal>
+
+      <Modal visible={showQuranPremiumOverlay} animationType="fade" transparent>
+        <View style={{ flex: 1 }}>
+          <PremiumOverlay
+            message={t('premiumBlockQuran')}
+            icon="book"
+            onDiscover={() => {
+              setShowQuranPremiumOverlay(false);
+              premiumRouter.push('/(tabs)/settings');
+            }}
+          />
+          <Pressable
+            onPress={() => setShowQuranPremiumOverlay(false)}
+            style={{ position: 'absolute', top: 60, right: 20, zIndex: 200 }}
+          >
+            <Ionicons name="close-circle" size={32} color={Colors.textMuted} />
+          </Pressable>
+        </View>
       </Modal>
     </View>
   );
