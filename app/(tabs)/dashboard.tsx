@@ -303,7 +303,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
 export default function DashboardScreen() {
   const insets = useSafeAreaInsets();
   const { children, selectedChildId, selectChild, cogenitori, refreshChildren } = useApp();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t, lang, isRTL } = useI18n();
   const queryClient = useQueryClient();
   const premiumRouter = useRouter();
@@ -1037,13 +1037,25 @@ export default function DashboardScreen() {
 
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
           <View style={s.dateBarHeader}>
-            <View>
-              <Text style={s.dateBarMonth}>
-                {`${getMonthName(currentDate, lang)} ${currentDate.getFullYear()}`}
-              </Text>
-              <Text style={s.dateBarHijriMonth}>
-                {`${gregorianToHijri(currentDate, lang).monthName} ${gregorianToHijri(currentDate, lang).year}`}
-              </Text>
+            <View style={s.dateBarTitleRow}>
+              <Text style={s.dateBarTitle}>{lang === 'ar' ? 'التقويم' : lang === 'en' ? 'Calendar' : 'Calendario'}</Text>
+              <Pressable
+                onPress={async () => {
+                  const newVal = !useHijri;
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  try {
+                    await apiRequest('PUT', '/api/auth/hijri-calendar', { preferredHijriCalendar: newVal });
+                    await refreshUser();
+                  } catch {}
+                }}
+                style={[
+                  s.calSwitch,
+                  { backgroundColor: useHijri ? Colors.mintGreen : Colors.textMuted + '40' },
+                ]}
+              >
+                <View style={[s.calSwitchThumb, { alignSelf: useHijri ? 'flex-end' : 'flex-start' }]} />
+              </Pressable>
+              <Text style={s.calSwitchLabel}>{useHijri ? t('hijriOn') : t('hijriOff')}</Text>
             </View>
             {dateStr !== todayStr && (
               <Pressable onPress={goToToday} style={[s.todayBtn, { backgroundColor: cardColor }]}>
@@ -1064,6 +1076,10 @@ export default function DashboardScreen() {
               const isSelected = ds === dateStr;
               const isToday = ds === todayStr;
               const hijri = gregorianToHijri(item, lang);
+              const displayDay = useHijri ? hijri.day : item.getDate();
+              const displaySub = useHijri
+                ? `${hijri.monthName} ${hijri.year}`
+                : `${getMonthName(item, lang)} ${item.getFullYear()}`;
               return (
                 <Pressable
                   onPress={() => setCurrentDate(new Date(item))}
@@ -1077,13 +1093,10 @@ export default function DashboardScreen() {
                     {getDayName(item, lang)}
                   </Text>
                   <Text style={[s.dateNum, isSelected && s.dateNumActive]}>
-                    {item.getDate()}
+                    {displayDay}
                   </Text>
-                  <Text style={[s.dateGregorianSub, isSelected && s.dateGregorianSubActive]}>
-                    {getMonthName(item, lang)}
-                  </Text>
-                  <Text style={[s.dateHijriSub, isSelected && s.dateHijriSubActive]} numberOfLines={1}>
-                    {`${hijri.day} ${hijri.monthNameShort}`}
+                  <Text style={[s.dateMonthSub, isSelected && s.dateMonthSubActive]} numberOfLines={1}>
+                    {displaySub}
                   </Text>
                 </Pressable>
               );
@@ -2111,24 +2124,25 @@ const s = StyleSheet.create({
 
   dateBarWrap: { marginBottom: 8 },
   dateBarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 8 },
-  dateBarMonth: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary },
-  dateBarHijriMonth: { fontFamily: 'Nunito_500Medium', fontSize: 12, color: Colors.textMuted, marginTop: 1 },
+  dateBarTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  dateBarTitle: { fontFamily: 'Nunito_700Bold', fontSize: 19, color: '#A8E6CF' },
+  calSwitch: { width: 44, height: 26, borderRadius: 13, justifyContent: 'center', paddingHorizontal: 3 },
+  calSwitchThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2 },
+  calSwitchLabel: { fontFamily: 'Nunito_500Medium', fontSize: 11, color: Colors.textMuted },
   todayBtn: { borderRadius: 12, paddingHorizontal: 12, paddingVertical: 4 },
   todayBtnText: { fontFamily: 'Nunito_700Bold', fontSize: 12, color: '#000000' },
   dateItem: {
-    width: 72, height: 84, borderRadius: 8, alignItems: 'center', justifyContent: 'center',
-    marginHorizontal: 4, backgroundColor: Colors.cardBackground, paddingVertical: 4,
+    width: 72, height: 82, borderRadius: 10, alignItems: 'center', justifyContent: 'center',
+    marginHorizontal: 4, backgroundColor: Colors.cardBackground, paddingVertical: 5,
   },
   dateItemActive: {},
   dateItemToday: {},
-  dateDayName: { fontFamily: 'Nunito_500Medium', fontSize: 10, color: Colors.textMuted },
+  dateDayName: { fontFamily: 'Nunito_500Medium', fontSize: 10, color: Colors.textMuted, textTransform: 'lowercase' as const },
   dateDayNameActive: { color: '#000000', fontFamily: 'Nunito_700Bold' },
-  dateNum: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
+  dateNum: { fontFamily: 'Nunito_700Bold', fontSize: 24, color: Colors.textPrimary, lineHeight: 28 },
   dateNumActive: { color: '#000000' },
-  dateGregorianSub: { fontFamily: 'Nunito_500Medium', fontSize: 9, color: Colors.textMuted, marginTop: -1 },
-  dateGregorianSubActive: { color: '#000000' },
-  dateHijriSub: { fontFamily: 'Nunito_400Regular', fontSize: 8, color: 'rgba(0,0,0,0.35)', marginTop: 1 },
-  dateHijriSubActive: { color: 'rgba(0,0,0,0.55)' },
+  dateMonthSub: { fontFamily: 'Nunito_400Regular', fontSize: 8, color: Colors.textMuted, marginTop: 1, textAlign: 'center' },
+  dateMonthSubActive: { color: 'rgba(0,0,0,0.7)' },
 
   sectionsWrap: { paddingHorizontal: 16, gap: 8 },
   sectionTitle: { fontFamily: 'Nunito_700Bold', fontSize: 17, color: Colors.textPrimary, marginTop: 12, marginBottom: 8, flex: 1 },
