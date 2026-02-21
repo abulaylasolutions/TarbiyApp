@@ -649,7 +649,7 @@ export default function SettingsScreen() {
               ))}
             </View>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.pricingScroll} contentContainerStyle={styles.pricingScrollContent}>
+            <View style={styles.pricingColumn}>
               <Pressable
                 onPress={async () => {
                   await updatePremium(true);
@@ -659,9 +659,15 @@ export default function SettingsScreen() {
                 }}
                 style={({ pressed }) => [styles.pricingCard, pressed && { opacity: 0.9 }]}
               >
-                <Text style={styles.pricingPeriod}>{t('monthly')}</Text>
-                <Text style={styles.pricingPrice}>€2.99</Text>
-                <Text style={styles.pricingDetail}>/{t('month')}</Text>
+                <View style={styles.pricingCardRow}>
+                  <View style={styles.pricingCardInfo}>
+                    <Text style={styles.pricingPeriod}>{t('monthly')}</Text>
+                    <Text style={styles.pricingPrice}>€2.99<Text style={styles.pricingDetail}> /{t('month')}</Text></Text>
+                  </View>
+                  <View style={styles.pricingBuyBtn}>
+                    <Text style={styles.pricingBuyText}>{t('save')}</Text>
+                  </View>
+                </View>
               </Pressable>
 
               <Pressable
@@ -673,12 +679,20 @@ export default function SettingsScreen() {
                 }}
                 style={({ pressed }) => [styles.pricingCard, styles.pricingCardBest, pressed && { opacity: 0.9 }]}
               >
-                <View style={styles.bestValueBadge}>
-                  <Text style={styles.bestValueText}>{t('save17')}</Text>
+                <View style={styles.pricingCardRow}>
+                  <View style={styles.pricingCardInfo}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={styles.pricingPeriod}>{t('annual')}</Text>
+                      <View style={styles.bestValueBadge}>
+                        <Text style={styles.bestValueText}>{t('save17')}</Text>
+                      </View>
+                    </View>
+                    <Text style={styles.pricingPrice}>€24.99<Text style={styles.pricingDetail}> /{t('year')}</Text></Text>
+                  </View>
+                  <View style={[styles.pricingBuyBtn, { backgroundColor: Colors.goldAccent }]}>
+                    <Text style={styles.pricingBuyText}>{t('save')}</Text>
+                  </View>
                 </View>
-                <Text style={styles.pricingPeriod}>{t('annual')}</Text>
-                <Text style={styles.pricingPrice}>€24.99</Text>
-                <Text style={styles.pricingDetail}>/{t('year')}</Text>
               </Pressable>
 
               <Pressable
@@ -690,14 +704,22 @@ export default function SettingsScreen() {
                 }}
                 style={({ pressed }) => [styles.pricingCard, styles.pricingCardLifetime, pressed && { opacity: 0.9 }]}
               >
-                <View style={styles.lifetimeBadge}>
-                  <Ionicons name="infinite" size={14} color={Colors.white} />
+                <View style={styles.pricingCardRow}>
+                  <View style={styles.pricingCardInfo}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Text style={styles.pricingPeriod}>{t('lifetime')}</Text>
+                      <View style={styles.lifetimeBadge}>
+                        <Ionicons name="infinite" size={14} color={Colors.white} />
+                      </View>
+                    </View>
+                    <Text style={styles.pricingPrice}>€49.99<Text style={styles.pricingDetail}> {t('oneTime')}</Text></Text>
+                  </View>
+                  <View style={[styles.pricingBuyBtn, { backgroundColor: '#9C27B0' }]}>
+                    <Text style={styles.pricingBuyText}>{t('save')}</Text>
+                  </View>
                 </View>
-                <Text style={styles.pricingPeriod}>{t('lifetime')}</Text>
-                <Text style={styles.pricingPrice}>€49.99</Text>
-                <Text style={styles.pricingDetail}>{t('oneTime')}</Text>
               </Pressable>
-            </ScrollView>
+            </View>
 
             <Pressable
               onPress={() => {
@@ -880,17 +902,20 @@ const styles = StyleSheet.create({
   premiumFeatureRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   premiumFeatureIcon: { width: 34, height: 34, borderRadius: 12, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center' },
   premiumFeatureText: { fontFamily: 'Nunito_500Medium', fontSize: 14, color: Colors.textPrimary, flex: 1 },
-  pricingScroll: { width: '100%', marginBottom: 12 },
-  pricingScrollContent: { gap: 10, paddingHorizontal: 2, paddingTop: 12 },
-  pricingCard: { width: 120, backgroundColor: Colors.creamBeige, borderRadius: 20, padding: 16, alignItems: 'center', borderWidth: 2, borderColor: 'transparent' },
+  pricingColumn: { width: '100%', gap: 16, marginBottom: 12, paddingTop: 12 },
+  pricingCard: { width: '100%', backgroundColor: Colors.creamBeige, borderRadius: 20, padding: 16, borderWidth: 2, borderColor: 'transparent' },
   pricingCardBest: { borderColor: Colors.goldAccent, backgroundColor: '#FFF9E6' },
   pricingCardLifetime: { borderColor: '#B39DDB', backgroundColor: '#F3E5F5' },
-  bestValueBadge: { backgroundColor: Colors.goldAccent, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, position: 'absolute', top: -10 },
+  pricingCardRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  pricingCardInfo: { flex: 1, gap: 2 },
+  pricingBuyBtn: { backgroundColor: Colors.mintGreen, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 10 },
+  pricingBuyText: { fontFamily: 'Nunito_700Bold', fontSize: 14, color: Colors.white },
+  bestValueBadge: { backgroundColor: Colors.goldAccent, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
   bestValueText: { fontFamily: 'Nunito_700Bold', fontSize: 11, color: Colors.white },
-  lifetimeBadge: { backgroundColor: '#9C27B0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, position: 'absolute', top: -10 },
-  pricingPeriod: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary, marginBottom: 4 },
-  pricingPrice: { fontFamily: 'Nunito_800ExtraBold', fontSize: 24, color: Colors.textPrimary },
-  pricingDetail: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  lifetimeBadge: { backgroundColor: '#9C27B0', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  pricingPeriod: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textSecondary },
+  pricingPrice: { fontFamily: 'Nunito_800ExtraBold', fontSize: 22, color: Colors.textPrimary },
+  pricingDetail: { fontFamily: 'Nunito_400Regular', fontSize: 12, color: Colors.textMuted },
   restoreBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 10 },
   restoreText: { fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.mintGreenDark },
   premiumCloseBtn: { paddingVertical: 8 },
