@@ -1147,7 +1147,7 @@ export default function DashboardScreen() {
                     >
                       <Pressable onPress={() => toggleTaskCompletion(task.id)} style={s.taskCheck}>
                         <View style={[s.checkBox, { borderColor: colors.textMuted }, comp?.completed && { backgroundColor: cardColor, borderColor: cardColor }]}>
-                          {comp?.completed && <Ionicons name="checkmark" size={14} color={Colors.white} />}
+                          {comp?.completed && <Ionicons name="checkmark" size={14} color="#000000" />}
                         </View>
                       </Pressable>
                       <View style={s.taskInfo}>
@@ -1188,7 +1188,7 @@ export default function DashboardScreen() {
                           <Pressable key={prayer} onPress={() => togglePrayer(prayer)} style={s.prayerItem}>
                             <View style={[s.prayerCircle, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, done && { backgroundColor: cardColor, borderColor: cardColor }]}>
                               {done ? (
-                                <Ionicons name="checkmark" size={20} color={Colors.white} />
+                                <Ionicons name="checkmark" size={20} color="#000000" />
                               ) : (
                                 <MaterialCommunityIcons name="mosque" size={18} color={colors.textMuted} />
                               )}
@@ -1494,7 +1494,7 @@ export default function DashboardScreen() {
                                     <View style={s.aqidahLeafRow}>
                                       <Pressable onPress={() => toggleAkhlaqItem(item.key)} style={s.aqidahLeafCheckArea}>
                                         <View style={[s.akhlaqCheckBox, { borderColor: colors.textMuted }, isChecked && { backgroundColor: cardColor, borderColor: cardColor }]}>
-                                          {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                                          {isChecked && <Ionicons name="checkmark" size={12} color="#000000" />}
                                         </View>
                                         <Text style={[s.akhlaqItemText, { color: colors.textPrimary }, isChecked && { color: colors.textMuted, textDecorationLine: 'line-through' as const }]}>{getAkhlaqLabel(item)}</Text>
                                       </Pressable>
@@ -1529,7 +1529,7 @@ export default function DashboardScreen() {
                                           multiline
                                         />
                                         <Pressable onPress={() => saveAkhlaqNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: cardColor }]}>
-                                          <Ionicons name="checkmark" size={16} color={Colors.white} />
+                                          <Ionicons name="checkmark" size={16} color="#000000" />
                                         </Pressable>
                                       </View>
                                     )}
@@ -1593,7 +1593,7 @@ export default function DashboardScreen() {
                                           <View style={s.aqidahLeafRow}>
                                             <Pressable onPress={() => toggleAqidahItem(item.key)} style={s.aqidahLeafCheckArea}>
                                               <View style={[s.akhlaqCheckBox, { borderColor: colors.textMuted }, isChecked && { backgroundColor: pillar.iconColor, borderColor: pillar.iconColor }]}>
-                                                {isChecked && <Ionicons name="checkmark" size={12} color={Colors.white} />}
+                                                {isChecked && <Ionicons name="checkmark" size={12} color="#000000" />}
                                               </View>
                                               <Text style={[s.aqidahLeafText, { color: colors.textPrimary }, isChecked && { color: colors.textMuted, textDecorationLine: 'line-through' as const }]}>
                                                 {getLabel(item, lang)}
@@ -1635,7 +1635,7 @@ export default function DashboardScreen() {
                                                 multiline
                                               />
                                               <Pressable onPress={() => saveAqidahNote(item.key)} style={[s.aqidahNoteSaveBtn, { backgroundColor: pillar.iconColor }]}>
-                                                <Ionicons name="checkmark" size={16} color={Colors.white} />
+                                                <Ionicons name="checkmark" size={16} color="#000000" />
                                               </Pressable>
                                             </View>
                                           )}
