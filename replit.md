@@ -26,7 +26,8 @@ Preferred communication style: Simple, everyday language.
 ### Frontend (Expo/React Native)
 
 - **Framework:** Expo SDK 54 with expo-router v6 for file-based routing
-- **State Management:** React Context API (`AuthProvider`, `AppProvider`) + TanStack React Query for server state
+- **State Management:** React Context API (`AuthProvider`, `AppProvider`, `ThemeProvider`) + TanStack React Query for server state
+- **Dark Mode:** Full dark/light theme support via `ThemeProvider` (lib/theme-context.tsx). Persists via AsyncStorage. Toggle in Settings. Applied to all screens: Auth, Profile Completion, Home, Dashboard, Bacheca, Settings, tab bar.
 - **Navigation:** File-based routing via expo-router with a tab layout (`(tabs)/`) containing 4 tabs: Home, Dashboard, Bacheca, Settings
 - **Styling:** React Native StyleSheet with a pastel color theme (mint green, peach pink, sky blue, cream beige). Font: Nunito (Google Fonts). Generous border radius (24-32px), soft shadows
 - **Animations:** react-native-reanimated for fade/zoom transitions
