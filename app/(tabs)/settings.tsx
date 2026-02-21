@@ -665,7 +665,7 @@ export default function SettingsScreen() {
                     <Text style={styles.pricingPrice}>€2.99<Text style={styles.pricingDetail}> /{t('month')}</Text></Text>
                   </View>
                   <View style={styles.pricingBuyBtn}>
-                    <Text style={styles.pricingBuyText}>{t('save')}</Text>
+                    <Text style={styles.pricingBuyText}>{t('buy')}</Text>
                   </View>
                 </View>
               </Pressable>
@@ -690,7 +690,7 @@ export default function SettingsScreen() {
                     <Text style={styles.pricingPrice}>€24.99<Text style={styles.pricingDetail}> /{t('year')}</Text></Text>
                   </View>
                   <View style={[styles.pricingBuyBtn, { backgroundColor: Colors.goldAccent }]}>
-                    <Text style={styles.pricingBuyText}>{t('save')}</Text>
+                    <Text style={styles.pricingBuyText}>{t('buy')}</Text>
                   </View>
                 </View>
               </Pressable>
@@ -715,7 +715,7 @@ export default function SettingsScreen() {
                     <Text style={styles.pricingPrice}>€49.99<Text style={styles.pricingDetail}> {t('oneTime')}</Text></Text>
                   </View>
                   <View style={[styles.pricingBuyBtn, { backgroundColor: '#9C27B0' }]}>
-                    <Text style={styles.pricingBuyText}>{t('save')}</Text>
+                    <Text style={styles.pricingBuyText}>{t('buy')}</Text>
                   </View>
                 </View>
               </Pressable>

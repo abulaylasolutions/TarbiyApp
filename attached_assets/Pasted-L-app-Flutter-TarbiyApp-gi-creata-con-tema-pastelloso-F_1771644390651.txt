@@ -1,0 +1,40 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Firebase per sync, Home, Dashboard, Bacheca, Impostazioni, selezione avatar, Aqidah/Educazione, eventi custom, pairing cogenitori, e sezione Premium.
+
+ORA IMPLEMENTA I BLOCCHI PREMIUM NEL MODO SEGUENTE, senza riscrivere l'intera app:
+
+Nella versione gratuita (senza Premium), blocca esattamente queste feature:
+
+1. Bacheca (Note condivise): completamente bloccata
+   - Se utente apre Bacheca → mostra overlay pastello con messaggio "Sblocca la Bacheca con Premium per condividere note con il cogenitore" + pulsante "Scopri Premium" che porta alla schermata piani
+   - Disabilita creazione/modifica/archivio note (no tasto +, no long-press, no drag)
+
+2. Più di 1 figlio: limite massimo a 1 figlio attivo
+   - In Home: se utente ha già 1 figlio e prova ad aggiungere un secondo → mostra overlay "Passa a Premium per figli illimitati" + pulsante "Scopri Premium"
+   - Disabilita tasto + in Home se figli.length >= 1
+
+3. Creazione eventi customizzati: tasto + in Dashboard disabilitato
+   - Tasto + a destra di "Eventi di oggi" → se !premium mostra overlay "Premium richiesto per aggiungere eventi personalizzati" + pulsante "Scopri Premium"
+   - Disabilita onTap del tasto +
+
+4. Sincronizzazione con genitore (pairing cogenitori): limitata
+   - In Impostazioni sezione "Cogenitori": se !premium disabilita input codice invito e pulsante "Collega cogenitore"
+   - Mostra overlay "Premium richiesto per sincronizzare con cogenitore" + pulsante "Scopri Premium"
+
+5. Sure memorizzate (Memorizzazione del Qur'an): solo lettura
+   - Sezione "Memorizzazione del Qur'an" visibile ma disabilitata: no tap per cambiare stato sure, no conteggio X/114 aggiornabile
+   - Mostra overlay "Sblocca con Premium per memorizzare le Sure" + pulsante "Scopri Premium"
+
+Cosa resta attiva nella versione gratuita:
+- Home con max 1 figlio (lista + placeholder avatar/lettera iniziale)
+- Dashboard base (Salah, Digiuno, Lettura Qur'an oggi, sezioni fisse Educazione/Aqidah/Akhlaq senza modifiche avanzate)
+- Impostazioni base (lingua, reminder, Instagram, Segnala problema)
+
+Implementazione:
+- Usa Provider o Riverpod per stato isPremium (true se users/isPremium == true o premiumUntil > DateTime.now())
+- Per ogni feature bloccata: se !isPremium → mostra overlay trasparente pastello con messaggio chiaro + pulsante "Scopri Premium" che naviga a Premium screen
+- Overlay: Container con Column centrata, testo bold, pulsante verde menta
+- Dopo acquisto Premium: aggiorna Firestore users/isPremium: true (o premiumUntil) e refresh UI globale
+
+Mantieni responsive, animazioni soft (fade su overlay). Aggiungi debugPrint("Feature bloccata: $featureName") per test.
+
+Modifica dashboard_screen.dart (blocchi eventi custom, sure), home_screen.dart (limite 1 figlio), bacheca_screen.dart (blocco completo), settings_screen.dart (blocco pairing), e crea overlay_widget.dart riutilizzabile. Inizia subito con questi blocchi Premium precisi!

@@ -18,11 +18,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeOut, ZoomIn, FadeInDown } from 'react-native-reanimated';
+import { useRouter } from 'expo-router';
 import { useApp, Note, Child } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest } from '@/lib/query-client';
 import Colors from '@/constants/colors';
+import PremiumOverlay from '@/components/PremiumOverlay';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_WIDTH = (SCREEN_WIDTH - 52) / 2;
@@ -205,6 +207,8 @@ export default function BachecaScreen() {
   const { t, isRTL } = useI18n();
   const { notes, children, addNote, updateNote, removeNote, refreshNotes } = useApp();
   const { user } = useAuth();
+  const isPremium = user?.isPremium;
+  const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showArchive, setShowArchive] = useState(false);
@@ -368,16 +372,26 @@ export default function BachecaScreen() {
         style={StyleSheet.absoluteFill}
       />
 
+      {!isPremium && (
+        <PremiumOverlay
+          message={t('premiumBlockBacheca')}
+          icon="newspaper"
+          onDiscover={() => router.push('/(tabs)/settings')}
+        />
+      )}
+
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingTop: topPadding + 16 }]}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!!isPremium}
       >
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>{t('bacheca_title')}</Text>
             <Text style={styles.headerSubtitle}>Note condivise tra genitori</Text>
           </View>
+          {isPremium && (
           <Pressable
             onPress={() => {
               loadArchivedNotes();
@@ -387,6 +401,7 @@ export default function BachecaScreen() {
           >
             <Ionicons name="archive-outline" size={20} color={Colors.textSecondary} />
           </Pressable>
+          )}
         </View>
 
         {notes.length === 0 ? (
@@ -413,6 +428,7 @@ export default function BachecaScreen() {
         <View style={{ height: Platform.OS === 'web' ? 34 : 100 }} />
       </ScrollView>
 
+      {isPremium && (
       <Pressable
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -430,6 +446,7 @@ export default function BachecaScreen() {
       >
         <Ionicons name="add" size={28} color={Colors.white} />
       </Pressable>
+      )}
 
       {snackbar?.visible && (
         <Animated.View
