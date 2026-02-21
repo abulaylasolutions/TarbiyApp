@@ -20,10 +20,14 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
+import { useI18n, getLanguageLabel, type Language } from '@/lib/i18n';
+
+const LANG_OPTIONS: Language[] = ['en', 'it'];
 
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const { login, register } = useAuth();
+  const { t, lang, setLang } = useI18n();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -38,17 +42,17 @@ export default function AuthScreen() {
     setErrorMessage('');
 
     if (!email.trim() || !password.trim()) {
-      setErrorMessage('Email e password sono richiesti');
+      setErrorMessage(t('authEmailPasswordRequired'));
       return;
     }
 
     if (!isLogin && password !== confirmPassword) {
-      setErrorMessage('Le password non corrispondono');
+      setErrorMessage(t('authPasswordMismatch'));
       return;
     }
 
     if (!isLogin && password.length < 6) {
-      setErrorMessage('La password deve avere almeno 6 caratteri');
+      setErrorMessage(t('authPasswordMinLength'));
       return;
     }
 
@@ -62,7 +66,7 @@ export default function AuthScreen() {
     setLoading(false);
 
     if (!result.success) {
-      setErrorMessage(result.message || 'Si è verificato un errore');
+      setErrorMessage(result.message || t('authGenericError'));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     } else {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -73,8 +77,15 @@ export default function AuthScreen() {
   const handleSocialLogin = (provider: string) => {
     Alert.alert(
       `${provider} Login`,
-      `L'accesso con ${provider} richiede la configurazione delle credenziali OAuth. Disponibile nella versione completa.`,
+      `${provider} ${t('authSocialNotAvailable')}`,
     );
+  };
+
+  const cycleLang = () => {
+    const idx = LANG_OPTIONS.indexOf(lang as Language);
+    const next = LANG_OPTIONS[(idx + 1) % LANG_OPTIONS.length];
+    setLang(next);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   return (
@@ -94,6 +105,14 @@ export default function AuthScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.langSwitcherRow}>
+            <Pressable onPress={cycleLang} style={styles.langSwitcherBtn}>
+              <Ionicons name="globe-outline" size={18} color={Colors.mintGreenDark} />
+              <Text style={styles.langSwitcherText}>{getLanguageLabel(lang as Language)}</Text>
+              <Ionicons name="chevron-down" size={14} color={Colors.textMuted} />
+            </Pressable>
+          </Animated.View>
+
           <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.logoSection}>
             <View style={styles.logoCircle}>
               <Image source={require('@/assets/images/logo.png')} style={styles.logoImage} resizeMode="contain" />
@@ -102,7 +121,7 @@ export default function AuthScreen() {
               <Text style={styles.brandTarbiy}>Tarbiy</Text>
               <Text style={styles.brandApp}>App</Text>
             </Text>
-            <Text style={styles.tagline}>Educazione islamica per i tuoi figli</Text>
+            <Text style={styles.tagline}>{t('authTagline')}</Text>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.formCard}>
@@ -111,13 +130,13 @@ export default function AuthScreen() {
                 onPress={() => { setIsLogin(true); setErrorMessage(''); }}
                 style={[styles.tab, isLogin && styles.tabActive]}
               >
-                <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>Accedi</Text>
+                <Text style={[styles.tabText, isLogin && styles.tabTextActive]}>{t('authLogin')}</Text>
               </Pressable>
               <Pressable
                 onPress={() => { setIsLogin(false); setErrorMessage(''); }}
                 style={[styles.tab, !isLogin && styles.tabActive]}
               >
-                <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>Registrati</Text>
+                <Text style={[styles.tabText, !isLogin && styles.tabTextActive]}>{t('authSignUp')}</Text>
               </Pressable>
             </View>
 
@@ -164,7 +183,7 @@ export default function AuthScreen() {
                   <Ionicons name="lock-closed-outline" size={20} color={Colors.textMuted} style={styles.inputIcon} />
                   <TextInput
                     style={styles.input}
-                    placeholder="Conferma password"
+                    placeholder={t('authConfirmPassword')}
                     placeholderTextColor={Colors.textMuted}
                     value={confirmPassword}
                     onChangeText={setConfirmPassword}
@@ -193,7 +212,7 @@ export default function AuthScreen() {
                   <ActivityIndicator color={Colors.white} />
                 ) : (
                   <Text style={styles.submitText}>
-                    {isLogin ? 'Accedi' : 'Registrati'}
+                    {isLogin ? t('authLogin') : t('authSignUp')}
                   </Text>
                 )}
               </LinearGradient>
@@ -201,7 +220,7 @@ export default function AuthScreen() {
 
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>oppure</Text>
+              <Text style={styles.dividerText}>{t('authOr')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -225,7 +244,7 @@ export default function AuthScreen() {
 
           <Animated.View entering={FadeInDown.delay(300).duration(500)}>
             <Text style={styles.footerText}>
-              I tuoi dati sono al sicuro con noi
+              {t('authDataSecure')}
             </Text>
           </Animated.View>
         </ScrollView>
@@ -247,6 +266,26 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: 24,
+  },
+  langSwitcherRow: {
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  langSwitcherBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.white,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.mintGreenLight,
+  },
+  langSwitcherText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 13,
+    color: Colors.textPrimary,
   },
   logoSection: {
     alignItems: 'center',

@@ -5,6 +5,20 @@ export type Language = 'it' | 'en' | 'ar';
 
 const translations: Record<Language, Record<string, string>> = {
   it: {
+    authLogin: 'Accedi',
+    authSignUp: 'Registrati',
+    authEmail: 'Email',
+    authPassword: 'Password',
+    authConfirmPassword: 'Conferma password',
+    authTagline: 'Educazione islamica per i tuoi figli',
+    authOr: 'oppure',
+    authDataSecure: 'I tuoi dati sono al sicuro con noi',
+    authEmailPasswordRequired: 'Email e password sono richiesti',
+    authPasswordMismatch: 'Le password non corrispondono',
+    authPasswordMinLength: 'La password deve avere almeno 6 caratteri',
+    authGenericError: 'Si è verificato un errore',
+    authSocialNotAvailable: 'richiede la configurazione delle credenziali OAuth. Disponibile nella versione completa.',
+    languageLabel: 'Lingua',
     home: 'Home',
     dashboard: 'Dashboard',
     bacheca: 'Bacheca',
@@ -248,6 +262,20 @@ const translations: Record<Language, Record<string, string>> = {
     prayedIsha: 'Ha pregato Salat Al-Isha',
   },
   en: {
+    authLogin: 'Login',
+    authSignUp: 'Sign Up',
+    authEmail: 'Email',
+    authPassword: 'Password',
+    authConfirmPassword: 'Confirm password',
+    authTagline: 'Islamic education for your children',
+    authOr: 'or',
+    authDataSecure: 'Your data is safe with us',
+    authEmailPasswordRequired: 'Email and password are required',
+    authPasswordMismatch: 'Passwords do not match',
+    authPasswordMinLength: 'Password must be at least 6 characters',
+    authGenericError: 'An error occurred',
+    authSocialNotAvailable: 'requires OAuth credentials setup. Available in the full version.',
+    languageLabel: 'Language',
     home: 'Home',
     dashboard: 'Dashboard',
     bacheca: 'Board',
@@ -491,6 +519,20 @@ const translations: Record<Language, Record<string, string>> = {
     prayedIsha: 'Prayed Salat Al-Isha',
   },
   ar: {
+    authLogin: 'تسجيل الدخول',
+    authSignUp: 'إنشاء حساب',
+    authEmail: 'البريد الإلكتروني',
+    authPassword: 'كلمة المرور',
+    authConfirmPassword: 'تأكيد كلمة المرور',
+    authTagline: 'التربية الإسلامية لأطفالك',
+    authOr: 'أو',
+    authDataSecure: 'بياناتك آمنة معنا',
+    authEmailPasswordRequired: 'البريد الإلكتروني وكلمة المرور مطلوبان',
+    authPasswordMismatch: 'كلمات المرور غير متطابقة',
+    authPasswordMinLength: 'يجب أن تكون كلمة المرور 6 أحرف على الأقل',
+    authGenericError: 'حدث خطأ',
+    authSocialNotAvailable: 'يتطلب إعداد بيانات OAuth. متاح في النسخة الكاملة.',
+    languageLabel: 'اللغة',
     home: 'الرئيسية',
     dashboard: 'لوحة التحكم',
     bacheca: 'اللوحة',
@@ -745,7 +787,7 @@ interface I18nContextValue {
 const I18nContext = createContext<I18nContextValue | null>(null);
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState] = useState<Language>('it');
+  const [lang, setLangState] = useState<Language>('en');
 
   const isRTL = lang === 'ar';
 
@@ -758,7 +800,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const t = useCallback((key: string): string => {
-    return translations[lang]?.[key] || translations.it[key] || key;
+    return translations[lang]?.[key] || translations.en[key] || key;
   }, [lang]);
 
   const value = useMemo(() => ({

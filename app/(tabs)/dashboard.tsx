@@ -24,7 +24,7 @@ import { gregorianToHijri, getHijriMonthName, getCurrentHijriYear } from '@/lib/
 
 const PASTEL_COLORS = [
   '#FF9999', '#FFCC99', '#FFFF99', '#99FF99', '#99FFFF', '#9999FF', '#CC99FF',
-  '#FFC1CC', '#FF99CC', '#E8C39E', '#E0E0E0', '#B2D8B2', '#B2F2E8', '#D7BDE2',
+  '#FF0000', '#FFA500', '#FFFF00', '#00FF00', '#00FFFF', '#0000FF', '#800080',
 ];
 
 const TIME_SLOTS: string[] = [];
