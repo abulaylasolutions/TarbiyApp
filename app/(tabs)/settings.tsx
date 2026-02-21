@@ -175,28 +175,6 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
         </View>
       )}
 
-      {!isPremium ? (
-        <View style={styles.addCogenitoreSection}>
-          <View style={{ alignItems: 'center', padding: 16, gap: 12 }}>
-            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: Colors.mintGreenLight, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="lock-closed" size={22} color={Colors.mintGreenDark} />
-            </View>
-            <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 14, color: Colors.textPrimary, textAlign: 'center', lineHeight: 20 }}>
-              {t('premiumBlockPairing')}
-            </Text>
-            <Pressable
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                onOpenPremium?.();
-              }}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: Colors.mintGreen, borderRadius: 14, paddingHorizontal: 18, paddingVertical: 10 }}
-            >
-              <Ionicons name="star" size={14} color={Colors.white} />
-              <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 14, color: Colors.white }}>{t('discoverPremium')}</Text>
-            </Pressable>
-          </View>
-        </View>
-      ) : (
       <View style={styles.addCogenitoreSection}>
         <Text style={styles.addCogLabel}>
           {cogenitori.length === 0
@@ -234,7 +212,6 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
           </Pressable>
         </View>
       </View>
-      )}
     </View>
   );
 }
