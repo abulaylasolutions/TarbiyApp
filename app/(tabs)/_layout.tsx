@@ -6,9 +6,9 @@ import { Platform, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
-import Colors from "@/constants/colors";
 import { AppProvider } from "@/lib/app-context";
 import { useI18n } from "@/lib/i18n";
+import { useTheme } from "@/lib/theme-context";
 
 function NativeTabLayout() {
   const { t } = useI18n();
@@ -39,26 +39,27 @@ function ClassicTabLayout() {
   const isIOS = Platform.OS === "ios";
   const safeAreaInsets = useSafeAreaInsets();
   const { t } = useI18n();
+  const { colors } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: Colors.mintGreenDark,
-        tabBarInactiveTintColor: Colors.textMuted,
+        tabBarActiveTintColor: colors.mintGreenDark,
+        tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: {
           fontFamily: "Nunito_600SemiBold",
           fontSize: 11,
         },
         tabBarStyle: {
           position: "absolute",
-          backgroundColor: isIOS ? "transparent" : Colors.white,
+          backgroundColor: isIOS ? "transparent" : colors.tabBarBg,
           borderTopWidth: isWeb ? 1 : 0,
-          borderTopColor: Colors.creamBeige,
+          borderTopColor: colors.tabBarBorder,
           elevation: 0,
-          shadowColor: Colors.shadow,
+          shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
+          shadowOpacity: colors.shadowOpacity,
           shadowRadius: 8,
           paddingBottom: isWeb ? 0 : safeAreaInsets.bottom,
           ...(isWeb ? { height: 84 } : {}),
@@ -67,14 +68,14 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={95}
-              tint="light"
+              tint={colors.blurTint}
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
             <View
               style={[
                 StyleSheet.absoluteFill,
-                { backgroundColor: Colors.white },
+                { backgroundColor: colors.tabBarBg },
               ]}
             />
           ) : null,

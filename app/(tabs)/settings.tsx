@@ -25,6 +25,7 @@ import { useApp, CogenitoreInfo } from '@/lib/app-context';
 import { apiRequest } from '@/lib/query-client';
 import { useI18n, getLanguageLabel, Language } from '@/lib/i18n';
 import Colors from '@/constants/colors';
+import { useTheme } from '@/lib/theme-context';
 import PremiumOverlay from '@/components/PremiumOverlay';
 
 interface SettingsRowProps {
@@ -38,22 +39,23 @@ interface SettingsRowProps {
 }
 
 function SettingsRow({ icon, iconColor, iconBg, label, value, onPress, isLast }: SettingsRowProps) {
+  const { colors } = useTheme();
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.settingsRow,
-        !isLast && styles.settingsRowBorder,
+        !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
         pressed && onPress ? { opacity: 0.7 } : {},
       ]}
     >
       <View style={[styles.settingsIcon, { backgroundColor: iconBg }]}>
         <Ionicons name={icon as any} size={18} color={iconColor} />
       </View>
-      <Text style={styles.settingsLabel}>{label}</Text>
+      <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{label}</Text>
       <View style={styles.settingsRight}>
-        {value && <Text style={styles.settingsValue}>{value}</Text>}
-        {onPress && <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />}
+        {value && <Text style={[styles.settingsValue, { color: colors.textMuted }]}>{value}</Text>}
+        {onPress && <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />}
       </View>
     </Pressable>
   );
@@ -63,6 +65,7 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
   const { user, refreshUser } = useAuth();
   const { cogenitori, refreshCogenitori } = useApp();
   const { t } = useI18n();
+  const { colors, isDark } = useTheme();
   const isPremium = user?.isPremium;
   const [inviteCodeInput, setInviteCodeInput] = useState('');
   const [pairing, setPairing] = useState(false);
@@ -125,18 +128,18 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
   };
 
   return (
-    <View style={styles.cogenitoreCard}>
+    <View style={[styles.cogenitoreCard, { backgroundColor: colors.cardBackground }]}>
       <View style={styles.cogenitoreHeader}>
-        <Ionicons name="people" size={20} color={Colors.skyBlueDark} />
-        <Text style={styles.cogenitoreTitle}>{t('coParents')}</Text>
+        <Ionicons name="people" size={20} color={isDark ? '#64B5F6' : Colors.skyBlueDark} />
+        <Text style={[styles.cogenitoreTitle, { color: colors.textPrimary }]}>{t('coParents')}</Text>
       </View>
 
-      <Pressable onPress={copyInviteCode} style={styles.inviteCodeBox}>
+      <Pressable onPress={copyInviteCode} style={[styles.inviteCodeBox, { backgroundColor: colors.mintGreenLight }]}>
         <View>
-          <Text style={styles.inviteCodeLabel}>{t('yourInviteCode')}</Text>
-          <Text style={styles.inviteCodeValue}>{user?.personalInviteCode || '------'}</Text>
+          <Text style={[styles.inviteCodeLabel, { color: colors.textSecondary }]}>{t('yourInviteCode')}</Text>
+          <Text style={[styles.inviteCodeValue, { color: colors.mintGreenDark }]}>{user?.personalInviteCode || '------'}</Text>
         </View>
-        <Ionicons name="copy-outline" size={20} color={Colors.mintGreenDark} />
+        <Ionicons name="copy-outline" size={20} color={colors.mintGreenDark} />
       </Pressable>
 
       {cogenitori.length > 0 && (
@@ -176,26 +179,26 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
       )}
 
       <View style={styles.addCogenitoreSection}>
-        <Text style={styles.addCogLabel}>
+        <Text style={[styles.addCogLabel, { color: colors.textSecondary }]}>
           {cogenitori.length === 0
             ? t('connectFirstCoParent')
             : t('addAnotherCoParent')}
         </Text>
 
         {errorMsg ? (
-          <View style={styles.errorBox}>
-            <Ionicons name="alert-circle" size={14} color={Colors.danger} />
-            <Text style={styles.errorBoxText}>{errorMsg}</Text>
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerLight }]}>
+            <Ionicons name="alert-circle" size={14} color={colors.danger} />
+            <Text style={[styles.errorBoxText, { color: colors.danger }]}>{errorMsg}</Text>
           </View>
         ) : null}
 
         <View style={styles.pairInputRow}>
           <TextInput
-            style={styles.pairInput}
+            style={[styles.pairInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
             value={inviteCodeInput}
             onChangeText={(t) => setInviteCodeInput(t.toUpperCase().slice(0, 6))}
             placeholder={t('code6chars')}
-            placeholderTextColor={Colors.textMuted}
+            placeholderTextColor={colors.textMuted}
             autoCapitalize="characters"
             maxLength={6}
           />
@@ -283,6 +286,7 @@ export default function SettingsScreen() {
   const { user, logout, updatePremium, refreshUser, updateProfile } = useAuth();
   const { children } = useApp();
   const { lang, setLang, t, isRTL } = useI18n();
+  const { isDark, toggleDark, colors } = useTheme();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
@@ -381,17 +385,17 @@ export default function SettingsScreen() {
   ];
 
   return (
-    <View style={[styles.container, { direction: isRTL ? 'rtl' : 'ltr' }]}>
+    <View style={[styles.container, { backgroundColor: colors.background, direction: isRTL ? 'rtl' : 'ltr' }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[styles.content, { paddingTop: topPadding + 16 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.headerTitle}>{t('settings')}</Text>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>{t('settings')}</Text>
 
         <Pressable onPress={openEditModal} style={({ pressed }) => [styles.profileCard, pressed && { opacity: 0.9 }]}>
           <LinearGradient
-            colors={['#A8E6CF', '#C7CEEA'] as const}
+            colors={[colors.headerGradient1, colors.headerGradient2] as const}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.profileGradient}
@@ -415,7 +419,7 @@ export default function SettingsScreen() {
             style={({ pressed }) => [styles.premiumBanner, pressed && { opacity: 0.9 }]}
           >
             <LinearGradient
-              colors={['#6BBF9A', '#A8E6CF'] as const}
+              colors={[colors.premiumGradient1, colors.premiumGradient2] as const}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
               style={styles.premiumGradient}
@@ -433,12 +437,12 @@ export default function SettingsScreen() {
         <PendingApprovalsSection />
         <CogenitoriSection onOpenPremium={() => setShowPremiumModal(true)} />
 
-        <Text style={styles.sectionTitle}>{t('general')}</Text>
-        <View style={styles.settingsCardWrap}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('general')}</Text>
+        <View style={[styles.settingsCardWrap, { backgroundColor: colors.cardBackground }]}>
           <SettingsRow
             icon="person"
-            iconColor={Colors.mintGreenDark}
-            iconBg={Colors.mintGreenLight}
+            iconColor={colors.mintGreenDark}
+            iconBg={colors.mintGreenLight}
             label={t('account')}
             value={user?.name || user?.email || ''}
             onPress={openEditModal}
@@ -446,18 +450,18 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="language"
             iconColor={Colors.skyBlueDark}
-            iconBg={Colors.skyBlueLight}
+            iconBg={isDark ? '#1A3A5C' : Colors.skyBlueLight}
             label={t('language')}
             value={getLanguageLabel(lang)}
             onPress={() => setShowLangModal(true)}
           />
-          <View style={[styles.settingsRow, styles.settingsRowBorder]}>
-            <View style={[styles.settingsIcon, { backgroundColor: Colors.mintGreenLight }]}>
-              <Ionicons name="calendar" size={18} color={Colors.mintGreenDark} />
+          <View style={[styles.settingsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+            <View style={[styles.settingsIcon, { backgroundColor: colors.mintGreenLight }]}>
+              <Ionicons name="calendar" size={18} color={colors.mintGreenDark} />
             </View>
-            <Text style={styles.settingsLabel}>{t('hijriCalendar')}</Text>
+            <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{t('hijriCalendar')}</Text>
             <View style={styles.settingsRight}>
-              <Text style={[styles.settingsValue, { marginRight: 8 }]}>
+              <Text style={[styles.settingsValue, { marginRight: 8, color: colors.textMuted }]}>
                 {(user as any)?.preferredHijriCalendar ? t('hijriOn') : t('hijriOff')}
               </Text>
               <Pressable
@@ -470,12 +474,35 @@ export default function SettingsScreen() {
                   } catch {}
                 }}
                 style={[
-                  { width: 48, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3, backgroundColor: (user as any)?.preferredHijriCalendar ? Colors.mintGreen : Colors.textMuted + '40' },
+                  { width: 48, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3, backgroundColor: (user as any)?.preferredHijriCalendar ? colors.mintGreen : colors.textMuted + '40' },
                 ]}
               >
                 <View style={{
-                  width: 22, height: 22, borderRadius: 11, backgroundColor: Colors.white,
+                  width: 22, height: 22, borderRadius: 11, backgroundColor: colors.white,
                   alignSelf: (user as any)?.preferredHijriCalendar ? 'flex-end' : 'flex-start',
+                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+                }} />
+              </Pressable>
+            </View>
+          </View>
+          <View style={[styles.settingsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
+            <View style={[styles.settingsIcon, { backgroundColor: isDark ? '#2A2A4A' : '#E8EAF6' }]}>
+              <Ionicons name="moon" size={18} color={isDark ? '#BB86FC' : '#5C6BC0'} />
+            </View>
+            <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{t('darkMode')}</Text>
+            <View style={styles.settingsRight}>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  toggleDark();
+                }}
+                style={[
+                  { width: 48, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3, backgroundColor: isDark ? '#BB86FC' : colors.textMuted + '40' },
+                ]}
+              >
+                <View style={{
+                  width: 22, height: 22, borderRadius: 11, backgroundColor: colors.white,
+                  alignSelf: isDark ? 'flex-end' : 'flex-start',
                   shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
                 }} />
               </Pressable>
@@ -483,8 +510,8 @@ export default function SettingsScreen() {
           </View>
           <SettingsRow
             icon="star"
-            iconColor={Colors.mintGreenDark}
-            iconBg={Colors.mintGreenLight}
+            iconColor={colors.mintGreenDark}
+            iconBg={colors.mintGreenLight}
             label={t('plan')}
             value={user?.isPremium ? t('premium') : t('free')}
             onPress={() => setShowPremiumModal(true)}
@@ -492,27 +519,27 @@ export default function SettingsScreen() {
           />
         </View>
 
-        <Text style={styles.sectionTitle}>{t('info')}</Text>
-        <View style={styles.settingsCardWrap}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{t('info')}</Text>
+        <View style={[styles.settingsCardWrap, { backgroundColor: colors.cardBackground }]}>
           <SettingsRow
             icon="shield-checkmark"
-            iconColor={Colors.mintGreenDark}
-            iconBg={Colors.mintGreenLight}
+            iconColor={colors.mintGreenDark}
+            iconBg={colors.mintGreenLight}
             label={t('privacy')}
             onPress={() => Alert.alert(t('privacy'), t('privacyMsg'))}
           />
           <SettingsRow
             icon="information-circle"
             iconColor={Colors.skyBlueDark}
-            iconBg={Colors.skyBlueLight}
+            iconBg={isDark ? '#1A3A5C' : Colors.skyBlueLight}
             label={t('version')}
             value="1.0.0"
             isLast
           />
         </View>
 
-        <Text style={styles.sectionTitle}>{lang === 'it' ? 'Contatti' : lang === 'ar' ? 'اتصل بنا' : 'Contact'}</Text>
-        <View style={styles.settingsCardWrap}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>{lang === 'it' ? 'Contatti' : lang === 'ar' ? 'اتصل بنا' : 'Contact'}</Text>
+        <View style={[styles.settingsCardWrap, { backgroundColor: colors.cardBackground }]}>
           <SettingsRow
             icon="logo-instagram"
             iconColor="#E1306C"
@@ -534,28 +561,28 @@ export default function SettingsScreen() {
           onPress={handleLogout}
           style={({ pressed }) => [styles.logoutBtn, pressed && { opacity: 0.8 }]}
         >
-          <Ionicons name="log-out" size={20} color={Colors.danger} />
-          <Text style={styles.logoutText}>{t('logout')}</Text>
+          <Ionicons name="log-out" size={20} color={colors.danger} />
+          <Text style={[styles.logoutText, { color: colors.danger }]}>{t('logout')}</Text>
         </Pressable>
 
-        <Text style={styles.footerText}>TarbiyApp v1.0.0</Text>
-        <Text style={styles.footerSubtext}>{t('islamicEducation')}</Text>
+        <Text style={[styles.footerText, { color: colors.textMuted }]}>TarbiyApp v1.0.0</Text>
+        <Text style={[styles.footerSubtext, { color: colors.textMuted }]}>{t('islamicEducation')}</Text>
 
         <View style={{ height: Platform.OS === 'web' ? 34 : 100 }} />
       </ScrollView>
 
       <Modal visible={showEditModal} animationType="slide" transparent>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-          <View style={styles.modalOverlay}>
+          <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
             <Pressable style={styles.modalDismiss} onPress={() => setShowEditModal(false)} />
             <Animated.View
               entering={FadeIn.duration(200)}
               exiting={FadeOut.duration(150)}
-              style={[styles.editModalContent, { paddingBottom: insets.bottom + 16 }]}
+              style={[styles.editModalContent, { paddingBottom: insets.bottom + 16, backgroundColor: colors.modalBackground }]}
             >
               <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
-                <View style={styles.modalHandle} />
-                <Text style={styles.editModalTitle}>{t('editProfile')}</Text>
+                <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
+                <Text style={[styles.editModalTitle, { color: colors.textPrimary }]}>{t('editProfile')}</Text>
 
                 {editError ? (
                   <View style={styles.errorBox}>
@@ -564,61 +591,61 @@ export default function SettingsScreen() {
                   </View>
                 ) : null}
 
-                <Text style={styles.editInputLabel}>{t('name')}</Text>
+                <Text style={[styles.editInputLabel, { color: colors.textSecondary }]}>{t('name')}</Text>
                 <TextInput
-                  style={styles.editInput}
+                  style={[styles.editInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                   value={editName}
                   onChangeText={setEditName}
                   placeholder={t('yourName')}
-                  placeholderTextColor={Colors.textMuted}
+                  placeholderTextColor={colors.textMuted}
                 />
 
-                <Text style={styles.editInputLabel}>Data di nascita</Text>
+                <Text style={[styles.editInputLabel, { color: colors.textSecondary }]}>Data di nascita</Text>
                 <View style={styles.editDateRow}>
                   <TextInput
-                    style={[styles.editInput, styles.editDateInput]}
+                    style={[styles.editInput, styles.editDateInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                     value={editBirthDay}
                     onChangeText={(t) => { if (t.length <= 2) setEditBirthDay(t); }}
                     placeholder="GG"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="number-pad"
                     maxLength={2}
                   />
                   <TextInput
-                    style={[styles.editInput, styles.editDateInput]}
+                    style={[styles.editInput, styles.editDateInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                     value={editBirthMonth}
                     onChangeText={(t) => { if (t.length <= 2) setEditBirthMonth(t); }}
                     placeholder="MM"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="number-pad"
                     maxLength={2}
                   />
                   <TextInput
-                    style={[styles.editInput, styles.editDateInputYear]}
+                    style={[styles.editInput, styles.editDateInputYear, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
                     value={editBirthYear}
                     onChangeText={(t) => { if (t.length <= 4) setEditBirthYear(t); }}
                     placeholder="AAAA"
-                    placeholderTextColor={Colors.textMuted}
+                    placeholderTextColor={colors.textMuted}
                     keyboardType="number-pad"
                     maxLength={4}
                   />
                 </View>
 
-                <Text style={styles.editInputLabel}>Genere</Text>
+                <Text style={[styles.editInputLabel, { color: colors.textSecondary }]}>Genere</Text>
                 <View style={styles.editGenderRow}>
                   <Pressable
                     onPress={() => setEditGender('male')}
-                    style={[styles.editGenderBtn, (editGender === 'male' || editGender === 'maschio') && styles.editGenderBtnActive]}
+                    style={[styles.editGenderBtn, { backgroundColor: colors.inputBackground }, (editGender === 'male' || editGender === 'maschio') && styles.editGenderBtnActive]}
                   >
-                    <Ionicons name="man" size={20} color={(editGender === 'male' || editGender === 'maschio') ? '#4A90E2' : Colors.textMuted} />
-                    <Text style={[styles.editGenderText, (editGender === 'male' || editGender === 'maschio') && { color: '#4A90E2' }]}>Uomo</Text>
+                    <Ionicons name="man" size={20} color={(editGender === 'male' || editGender === 'maschio') ? '#4A90E2' : colors.textMuted} />
+                    <Text style={[styles.editGenderText, { color: colors.textSecondary }, (editGender === 'male' || editGender === 'maschio') && { color: '#4A90E2' }]}>Uomo</Text>
                   </Pressable>
                   <Pressable
                     onPress={() => setEditGender('female')}
-                    style={[styles.editGenderBtn, (editGender === 'female' || editGender === 'femmina') && styles.editGenderBtnFemActive]}
+                    style={[styles.editGenderBtn, { backgroundColor: colors.inputBackground }, (editGender === 'female' || editGender === 'femmina') && styles.editGenderBtnFemActive]}
                   >
-                    <Ionicons name="woman" size={20} color={(editGender === 'female' || editGender === 'femmina') ? '#FF6B6B' : Colors.textMuted} />
-                    <Text style={[styles.editGenderText, (editGender === 'female' || editGender === 'femmina') && { color: '#FF6B6B' }]}>Donna</Text>
+                    <Ionicons name="woman" size={20} color={(editGender === 'female' || editGender === 'femmina') ? '#FF6B6B' : colors.textMuted} />
+                    <Text style={[styles.editGenderText, { color: colors.textSecondary }, (editGender === 'female' || editGender === 'femmina') && { color: '#FF6B6B' }]}>Donna</Text>
                   </Pressable>
                 </View>
 
@@ -643,14 +670,14 @@ export default function SettingsScreen() {
       </Modal>
 
       <Modal visible={showPremiumModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowPremiumModal(false)} />
           <Animated.View
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(150)}
-            style={[styles.premiumModalContent, { paddingBottom: insets.bottom + 16 }]}
+            style={[styles.premiumModalContent, { paddingBottom: insets.bottom + 16, backgroundColor: colors.modalBackground }]}
           >
-            <View style={styles.modalHandle} />
+            <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
             <LinearGradient
               colors={['#FFD700', '#FFA500']}
               start={{ x: 0, y: 0 }}
@@ -659,8 +686,8 @@ export default function SettingsScreen() {
             >
               <MaterialCommunityIcons name="crown" size={36} color={Colors.white} />
             </LinearGradient>
-            <Text style={styles.premiumModalTitle}>TarbiyApp Premium</Text>
-            <Text style={styles.premiumModalSub}>{t('premiumUnlock')}</Text>
+            <Text style={[styles.premiumModalTitle, { color: colors.textPrimary }]}>TarbiyApp Premium</Text>
+            <Text style={[styles.premiumModalSub, { color: colors.textSecondary }]}>{t('premiumUnlock')}</Text>
 
             <Text style={styles.premiumTrialNote}>{t('premiumTrial')}</Text>
 
@@ -676,7 +703,7 @@ export default function SettingsScreen() {
                   <View style={styles.premiumFeatureIcon}>
                     <Ionicons name={f.icon as any} size={18} color={Colors.mintGreenDark} />
                   </View>
-                  <Text style={styles.premiumFeatureText}>{f.text}</Text>
+                  <Text style={[styles.premiumFeatureText, { color: colors.textPrimary }]}>{f.text}</Text>
                 </View>
               ))}
             </View>
@@ -694,7 +721,7 @@ export default function SettingsScreen() {
                 <View style={styles.pricingCardRow}>
                   <View style={styles.pricingCardInfo}>
                     <Text style={styles.pricingPeriod}>{t('monthly')}</Text>
-                    <Text style={styles.pricingPrice}>€2.99<Text style={styles.pricingDetail}> /{t('month')}</Text></Text>
+                    <Text style={[styles.pricingPrice, { color: colors.textPrimary }]}>€2.99<Text style={[styles.pricingDetail, { color: colors.textMuted }]}> /{t('month')}</Text></Text>
                   </View>
                   <View style={styles.pricingBuyBtn}>
                     <Text style={styles.pricingBuyText}>{t('buy')}</Text>
@@ -772,29 +799,30 @@ export default function SettingsScreen() {
       </Modal>
 
       <Modal visible={showLangModal} animationType="slide" transparent>
-        <View style={styles.modalOverlay}>
+        <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
           <Pressable style={styles.modalDismiss} onPress={() => setShowLangModal(false)} />
           <Animated.View
             entering={FadeIn.duration(200)}
             exiting={FadeOut.duration(150)}
-            style={[styles.langModalContent, { paddingBottom: insets.bottom + 16 }]}
+            style={[styles.langModalContent, { paddingBottom: insets.bottom + 16, backgroundColor: colors.modalBackground }]}
           >
-            <View style={styles.modalHandle} />
-            <Text style={styles.editModalTitle}>{t('selectLanguage')}</Text>
+            <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
+            <Text style={[styles.editModalTitle, { color: colors.textPrimary }]}>{t('selectLanguage')}</Text>
             {langOptions.map((option, index) => (
               <Pressable
                 key={option.code}
                 onPress={() => handleSelectLanguage(option.code)}
                 style={[
                   styles.langOption,
-                  lang === option.code && styles.langOptionActive,
+                  { borderBottomColor: colors.border },
+                  lang === option.code && { backgroundColor: colors.mintGreenLight, borderRadius: 14 },
                   index === langOptions.length - 1 && { borderBottomWidth: 0 },
                 ]}
               >
                 <View style={[styles.langCircle, { backgroundColor: option.circleColor }]}>
                   <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.white }}>{option.circleText}</Text>
                 </View>
-                <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textPrimary, flex: 1 }}>{option.label}</Text>
+                <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: colors.textPrimary, flex: 1 }}>{option.label}</Text>
                 <View style={[styles.langRadio, lang === option.code && styles.langRadioActive]} />
               </Pressable>
             ))}
