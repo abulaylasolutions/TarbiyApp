@@ -26,6 +26,13 @@ const PASTEL_COLORS = [
   '#E0BBE4', '#FFF5BA', '#B2D8B2',
 ];
 
+const TIME_SLOTS: string[] = [];
+for (let h = 0; h < 24; h++) {
+  for (let m = 0; m < 60; m += 15) {
+    TIME_SLOTS.push(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+  }
+}
+
 const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
 type PrayerName = typeof PRAYER_NAMES[number];
 
@@ -1646,9 +1653,9 @@ export default function DashboardScreen() {
                       setNewTaskDays([]);
                       setNewTaskDayOfMonth('');
                     }}
-                    style={[s.freqBtn, newTaskFreq === freq && { backgroundColor: cardColor + '30', borderColor: cardColor }]}
+                    style={[s.freqBtn, newTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
                   >
-                    <Text style={[s.freqBtnText, newTaskFreq === freq && { color: cardColor }]}>{t(freq)}</Text>
+                    <Text style={[s.freqBtnText, newTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -1694,25 +1701,35 @@ export default function DashboardScreen() {
               <View style={s.timeRow}>
                 <View style={s.timeCol}>
                   <Text style={s.inputLabel}>{t('startTime')}</Text>
-                  <TextInput
-                    style={s.input}
-                    placeholder="HH:MM"
-                    placeholderTextColor={Colors.textMuted}
-                    value={newTaskTime}
-                    onChangeText={setNewTaskTime}
-                    keyboardType="numbers-and-punctuation"
-                  />
+                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>  
+                    <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+                      {TIME_SLOTS.map((slot) => (
+                        <Pressable
+                          key={slot}
+                          onPress={() => setNewTaskTime(slot)}
+                          style={[s.timeSlotItem, newTaskTime === slot && { backgroundColor: cardColor }]}
+                        >
+                          <Text style={[s.timeSlotText, newTaskTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
                 </View>
                 <View style={s.timeCol}>
                   <Text style={s.inputLabel}>{t('endTimePicker')}</Text>
-                  <TextInput
-                    style={s.input}
-                    placeholder="HH:MM"
-                    placeholderTextColor={Colors.textMuted}
-                    value={newTaskEndTime}
-                    onChangeText={setNewTaskEndTime}
-                    keyboardType="numbers-and-punctuation"
-                  />
+                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>
+                    <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+                      {TIME_SLOTS.map((slot) => (
+                        <Pressable
+                          key={slot}
+                          onPress={() => setNewTaskEndTime(slot)}
+                          style={[s.timeSlotItem, newTaskEndTime === slot && { backgroundColor: cardColor }]}
+                        >
+                          <Text style={[s.timeSlotText, newTaskEndTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
                 </View>
               </View>
 
@@ -1720,8 +1737,8 @@ export default function DashboardScreen() {
                 onPress={handleAddTask}
                 style={[s.saveBtn, { backgroundColor: cardColor }]}
               >
-                <Ionicons name="checkmark" size={20} color={Colors.white} />
-                <Text style={s.saveBtnText}>{t('save')}</Text>
+                <Ionicons name="checkmark" size={20} color="#000000" />
+                <Text style={[s.saveBtnText, { color: '#000000' }]}>{t('save')}</Text>
               </Pressable>
             </ScrollView>
           </View>
@@ -1782,9 +1799,9 @@ export default function DashboardScreen() {
                       setEditTaskDays([]);
                       setEditTaskDayOfMonth('');
                     }}
-                    style={[s.freqBtn, editTaskFreq === freq && { backgroundColor: cardColor + '30', borderColor: cardColor }]}
+                    style={[s.freqBtn, editTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
                   >
-                    <Text style={[s.freqBtnText, editTaskFreq === freq && { color: cardColor }]}>{t(freq)}</Text>
+                    <Text style={[s.freqBtnText, editTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -1830,25 +1847,35 @@ export default function DashboardScreen() {
               <View style={s.timeRow}>
                 <View style={s.timeCol}>
                   <Text style={s.inputLabel}>{t('startTime')}</Text>
-                  <TextInput
-                    style={s.input}
-                    placeholder="HH:MM"
-                    placeholderTextColor={Colors.textMuted}
-                    value={editTaskTime}
-                    onChangeText={setEditTaskTime}
-                    keyboardType="numbers-and-punctuation"
-                  />
+                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>
+                    <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+                      {TIME_SLOTS.map((slot) => (
+                        <Pressable
+                          key={slot}
+                          onPress={() => setEditTaskTime(slot)}
+                          style={[s.timeSlotItem, editTaskTime === slot && { backgroundColor: cardColor }]}
+                        >
+                          <Text style={[s.timeSlotText, editTaskTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
                 </View>
                 <View style={s.timeCol}>
                   <Text style={s.inputLabel}>{t('endTimePicker')}</Text>
-                  <TextInput
-                    style={s.input}
-                    placeholder="HH:MM"
-                    placeholderTextColor={Colors.textMuted}
-                    value={editTaskEndTime}
-                    onChangeText={setEditTaskEndTime}
-                    keyboardType="numbers-and-punctuation"
-                  />
+                  <View style={[s.timeDropdown, { borderColor: cardColor }]}>
+                    <ScrollView style={s.timeDropdownScroll} nestedScrollEnabled showsVerticalScrollIndicator>
+                      {TIME_SLOTS.map((slot) => (
+                        <Pressable
+                          key={slot}
+                          onPress={() => setEditTaskEndTime(slot)}
+                          style={[s.timeSlotItem, editTaskEndTime === slot && { backgroundColor: cardColor }]}
+                        >
+                          <Text style={[s.timeSlotText, editTaskEndTime === slot && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{slot}</Text>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
                 </View>
               </View>
 
@@ -1856,8 +1883,8 @@ export default function DashboardScreen() {
                 onPress={handleEditTask}
                 style={[s.saveBtn, { backgroundColor: cardColor }]}
               >
-                <Ionicons name="checkmark" size={20} color={Colors.white} />
-                <Text style={s.saveBtnText}>{t('save')}</Text>
+                <Ionicons name="checkmark" size={20} color="#000000" />
+                <Text style={[s.saveBtnText, { color: '#000000' }]}>{t('save')}</Text>
               </Pressable>
             </ScrollView>
           </View>
@@ -2207,8 +2234,19 @@ const s = StyleSheet.create({
     borderColor: Colors.creamBeige, backgroundColor: Colors.creamBeige,
   },
   dayChipText: { fontFamily: 'Nunito_600SemiBold', fontSize: 13, color: Colors.textSecondary },
-  timeRow: { flexDirection: 'row', gap: 12 },
+  timeRow: { flexDirection: 'row', gap: 12, marginBottom: 8 },
   timeCol: { flex: 1 },
+  timeDropdown: {
+    borderWidth: 2, borderRadius: 14, backgroundColor: Colors.creamBeige,
+    overflow: 'hidden', marginBottom: 8,
+  },
+  timeDropdownScroll: { maxHeight: 160 },
+  timeSlotItem: {
+    paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center',
+  },
+  timeSlotText: {
+    fontFamily: 'Nunito_500Medium', fontSize: 15, color: Colors.textPrimary,
+  },
   saveBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     paddingVertical: 16, borderRadius: 20, marginTop: 8,
