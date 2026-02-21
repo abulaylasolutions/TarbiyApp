@@ -4,11 +4,18 @@ const HIJRI_MONTHS = {
   ar: ['محرّم', 'صفر', 'ربيع الأول', 'ربيع الثاني', 'جمادى الأولى', 'جمادى الثانية', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'],
 };
 
+const HIJRI_MONTHS_SHORT = {
+  it: ['Muh', 'Saf', 'Rb1', 'Rb2', 'Jm1', 'Jm2', 'Raj', 'Sha', 'Ram', 'Shw', 'DhQ', 'DhH'],
+  en: ['Muh', 'Saf', 'Rb1', 'Rb2', 'Jm1', 'Jm2', 'Raj', 'Sha', 'Ram', 'Shw', 'DhQ', 'DhH'],
+  ar: ['محرم', 'صفر', 'رب1', 'رب2', 'جم1', 'جم2', 'رجب', 'شعب', 'رمض', 'شوا', 'ذقع', 'ذحج'],
+};
+
 export interface HijriDate {
   day: number;
   month: number;
   year: number;
   monthName: string;
+  monthNameShort: string;
 }
 
 export function gregorianToHijri(gDate: Date, lang: string = 'it'): HijriDate {
@@ -35,12 +42,14 @@ export function gregorianToHijri(gDate: Date, lang: string = 'it'): HijriDate {
   const hy = 30 * n + j - 30;
 
   const months = HIJRI_MONTHS[lang as keyof typeof HIJRI_MONTHS] || HIJRI_MONTHS.it;
+  const monthsShort = HIJRI_MONTHS_SHORT[lang as keyof typeof HIJRI_MONTHS_SHORT] || HIJRI_MONTHS_SHORT.it;
 
   return {
     day: hd,
     month: hm,
     year: hy,
     monthName: months[hm - 1] || '',
+    monthNameShort: monthsShort[hm - 1] || '',
   };
 }
 
