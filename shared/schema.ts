@@ -239,3 +239,18 @@ export type QuranLog = typeof quranLogs.$inferSelect;
 export type ChildCustomPhoto = typeof childCustomPhotos.$inferSelect;
 export type QuranDailyLog = typeof quranDailyLogs.$inferSelect;
 export type AqidahProgress = typeof aqidahProgress.$inferSelect;
+
+export const akhlaqNotes = pgTable("akhlaq_notes", {
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
+  childId: text("child_id").notNull(),
+  itemKey: text("item_key").notNull(),
+  note: text("note").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("akhlaq_notes_child_item_idx").on(table.childId, table.itemKey),
+]);
+
+export type AkhlaqNote = typeof akhlaqNotes.$inferSelect;

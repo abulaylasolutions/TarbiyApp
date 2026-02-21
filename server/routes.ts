@@ -56,6 +56,9 @@ import {
   getAqidahProgress,
   upsertAqidahProgress,
   getEducationFeed,
+  getAkhlaqNotes,
+  upsertAkhlaqNote,
+  deleteAkhlaqNote,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -765,6 +768,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { itemKey, checked, note } = req.body;
       if (!itemKey) return res.status(400).json({ message: "itemKey richiesto" });
       const result = await upsertAqidahProgress(req.params.childId as string, itemKey, checked, note);
+      return res.json(result);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.get("/api/children/:childId/akhlaq-notes", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const notes = await getAkhlaqNotes(req.params.childId as string);
+      return res.json(notes);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.post("/api/children/:childId/akhlaq-notes", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { itemKey, note } = req.body;
+      if (!itemKey) return res.status(400).json({ message: "itemKey richiesto" });
+      if (!note || !note.trim()) {
+        await deleteAkhlaqNote(req.params.childId as string, itemKey);
+        return res.json({ deleted: true });
+      }
+      const result = await upsertAkhlaqNote(req.params.childId as string, itemKey, note.trim());
       return res.json(result);
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });

@@ -1,7 +1,7 @@
 import { eq, or, and, inArray, sql, desc } from "drizzle-orm";
 import { db } from "./db";
-import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs, childCustomPhotos, aqidahProgress } from "@shared/schema";
-import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog, ChildCustomPhoto, AqidahProgress } from "@shared/schema";
+import { users, children, notes, comments, pendingChanges, customTasks, taskCompletions, prayerLogs, fastingLogs, activityLogs, quranLogs, quranDailyLogs, childCustomPhotos, aqidahProgress, akhlaqNotes } from "@shared/schema";
+import type { User, Child, Note, Comment, PendingChange, CustomTask, TaskCompletion, PrayerLog, FastingLog, ActivityLog, QuranLog, QuranDailyLog, ChildCustomPhoto, AqidahProgress, AkhlaqNote } from "@shared/schema";
 
 function generateInviteCode(): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -581,4 +581,26 @@ export async function getEducationFeed(childId: string): Promise<Array<{ type: s
 
   combined.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
   return combined.slice(0, 5);
+}
+
+export async function getAkhlaqNotes(childId: string): Promise<AkhlaqNote[]> {
+  return db.select().from(akhlaqNotes).where(eq(akhlaqNotes.childId, childId));
+}
+
+export async function upsertAkhlaqNote(childId: string, itemKey: string, note: string): Promise<AkhlaqNote> {
+  const existing = await db.select().from(akhlaqNotes).where(
+    and(eq(akhlaqNotes.childId, childId), eq(akhlaqNotes.itemKey, itemKey))
+  );
+  if (existing.length > 0) {
+    const result = await db.update(akhlaqNotes).set({ note, updatedAt: new Date() }).where(eq(akhlaqNotes.id, existing[0].id)).returning();
+    return result[0];
+  }
+  const result = await db.insert(akhlaqNotes).values({ childId, itemKey, note, updatedAt: new Date() }).returning();
+  return result[0];
+}
+
+export async function deleteAkhlaqNote(childId: string, itemKey: string): Promise<void> {
+  await db.delete(akhlaqNotes).where(
+    and(eq(akhlaqNotes.childId, childId), eq(akhlaqNotes.itemKey, itemKey))
+  );
 }
