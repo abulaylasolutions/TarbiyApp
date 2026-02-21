@@ -1276,21 +1276,21 @@ export default function DashboardScreen() {
                     let borderStyle: 'solid' | 'dashed' = 'solid';
 
                     if (fasted) {
-                      bgColor = cardColor + '25';
-                      borderColor = cardColor;
-                      textColor = cardColor;
+                      bgColor = '#4CAF50' + '20';
+                      borderColor = '#4CAF50';
+                      textColor = '#2E7D32';
                     } else if (isToday && !fasted) {
-                      bgColor = Colors.creamBeige + '50';
-                      borderColor = Colors.creamBeige;
-                      textColor = Colors.textMuted;
+                      bgColor = '#B0BEC5' + '18';
+                      borderColor = '#B0BEC5';
+                      textColor = '#78909C';
                     } else if (isPastDay && !fasted) {
-                      bgColor = '#FF6B6B' + '15';
-                      borderColor = '#FF6B6B';
-                      textColor = '#D32F2F';
+                      bgColor = '#F44336' + '18';
+                      borderColor = '#F44336';
+                      textColor = '#C62828';
                     } else if (isFutureDay) {
-                      bgColor = Colors.textMuted + '10';
-                      borderColor = Colors.textMuted + '30';
-                      textColor = Colors.textMuted + '60';
+                      bgColor = '#B0BEC5' + '10';
+                      borderColor = '#B0BEC5' + '40';
+                      textColor = '#B0BEC5';
                     }
 
                     if (isDay30) {
@@ -1323,7 +1323,7 @@ export default function DashboardScreen() {
 
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, gap: 8 }}>
                   <View style={{ flex: 1, height: 10, backgroundColor: Colors.creamBeige, borderRadius: 5, overflow: 'hidden' }}>
-                    <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: cardColor, borderRadius: 5 }} />
+                    <View style={{ height: '100%', width: `${(ramadanFastedCount / 30) * 100}%`, backgroundColor: '#4CAF50', borderRadius: 5 }} />
                   </View>
                   <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 13, color: Colors.textPrimary }}>
                     {ramadanFastedCount}/30
@@ -1332,15 +1332,15 @@ export default function DashboardScreen() {
 
                 <View style={{ flexDirection: 'row', gap: 12, marginTop: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: cardColor + '25', borderWidth: 1, borderColor: cardColor }} />
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#4CAF50' + '20', borderWidth: 1, borderColor: '#4CAF50' }} />
                     <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanFasted')}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#FF6B6B' + '15', borderWidth: 1, borderColor: '#FF6B6B' }} />
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#F44336' + '18', borderWidth: 1, borderColor: '#F44336' }} />
                     <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanMissed')}</Text>
                   </View>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: Colors.textMuted + '10', borderWidth: 1, borderColor: Colors.textMuted + '30' }} />
+                    <View style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: '#B0BEC5' + '10', borderWidth: 1, borderColor: '#B0BEC5' + '40' }} />
                     <Text style={{ fontFamily: 'Nunito_400Regular', fontSize: 11, color: Colors.textMuted }}>{t('ramadanNotTracked')}</Text>
                   </View>
                 </View>
@@ -1728,20 +1728,20 @@ export default function DashboardScreen() {
           <View style={s.quranLearnedSummary}>
             <Text style={s.quranLearnedText}>{t('surahLearnedCount')}: {learnedCount} / 114</Text>
             <View style={s.quranLearnedBar}>
-              <View style={[s.quranLearnedBarFill, { width: `${(learnedCount / 114) * 100}%`, backgroundColor: cardColor }]} />
+              <View style={[s.quranLearnedBarFill, { width: `${(learnedCount / 114) * 100}%`, backgroundColor: '#4CAF50' }]} />
             </View>
           </View>
           <View style={s.quranFilterRow}>
             {(['all', 'learned', 'in_progress', 'not_started'] as const).map((f) => {
               const isActive = quranFilter === f;
-              const filterBg = f === 'learned' ? cardColor : f === 'in_progress' ? '#FFCC99' : f === 'not_started' ? Colors.textMuted : cardColor;
+              const filterBg = f === 'learned' ? '#4CAF50' : f === 'in_progress' ? '#FBC02D' : f === 'not_started' ? '#B0BEC5' : cardColor;
               return (
                 <Pressable
                   key={f}
                   onPress={() => setQuranFilter(f)}
                   style={[s.quranFilterBtn, isActive && { backgroundColor: filterBg + '20', borderColor: filterBg }]}
                 >
-                  <Text style={[s.quranFilterText, { color: '#000000' }, isActive && { color: filterBg, fontFamily: 'Nunito_700Bold' }]}>
+                  <Text style={[s.quranFilterText, { color: '#000000' }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>
                     {f === 'all' ? (lang === 'ar' ? 'الكل' : lang === 'en' ? 'All' : 'Tutte') : t(f === 'learned' ? 'surahLearned' : f === 'in_progress' ? 'surahInProgress' : 'surahNotStarted')}
                   </Text>
                 </Pressable>
@@ -1755,13 +1755,13 @@ export default function DashboardScreen() {
             style={s.quranList}
             contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
             renderItem={({ item }) => {
-              const statusColor = item.status === 'learned' ? cardColor : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
+              const statusColor = item.status === 'learned' ? '#4CAF50' : item.status === 'in_progress' ? '#FBC02D' : '#B0BEC5';
               const statusIcon = item.status === 'learned' ? 'checkmark-circle' : item.status === 'in_progress' ? 'time' : 'ellipse-outline';
-              const badgeBg = item.status === 'learned' ? cardColor : item.status === 'in_progress' ? '#FFCC99' : Colors.textMuted;
+              const badgeBg = item.status === 'learned' ? '#4CAF50' : item.status === 'in_progress' ? '#FBC02D' : '#B0BEC5';
               return (
                 <Pressable onPress={() => cycleSurahStatus(item.number)} style={s.surahRow}>
                   <View style={[s.surahNumBadge, { backgroundColor: badgeBg }]}>
-                    <Text style={[s.surahNum, badgeBg !== Colors.textMuted && { color: '#333333' }]}>{item.number}</Text>
+                    <Text style={[s.surahNum, badgeBg !== '#B0BEC5' && { color: '#333333' }]}>{item.number}</Text>
                   </View>
                   <View style={s.surahNameCol}>
                     <Text style={s.surahArabicName}>{item.arabicName}</Text>
