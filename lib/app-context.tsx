@@ -203,7 +203,7 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     return null;
   };
 
-  const addChild = async (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[] }) => {
+  const addChild = async (child: { name: string; birthDate: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; selectedCogenitori?: string[]; avatarAsset?: string }) => {
     try {
       const res = await apiRequest('POST', '/api/children', child);
       const newChild = await res.json();
@@ -217,7 +217,7 @@ export function AppProvider({ children: childrenProp }: { children: ReactNode })
     }
   };
 
-  const updateChildFn = async (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string }) => {
+  const updateChildFn = async (id: string, data: { name?: string; birthDate?: string; gender?: string; photoUri?: string; coParentName?: string; cardColor?: string; cogenitori?: string; avatarAsset?: string }) => {
     try {
       const res = await apiRequest('PUT', `/api/children/${id}`, data);
       const updated = await res.json();

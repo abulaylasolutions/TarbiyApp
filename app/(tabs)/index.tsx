@@ -23,6 +23,7 @@ import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest } from '@/lib/query-client';
+import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 import * as FileSystem from 'expo-file-system/legacy';
 
 const PASTEL_COLORS = [
@@ -96,6 +97,13 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, photoU
               style={styles.childPhoto}
               contentFit="cover"
               cachePolicy="memory-disk"
+              transition={300}
+            />
+          ) : child.avatarAsset && getAvatarSource(child.avatarAsset) ? (
+            <Image
+              source={getAvatarSource(child.avatarAsset)}
+              style={styles.childPhoto}
+              contentFit="cover"
               transition={300}
             />
           ) : (
@@ -203,6 +211,7 @@ interface ChildFormData {
   photoUri: string;
   selectedCogenitori: string[];
   cardColor: string;
+  avatarAsset: string;
 }
 
 const EMPTY_FORM: ChildFormData = {
@@ -214,6 +223,7 @@ const EMPTY_FORM: ChildFormData = {
   photoUri: '',
   selectedCogenitori: [],
   cardColor: PASTEL_COLORS[0],
+  avatarAsset: '',
 };
 
 export default function HomeScreen() {
@@ -266,6 +276,7 @@ export default function HomeScreen() {
       photoUri: existingPhoto || '',
       selectedCogenitori: selectedCogs,
       cardColor: child.cardColor || PASTEL_COLORS[0],
+      avatarAsset: child.avatarAsset || '',
     });
     setErrorMsg('');
     setShowModal(true);
@@ -389,6 +400,7 @@ export default function HomeScreen() {
         birthDate,
         gender: form.gender,
         cardColor: form.cardColor,
+        avatarAsset: form.avatarAsset || undefined,
         cogenitori: JSON.stringify(cogArray),
       });
       if (result.success) {
@@ -419,6 +431,7 @@ export default function HomeScreen() {
         coParentName,
         cardColor: form.cardColor,
         selectedCogenitori: form.selectedCogenitori,
+        avatarAsset: form.avatarAsset || undefined,
       });
       if (result.success) {
         if (form.photoUri && result.childId) {
@@ -570,6 +583,41 @@ export default function HomeScreen() {
                   </Pressable>
                 ) : null}
               </View>
+
+              <Text style={[styles.inputLabel, { marginTop: 8 }]}>Avatar</Text>
+              {form.gender === 'maschio' || form.gender === 'femmina' ? (
+                <View style={styles.avatarGrid}>
+                  {(form.gender === 'maschio' ? BOY_AVATARS : GIRL_AVATARS).map((path) => {
+                    const isSelected = form.avatarAsset === path;
+                    return (
+                      <Pressable
+                        key={path}
+                        onPress={() => {
+                          const newVal = isSelected ? '' : path;
+                          setForm(p => ({ ...p, avatarAsset: newVal }));
+                          console.log("Avatar selezionato:", newVal || 'nessuno');
+                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                        }}
+                        style={[styles.avatarItem, isSelected && styles.avatarItemSelected]}
+                      >
+                        <Image
+                          source={getAvatarSource(path)}
+                          style={styles.avatarImage}
+                          contentFit="cover"
+                          transition={200}
+                        />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View style={styles.noCogWarn}>
+                  <Ionicons name="information-circle" size={16} color={Colors.skyBlue} />
+                  <Text style={styles.noCogWarnText}>
+                    {t('selectGender')}
+                  </Text>
+                </View>
+              )}
 
               <Text style={styles.inputLabel}>{t('childName')}</Text>
               <TextInput
@@ -937,6 +985,21 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.skyBlueLight, borderRadius: 14, padding: 12, marginBottom: 16,
   },
   noCogWarnText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.skyBlueDark, flex: 1 },
+  avatarGrid: {
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16, justifyContent: 'center',
+  },
+  avatarItem: {
+    width: 64, height: 64, borderRadius: 32, overflow: 'hidden',
+    borderWidth: 3, borderColor: 'transparent',
+  },
+  avatarItemSelected: {
+    borderColor: Colors.mintGreen, borderWidth: 3,
+    shadowColor: Colors.mintGreen, shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
+  },
+  avatarImage: {
+    width: '100%', height: '100%', borderRadius: 30,
+  },
   colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16 },
   colorSwatch: {
     width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center',
