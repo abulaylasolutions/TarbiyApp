@@ -21,7 +21,7 @@ import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, ty
 
 const PASTEL_COLORS = [
   '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
-  '#E0BBE4', '#FFF5BA', '#FFDAC1', '#B2D8B2',
+  '#E0BBE4', '#FFF5BA', '#B2D8B2',
 ];
 
 const PRAYER_NAMES = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;
@@ -931,7 +931,7 @@ export default function DashboardScreen() {
                   style={s.childNavArrow}
                   hitSlop={12}
                 >
-                  <Ionicons name="chevron-back" size={22} color="rgba(255,255,255,0.85)" />
+                  <Ionicons name="chevron-back" size={22} color="rgba(0,0,0,0.6)" />
                 </Pressable>
               )}
               {selectedChild.avatarAsset && getAvatarSource(selectedChild.avatarAsset) ? (
@@ -965,7 +965,7 @@ export default function DashboardScreen() {
                   style={s.childNavArrow}
                   hitSlop={12}
                 >
-                  <Ionicons name="chevron-forward" size={22} color="rgba(255,255,255,0.85)" />
+                  <Ionicons name="chevron-forward" size={22} color="rgba(0,0,0,0.6)" />
                 </Pressable>
               )}
             </View>
@@ -1874,7 +1874,7 @@ const s = StyleSheet.create({
   headerPhoto: { width: 72, height: 72, borderRadius: 36 },
   childNavArrow: {
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.5)',
     alignItems: 'center', justifyContent: 'center',
   },
   childCounter: {
@@ -1901,7 +1901,7 @@ const s = StyleSheet.create({
     marginHorizontal: 4, backgroundColor: Colors.cardBackground,
   },
   dateItemActive: { borderWidth: 0 },
-  dateItemToday: { borderWidth: 2, borderColor: Colors.mintGreen },
+  dateItemToday: { borderWidth: 2, borderColor: '#000000' },
   dateDayName: { fontFamily: 'Nunito_500Medium', fontSize: 11, color: Colors.textMuted },
   dateDayNameActive: { color: Colors.white },
   dateNum: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },

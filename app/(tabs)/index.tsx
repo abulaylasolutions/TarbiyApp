@@ -26,7 +26,7 @@ import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
 const PASTEL_COLORS = [
   '#A8E6CF', '#FFD3B6', '#C7CEEA', '#FFF5E1',
-  '#E0BBE4', '#FFF5BA', '#FFDAC1', '#B2D8B2',
+  '#E0BBE4', '#FFF5BA', '#B2D8B2',
 ];
 
 interface ChildCardProps {
@@ -901,7 +901,7 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%', height: '100%', borderRadius: 38,
   },
-  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 16, justifyContent: 'center' },
+  colorRow: { flexDirection: 'row', flexWrap: 'nowrap', gap: 10, marginBottom: 16, justifyContent: 'center' },
   colorSwatch: {
     width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
   },
