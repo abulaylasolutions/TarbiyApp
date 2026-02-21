@@ -1,0 +1,34 @@
+L'app Flutter "TarbiyApp" è già creata con tema pastelloso, Dashboard con sezione "Memorizzazione del Qur'an" (stati "Imparata" verde, "In Corso" arancione), e griglia selezione colore card figlio in add_child_screen.dart (attualmente 14 colori).
+
+ORA MODIFICA SOLO QUESTE COSE, senza toccare altre parti:
+
+1. Colori tracciabilità Corano (in quran_memorization_page.dart o dialog):
+   - "Imparata": cambia verde forte in verde pastello morbido #99FF99 (o #A8E6CF se vuoi coerenza con tema app)
+   - "In Corso": cambia arancione in arancione pastello #FFCC99
+   - Mantieni testo filtri ("Tutte", "Imparata", "In Corso", "Da imparare") in nero
+
+2. Griglia 14 colori tema card figlio (in add_child_screen.dart):
+   - Ordina i 14 colori in 2 righe da 7 (crossAxisCount: 7)
+   - Riga superiore (arcobaleno pastelloso, rosso → viola):
+     1. #FF9999 (rosso pastello)
+     2. #FFCC99 (arancione pastello)
+     3. #FFFF99 (giallo pastello)
+     4. #99FF99 (verde pastello)
+     5. #99FFFF (azzurro pastello)
+     6. #9999FF (blu pastello)
+     7. #CC99FF (viola pastello)
+   - Riga inferiore (complementari pastellosi):
+     8. #FFC1CC (rosa cipria)
+     9. #FF99CC (fuchsia tenue)
+     10. #E8C39E (marrone chiaro)
+     11. #E0E0E0 (grigio chiaro)
+     12. #B2D8B2 (verde salvia)
+     13. #B2F2E8 (acqua marina)
+     14. #D7BDE2 (lavanda extra)
+   - Ogni colore: CircleAvatar tappabile (radius 30–35), sfondo con il colore, bordo verde menta #A8E6CF quando selezionato
+   - Salva hex string in children/cardColor (es. '#FF9999')
+   - Applica cardColor come backgroundColor della card figlio in Home e Dashboard header (opacità 0.9–1.0)
+
+Mantieni responsive (crossAxisCount: 7, su piccoli schermi riduci a 4–5), animazioni soft (fade su selezione). Usa debugPrint("Colore selezionato: $hex") per verificare.
+
+Modifica quran_memorization_page.dart (colori Imparata/In Corso pastellosi), add_child_screen.dart (griglia 14 colori, 2 righe da 7), child_card.dart / dashboard_screen.dart (applica cardColor). Inizia subito con queste integrazioni precise!
