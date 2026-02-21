@@ -701,22 +701,6 @@ export default function HomeScreen() {
               {settingsFasting ? t('enabled') : t('disabled')}
             </Text>
 
-            <View style={styles.settingsRow}>
-              <View style={styles.settingsLabelRow}>
-                <Ionicons name="book-outline" size={22} color={Colors.peachPink} />
-                <Text style={styles.settingsLabel}>{t('quranTodayTracker')}</Text>
-              </View>
-              <Pressable
-                onPress={() => setSettingsQuranToday(!settingsQuranToday)}
-                style={[styles.toggleTrack, settingsQuranToday && styles.toggleTrackActive]}
-              >
-                <View style={[styles.toggleThumb, settingsQuranToday && styles.toggleThumbActive]} />
-              </Pressable>
-            </View>
-            <Text style={styles.settingsHint}>
-              {settingsQuranToday ? t('enabled') : t('disabled')}
-            </Text>
-
             <Pressable onPress={saveSettings} style={styles.settingsSaveBtn}>
               <Ionicons name="checkmark" size={20} color={Colors.white} />
               <Text style={styles.settingsSaveBtnText}>{t('save')}</Text>

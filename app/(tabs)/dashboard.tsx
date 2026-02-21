@@ -1072,7 +1072,7 @@ export default function DashboardScreen() {
             )}
           </Animated.View>
 
-          {(salahEnabled || fastingEnabled || trackQuranToday) && (
+          {(salahEnabled || fastingEnabled) && (
             <Animated.View entering={FadeInDown.delay(300).duration(300)}>
               <Text style={s.sectionTitle}>{t('todayActivities')}</Text>
               <View style={s.dailyCard}>
@@ -1108,57 +1108,31 @@ export default function DashboardScreen() {
                   </View>
                 )}
 
-                {(fastingEnabled || trackQuranToday) && salahEnabled && (
+                {fastingEnabled && salahEnabled && (
                   <View style={s.dailyDivider} />
                 )}
 
-                {(fastingEnabled || trackQuranToday) && (
+                {fastingEnabled && (
                   <View style={s.dailySubsection}>
-                    <View style={s.fastingQuranRow}>
-                      {fastingEnabled && (
-                        <View style={s.fastingCol}>
-                          <View style={s.dailySubHeader}>
-                            <Ionicons name="moon-outline" size={16} color="#D4A03C" />
-                            <Text style={s.dailySubTitle}>{t('fastingSection')}</Text>
-                          </View>
-                          <View style={s.fastingRow}>
-                            <Pressable
-                              onPress={() => updateFasting('yes')}
-                              style={[s.fastingBtn, { flex: 1 }, fasting.status === 'yes' && { backgroundColor: Colors.mintGreen + '20', borderColor: Colors.mintGreen }]}
-                            >
-                              <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? Colors.mintGreen : Colors.textMuted} />
-                              <Text style={[s.fastingBtnText, fasting.status === 'yes' && { color: Colors.mintGreen }]}>{t('yes')}</Text>
-                            </Pressable>
-                            <Pressable
-                              onPress={() => updateFasting('partial')}
-                              style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: '#F4C430' + '20', borderColor: '#F4C430' }]}
-                            >
-                              <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? '#F4C430' : Colors.textMuted} />
-                              <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: '#F4C430' }]}>{t('partial')}</Text>
-                            </Pressable>
-                          </View>
-                        </View>
-                      )}
-                      {trackQuranToday && (
-                        <View style={[s.quranTodayCol, fastingEnabled && { flex: 1, borderLeftWidth: 1, borderLeftColor: Colors.creamBeige, paddingLeft: 12 }]}>
-                          <View style={[s.dailySubHeader, { justifyContent: 'center' }]}>
-                            <Ionicons name="book-outline" size={16} color={Colors.skyBlueDark} />
-                            <Text style={[s.dailySubTitle, { fontSize: 11 }]}>{t('quranShort')}</Text>
-                          </View>
-                          <Pressable onPress={toggleQuranToday} style={s.quranTodayToggle}>
-                            <View style={[s.quranTodayCircle, quranToday && { backgroundColor: Colors.mintGreen, borderColor: Colors.mintGreen }]}>
-                              {quranToday ? (
-                                <Ionicons name="checkmark" size={20} color={Colors.white} />
-                              ) : (
-                                <Ionicons name="book-outline" size={16} color={Colors.textMuted} />
-                              )}
-                            </View>
-                            <Text style={[s.quranTodayStatus, quranToday && { color: Colors.mintGreen }]}>
-                              {quranToday ? t('yes') : t('no')}
-                            </Text>
-                          </Pressable>
-                        </View>
-                      )}
+                    <View style={s.dailySubHeader}>
+                      <Ionicons name="moon-outline" size={16} color="#D4A03C" />
+                      <Text style={s.dailySubTitle}>{t('fastingSection')}</Text>
+                    </View>
+                    <View style={s.fastingRow}>
+                      <Pressable
+                        onPress={() => updateFasting('yes')}
+                        style={[s.fastingBtn, { flex: 1 }, fasting.status === 'yes' && { backgroundColor: Colors.mintGreen + '20', borderColor: Colors.mintGreen }]}
+                      >
+                        <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? Colors.mintGreen : Colors.textMuted} />
+                        <Text style={[s.fastingBtnText, fasting.status === 'yes' && { color: Colors.mintGreen }]}>{t('yes')}</Text>
+                      </Pressable>
+                      <Pressable
+                        onPress={() => updateFasting('partial')}
+                        style={[s.fastingBtn, { flex: 1 }, fasting.status === 'partial' && { backgroundColor: '#F4C430' + '20', borderColor: '#F4C430' }]}
+                      >
+                        <Ionicons name="remove-circle" size={18} color={fasting.status === 'partial' ? '#F4C430' : Colors.textMuted} />
+                        <Text style={[s.fastingBtnText, fasting.status === 'partial' && { color: '#F4C430' }]}>{t('partial')}</Text>
+                      </Pressable>
                     </View>
                   </View>
                 )}
