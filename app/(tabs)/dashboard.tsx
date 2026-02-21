@@ -955,9 +955,6 @@ export default function DashboardScreen() {
                     <Text style={{ color: '#333', fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
                   </Text>
                 )}
-                {children.length > 1 && (
-                  <Text style={s.childCounter}>{selectedIndex + 1} / {children.length}</Text>
-                )}
               </View>
               {children.length > 1 && (
                 <Pressable
