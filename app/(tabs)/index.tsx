@@ -45,7 +45,7 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
   const { colors, isDark } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
-  const cardBg = getGenderColor(child.gender, isDark);
+  const cardBg = getGenderColor(child.gender);
   const cardBgLight = cardBg + '40';
   const isFemale = child.gender === 'femmina';
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';

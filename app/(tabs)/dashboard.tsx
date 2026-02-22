@@ -273,7 +273,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.selectorRow}>
       {childList.map((child, index) => {
         const isSelected = child.id === selectedChildId;
-        const color = getGenderColor(child.gender, isDark);
+        const color = getGenderColor(child.gender);
         return (
           <Pressable key={`${child.id}-${child.avatarAsset || 'none'}`} onPress={() => selectChild(child.id)} style={s.selectorItem}>
             <View style={[s.selectorCircle, { backgroundColor: colors.creamBeige }, isSelected && { borderColor: color, borderWidth: 3 }]}>
@@ -311,7 +311,7 @@ export default function DashboardScreen() {
 
   const selectedChild = children.find(c => c.id === selectedChildId);
   const selectedIndex = children.findIndex(c => c.id === selectedChildId);
-  const cardColor = getGenderColor(selectedChild?.gender, isDark);
+  const cardColor = getGenderColor(selectedChild?.gender);
 
   const salahEnabled = selectedChild?.salahEnabled !== false;
   const fastingEnabled = selectedChild?.fastingEnabled !== false;

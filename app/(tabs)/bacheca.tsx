@@ -155,7 +155,7 @@ interface ChildTagProps {
 
 function ChildTag({ child, isSelected, onToggle }: ChildTagProps) {
   const { colors, isDark } = useTheme();
-  const tagColor = getGenderColor(child.gender, isDark);
+  const tagColor = getGenderColor(child.gender);
   return (
     <Pressable
       onPress={() => onToggle(child.id)}

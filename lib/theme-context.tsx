@@ -115,10 +115,9 @@ export const GENDER_COLORS = {
   male: { light: '#C7CEEA', dark: '#1976D2' },
 };
 
-export function getGenderColor(gender: string | undefined | null, isDark: boolean): string {
+export function getGenderColor(gender: string | undefined | null): string {
   const isFemale = gender === 'femmina' || gender === 'female';
-  if (isFemale) return isDark ? GENDER_COLORS.female.dark : GENDER_COLORS.female.light;
-  return isDark ? GENDER_COLORS.male.dark : GENDER_COLORS.male.light;
+  return isFemale ? GENDER_COLORS.female.light : GENDER_COLORS.male.light;
 }
 
 export function getDarkVariant(lightHex: string): string {
