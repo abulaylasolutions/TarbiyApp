@@ -169,7 +169,7 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
                     onPress={() => handleUnpair(cog)}
                     hitSlop={10}
                   >
-                    <Ionicons name="close-circle" size={24} color={Colors.danger} />
+                    <Ionicons name="close-circle" size={24} color="#FFFFFF" />
                   </Pressable>
                 </LinearGradient>
               </View>
