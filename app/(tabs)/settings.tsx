@@ -545,7 +545,7 @@ export default function SettingsScreen() {
             iconColor="#E1306C"
             iconBg="#FCE4EC"
             label="Instagram @tarbiyapp"
-            onPress={() => Linking.openURL('https://www.instagram.com/tarbiyapp')}
+            onPress={() => Linking.openURL('instagram://user?username=tarbiyapp').catch(() => Linking.openURL('https://www.instagram.com/tarbiyapp'))}
           />
           <SettingsRow
             icon="mail"
