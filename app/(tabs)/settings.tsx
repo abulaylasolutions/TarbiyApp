@@ -137,7 +137,7 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
       <Pressable onPress={copyInviteCode} style={[styles.inviteCodeBox, { backgroundColor: colors.mintGreenLight }]}>
         <View>
           <Text style={[styles.inviteCodeLabel, { color: colors.textSecondary }]}>{t('yourInviteCode')}</Text>
-          <Text style={[styles.inviteCodeValue, { color: colors.mintGreenDark }]}>{user?.personalInviteCode || '------'}</Text>
+          <Text style={[styles.inviteCodeValue, { color: '#A8E6CF' }]}>{user?.personalInviteCode || '------'}</Text>
         </View>
         <Ionicons name="copy-outline" size={20} color={colors.mintGreenDark} />
       </Pressable>
