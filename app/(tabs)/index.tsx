@@ -102,17 +102,17 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
           )}
           <View style={styles.childInfo}>
             <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
-            <Text style={[styles.childAge, { color: colors.textPrimary }]}>{age}</Text>
+            <Text style={[styles.childAge, { color: '#121212' }]}>{age}</Text>
             {coParentNames.length > 0 && child.gender ? (
               <Text style={styles.coParentLine}>
-                <Text style={[styles.coParentPrefix, { color: colors.textPrimary }]}>{genderPrefix} </Text>
-                <Text style={[styles.coParentNameText, { color: colors.textPrimary }]}>
+                <Text style={[styles.coParentPrefix, { color: '#121212' }]}>{genderPrefix} </Text>
+                <Text style={[styles.coParentNameText, { color: '#121212' }]}>
                   {coParentNames.join(', ')}
                 </Text>
               </Text>
             ) : null}
           </View>
-          <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+          <Ionicons name="chevron-forward" size={20} color="rgba(0,0,0,0.5)" />
         </View>
       </Pressable>
 

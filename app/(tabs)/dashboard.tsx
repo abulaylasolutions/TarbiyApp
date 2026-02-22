@@ -1190,7 +1190,7 @@ export default function DashboardScreen() {
                                 <MaterialCommunityIcons name="mosque" size={18} color={colors.textMuted} />
                               )}
                             </View>
-                            <Text style={[s.prayerLabel, { color: colors.textSecondary }, done && { color: colors.mintGreenDark, fontFamily: 'Nunito_700Bold' }]}>{t(prayer)}</Text>
+                            <Text style={[s.prayerLabel, { color: colors.textSecondary }, done && { fontFamily: 'Nunito_700Bold' }]}>{t(prayer)}</Text>
                           </Pressable>
                         );
                       })}
