@@ -805,7 +805,8 @@ export default function DashboardScreen() {
       const allAkhlaqItems = AKHLAQ_CATEGORIES.flatMap(c => c.items);
       const allAqidahItems = getAllAqidahLeafItems();
 
-      const items = data.map((entry: any) => {
+      const filtered = data.filter((entry: any) => entry.type !== 'arabo');
+      const items = filtered.map((entry: any) => {
         let icon = 'school-outline';
         let iconColor = '#A8E6CF';
         let text = entry.label || entry.key;
