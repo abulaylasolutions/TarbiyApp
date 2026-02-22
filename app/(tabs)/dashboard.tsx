@@ -1224,8 +1224,8 @@ export default function DashboardScreen() {
                         onPress={() => updateFasting('yes')}
                         style={[s.fastingBtn, { flex: 1, backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, fasting.status === 'yes' && { backgroundColor: cardColor + '20', borderColor: cardColor }]}
                       >
-                        <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? '#000000' : colors.textMuted} />
-                        <Text style={[s.fastingBtnText, { color: colors.textSecondary }, fasting.status === 'yes' && { color: '#000000' }]}>{t('yes')}</Text>
+                        <Ionicons name="checkmark-circle" size={18} color={fasting.status === 'yes' ? cardColor : colors.textMuted} />
+                        <Text style={[s.fastingBtnText, { color: colors.textSecondary }, fasting.status === 'yes' && { color: cardColor }]}>{t('yes')}</Text>
                       </Pressable>
                       {!trackRamadan && (
                         <Pressable
@@ -1426,7 +1426,7 @@ export default function DashboardScreen() {
                                 onPress={() => toggleArabicLetter(letter)}
                                 style={[s.arabicLetterChip, { backgroundColor: colors.creamBeige }, isSelected && { backgroundColor: cardColor }]}
                               >
-                                <Text style={[s.arabicLetterText, { color: colors.textPrimary }, isSelected && { color: '#000000' }]}>{letter}</Text>
+                                <Text style={[s.arabicLetterText, { color: colors.textPrimary }, isSelected && { color: Colors.white }]}>{letter}</Text>
                               </Pressable>
                             );
                           })}
@@ -1437,7 +1437,7 @@ export default function DashboardScreen() {
                             onPress={() => toggleArabicSetting('hasHarakat')}
                             style={[s.arabicPill, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, localHarakat && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
-                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localHarakat && { color: '#000000' }]}>
+                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localHarakat && { color: Colors.white }]}>
                               {localHarakat ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
@@ -1448,7 +1448,7 @@ export default function DashboardScreen() {
                             onPress={() => toggleArabicSetting('canReadArabic')}
                             style={[s.arabicPill, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, localCanRead && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
-                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localCanRead && { color: '#000000' }]}>
+                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localCanRead && { color: Colors.white }]}>
                               {localCanRead ? t('yes') : t('no')}
                             </Text>
                           </Pressable>
@@ -1459,7 +1459,7 @@ export default function DashboardScreen() {
                             onPress={() => toggleArabicSetting('canWriteArabic')}
                             style={[s.arabicPill, { backgroundColor: colors.creamBeige, borderColor: colors.creamBeige }, localCanWrite && { backgroundColor: cardColor, borderColor: cardColor }]}
                           >
-                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localCanWrite && { color: '#000000' }]}>
+                            <Text style={[s.arabicPillText, { color: colors.textSecondary }, localCanWrite && { color: Colors.white }]}>
                               {localCanWrite ? t('yes') : t('no')}
                             </Text>
                           </Pressable>

@@ -93,7 +93,7 @@ function NoteCard({ note, onPress, onDelete, onArchive, onEdit }: NoteCardProps)
             {note.text}
           </Text>
           <View style={styles.noteFooter}>
-            <Text style={[styles.noteAuthor, { color: '#000000' }]}>{note.author}</Text>
+            <Text style={styles.noteAuthor}>{note.author}</Text>
             <Text style={styles.noteDate}>{formattedDate} {formattedTime}</Text>
           </View>
         </Pressable>
@@ -166,7 +166,7 @@ function ChildTag({ child, isSelected, onToggle }: ChildTagProps) {
         isSelected && { borderColor: tagColor, borderWidth: 2 },
       ]}
     >
-      <Text style={[styles.childTagText, { color: colors.textSecondary }, isSelected && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>
+      <Text style={[styles.childTagText, { color: colors.textSecondary }, isSelected && { color: colors.textPrimary, fontFamily: 'Nunito_700Bold' }]}>
         {child.name}
       </Text>
       {isSelected && <Ionicons name="checkmark-circle" size={16} color={colors.textPrimary} />}
@@ -197,7 +197,7 @@ function CommentBubble({ comment, isMine, index }: CommentBubbleProps) {
           isMine ? [styles.bubbleMine, { backgroundColor: colors.mintGreenLight }] : styles.bubbleOther,
         ]}>
           {!isMine && (
-            <Text style={[styles.bubbleAuthor, { color: '#000000' }]}>{comment.authorName}</Text>
+            <Text style={styles.bubbleAuthor}>{comment.authorName}</Text>
           )}
           <Text style={[styles.bubbleText, { color: colors.textPrimary }]}>{comment.text}</Text>
           <Text style={[styles.bubbleTime, { color: colors.textMuted }, isMine && styles.bubbleTimeMine]}>{formattedTime}</Text>
@@ -571,7 +571,7 @@ export default function BachecaScreen() {
                       { backgroundColor: selectedNote.color },
                     ]}
                   >
-                    <Text style={[styles.detailAuthor, { color: '#000000' }]}>{selectedNote.author}</Text>
+                    <Text style={[styles.detailAuthor, { color: colors.textPrimary }]}>{selectedNote.author}</Text>
                     <Text style={[styles.detailDate, { color: colors.textSecondary }]}>
                       {new Date(selectedNote.createdAt).toLocaleDateString('it-IT', {
                         day: 'numeric',
