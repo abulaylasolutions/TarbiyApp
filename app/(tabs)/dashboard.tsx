@@ -1077,7 +1077,7 @@ export default function DashboardScreen() {
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
           <View style={s.dateBarHeader}>
             <View style={s.dateBarTitleRow}>
-              <Text style={[s.dateBarTitle, { color: colors.mintGreen }]}>{t('calendarTitle')}</Text>
+              <Text style={[s.dateBarTitle, { color: colors.textPrimary }]}>{t('calendarTitle')}</Text>
               <Pressable
                 onPress={async () => {
                   const newVal = !useHijri;
