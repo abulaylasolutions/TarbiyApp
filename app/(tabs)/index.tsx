@@ -566,8 +566,8 @@ export default function HomeScreen() {
                         onPress={() => selectCogenitore(cog.id)}
                         style={[styles.cogChip, { backgroundColor: colors.inputBackground }, isSelected && [styles.cogChipSelected, { backgroundColor: colors.mintGreenLight, borderColor: colors.mintGreen }]]}
                       >
-                        <View style={styles.cogChipAvatar}>
-                          <Text style={[styles.cogChipAvatarText, { color: colors.textPrimary }]}>
+                        <View style={[styles.cogChipAvatar, { backgroundColor: (cog.gender === 'maschio' || cog.gender === 'male') ? '#779ECB' : '#FF6961' }]}>
+                          <Text style={[styles.cogChipAvatarText, { color: '#FFFFFF' }]}>
                             {(cog.name || cog.email).charAt(0).toUpperCase()}
                           </Text>
                         </View>
