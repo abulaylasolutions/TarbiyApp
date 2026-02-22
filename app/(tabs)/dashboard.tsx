@@ -1899,7 +1899,7 @@ export default function DashboardScreen() {
                       setNewTaskDays([]);
                       setNewTaskDayOfMonth('');
                     }}
-                    style={[s.freqBtn, { borderColor: colors.border }, newTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
+                    style={[s.freqBtn, { borderColor: colors.border, backgroundColor: colors.inputBackground }, newTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
                   >
                     <Text style={[s.freqBtnText, { color: colors.textSecondary }, newTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
                   </Pressable>
@@ -1916,7 +1916,7 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleDayOfWeek(i)}
-                          style={[s.dayChip, { borderColor: colors.border }, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                          style={[s.dayChip, { borderColor: colors.border, backgroundColor: colors.inputBackground }, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
                         >
                           <Text style={[s.dayChipText, { color: colors.textSecondary }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
@@ -2045,7 +2045,7 @@ export default function DashboardScreen() {
                       setEditTaskDays([]);
                       setEditTaskDayOfMonth('');
                     }}
-                    style={[s.freqBtn, { borderColor: colors.border }, editTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
+                    style={[s.freqBtn, { borderColor: colors.border, backgroundColor: colors.inputBackground }, editTaskFreq === freq && { backgroundColor: cardColor, borderColor: cardColor }]}
                   >
                     <Text style={[s.freqBtnText, { color: colors.textSecondary }, editTaskFreq === freq && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(freq)}</Text>
                   </Pressable>
@@ -2062,7 +2062,7 @@ export default function DashboardScreen() {
                         <Pressable
                           key={dayKey}
                           onPress={() => toggleEditDayOfWeek(i)}
-                          style={[s.dayChip, { borderColor: colors.border }, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
+                          style={[s.dayChip, { borderColor: colors.border, backgroundColor: colors.inputBackground }, isActive && { backgroundColor: cardColor, borderColor: cardColor }]}
                         >
                           <Text style={[s.dayChipText, { color: colors.textSecondary }, isActive && { color: '#000000', fontFamily: 'Nunito_700Bold' }]}>{t(dayKey)}</Text>
                         </Pressable>
