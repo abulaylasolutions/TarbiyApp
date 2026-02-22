@@ -1,0 +1,29 @@
+L'app Flutter "TarbiyApp" è già creata con Dashboard, sezione "Salah e digiuno odierni" e "Ramadan" (tabella 30 giorni con quadrati verde/rosso/grigio, freccette anno), switch calendario solare/islamico, toggle "Monitora Ramadan" per figlio.
+
+ORA MODIFICA SOLO LA SEZIONE RAMADAN (dashboard_screen.dart), senza toccare altre parti:
+
+1. Logica anni Ramadan:
+   - Default: mostra sempre l'anno Ramadan più recente disponibile (es. 1447 se attuale, o ultimo sbloccato)
+   - Anni sbloccabili solo dal primo giorno di Ramadan di quell'anno:
+     - Esempio: oggi è 1447 → solo 1447 visibile
+     - Nel 1448 (dal 1° Ramadan 1448) → si sblocca 1448
+     - Nel 1449 → si sbloccano 1449, 1448 e 1447 (e così via)
+   - Freccette < >: permettono di andare indietro agli anni già sbloccati (es. in 1449: 1449 > 1448 > 1447)
+     - Non permettono di andare avanti oltre l'anno corrente (no 1450 se oggi è 1447)
+   - Salva anni sbloccati in users/unlockedRamadanYears array (es. [1447, 1448]) o in children/ramadanDigests (crea entry solo se anno sbloccato)
+
+2. Controllo sblocco automatico:
+   - Al caricamento Dashboard: calcola anno hijri corrente (usa package hijri)
+   - Se anno corrente non in unlockedRamadanYears e è il primo giorno di Ramadan (hijri.day == 1 && hijri.month == 9):
+     - Aggiungi anno corrente a unlockedRamadanYears
+   - Default visualizzato: ultimo anno in unlockedRamadanYears (max)
+
+3. Mantieni:
+   - Tabella 30 giorni per anno selezionato (verde digiunato #4CAF50, rosso mancato #F44336, grigio futuro/attuale #B0BEC5)
+   - Clic su giorno: toggle fasted bool in Firestore children/ramadanDigests/{year}/{day}
+   - Connessione con toggle "Digiuno oggi Sì" solo per giorno attuale
+   - No "Parziale" se Ramadan attivo
+
+Mantieni responsive, animazioni soft. Usa package hijri per date islamiche. Aggiungi debugPrint("Anno Ramadan corrente: $currentYear, unlocked: $unlockedYears") per verificare.
+
+Modifica dashboard_screen.dart (logica anni sbloccabili, freccette indietro solo, default ultimo anno, sblocco automatico al 1° giorno Ramadan). Inizia subito con queste integrazioni precise!

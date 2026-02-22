@@ -1279,16 +1279,26 @@ export default function DashboardScreen() {
               <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('ramadanTracker')}</Text>
               <View style={[s.subjectCard, { padding: 16, backgroundColor: colors.cardBackground }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                  <View style={{ width: 32 }} />
+                  <Pressable
+                    onPress={() => {
+                      if (Number(ramadanYear) > currentHijriYear - 5) setRamadanYear(String(Number(ramadanYear) - 1));
+                    }}
+                    hitSlop={12}
+                    style={{ opacity: Number(ramadanYear) > currentHijriYear - 5 ? 1 : 0.25 }}
+                    disabled={Number(ramadanYear) <= currentHijriYear - 5}
+                  >
+                    <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
+                  </Pressable>
                   <Text style={{ fontFamily: 'Nunito_700Bold', fontSize: 16, color: colors.textPrimary }}>
                     {t('ramadanTracker')} {ramadanYear}
                   </Text>
                   <Pressable
                     onPress={() => {
-                      const next = Number(ramadanYear) + 1;
-                      setRamadanYear(String(next));
+                      if (Number(ramadanYear) < currentHijriYear) setRamadanYear(String(Number(ramadanYear) + 1));
                     }}
                     hitSlop={12}
+                    style={{ opacity: Number(ramadanYear) < currentHijriYear ? 1 : 0.25 }}
+                    disabled={Number(ramadanYear) >= currentHijriYear}
                   >
                     <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
                   </Pressable>
