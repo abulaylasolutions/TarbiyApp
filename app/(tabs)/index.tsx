@@ -889,19 +889,19 @@ const styles = StyleSheet.create({
   },
   noCogWarnText: { fontFamily: 'Nunito_500Medium', fontSize: 13, color: Colors.skyBlueDark, flex: 1 },
   avatarGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginBottom: 16, justifyContent: 'center',
+    flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16, justifyContent: 'center',
   },
   avatarItem: {
-    width: 80, height: 80, borderRadius: 40, overflow: 'hidden',
-    borderWidth: 3, borderColor: 'transparent',
+    width: 56, height: 56, borderRadius: 28, overflow: 'hidden',
+    borderWidth: 2.5, borderColor: 'transparent',
   },
   avatarItemSelected: {
-    borderColor: Colors.mintGreen, borderWidth: 3,
+    borderColor: Colors.mintGreen, borderWidth: 2.5,
     shadowColor: Colors.mintGreen, shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4, shadowRadius: 6, elevation: 4,
   },
   avatarImage: {
-    width: '100%', height: '100%', borderRadius: 38,
+    width: '100%', height: '100%', borderRadius: 26,
   },
   modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   modalCancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
