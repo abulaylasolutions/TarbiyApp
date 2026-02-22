@@ -148,7 +148,7 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
             <Animated.View key={cog.id} entering={FadeInDown.delay(index * 80).duration(300)}>
               <View style={styles.pairedCard}>
                 <LinearGradient
-                  colors={[(cog.gender === 'maschio' || cog.gender === 'male') ? '#A3D8F4' : '#FFC1CC', (cog.gender === 'maschio' || cog.gender === 'male') ? '#C4E4F9' : '#FFD6E0'] as const}
+                  colors={[(cog.gender === 'maschio' || cog.gender === 'male') ? '#779ECB' : '#FF6961', (cog.gender === 'maschio' || cog.gender === 'male') ? '#9BB8D8' : '#FF8A84'] as const}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.pairedGradient}
@@ -395,7 +395,7 @@ export default function SettingsScreen() {
 
         <Pressable onPress={openEditModal} style={({ pressed }) => [styles.profileCard, pressed && { opacity: 0.9 }]}>
           <LinearGradient
-            colors={[(user?.gender === 'femmina' || user?.gender === 'female') ? '#FFC1CC' : '#A3D8F4', (user?.gender === 'femmina' || user?.gender === 'female') ? '#FFD6E0' : '#C4E4F9'] as const}
+            colors={[(user?.gender === 'femmina' || user?.gender === 'female') ? '#FF6961' : '#779ECB', (user?.gender === 'femmina' || user?.gender === 'female') ? '#FF8A84' : '#9BB8D8'] as const}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.profileGradient}
