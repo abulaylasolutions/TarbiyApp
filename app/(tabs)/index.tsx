@@ -400,7 +400,7 @@ export default function HomeScreen() {
         <View style={styles.header}>
           <View>
             <Text style={styles.brandName}>
-              <Text style={[styles.brandTarbiy, { color: colors.mintGreen }]}>Tarbiy</Text>
+              <Text style={[styles.brandTarbiy, { color: '#A8E6CF' }]}>Tarbiy</Text>
               <Text style={[styles.brandApp, { color: colors.textPrimary }]}>App</Text>
             </Text>
             <Text style={[styles.headerSubtitle, { color: colors.textSecondary }]}>{t('hello')}, {user?.name || t('parent')}</Text>
