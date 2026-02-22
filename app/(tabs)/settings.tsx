@@ -721,7 +721,7 @@ export default function SettingsScreen() {
                 <View style={styles.pricingCardRow}>
                   <View style={styles.pricingCardInfo}>
                     <Text style={styles.pricingPeriod}>{t('monthly')}</Text>
-                    <Text style={[styles.pricingPrice, { color: colors.textPrimary }]}>€2.99<Text style={[styles.pricingDetail, { color: colors.textMuted }]}> /{t('month')}</Text></Text>
+                    <Text style={[styles.pricingPrice, { color: colors.textPrimary }]}>€2.99<Text style={[styles.pricingDetail, { color: colors.textSecondary }]}> /{t('month')}</Text></Text>
                   </View>
                   <View style={styles.pricingBuyBtn}>
                     <Text style={styles.pricingBuyText}>{t('buy')}</Text>
