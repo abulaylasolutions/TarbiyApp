@@ -1284,11 +1284,11 @@ export default function DashboardScreen() {
                       bgColor = '#B0BEC5' + '18';
                       borderColor = '#B0BEC5';
                       textColor = '#78909C';
-                    } else if (isPastDay && !fasted) {
+                    } else if (isPastDay && hasLog && !fasted) {
                       bgColor = '#F44336' + '18';
                       borderColor = '#F44336';
                       textColor = '#C62828';
-                    } else if (isFutureDay) {
+                    } else if (isFutureDay || (isPastDay && !hasLog)) {
                       bgColor = '#B0BEC5' + '10';
                       borderColor = '#B0BEC5' + '40';
                       textColor = '#B0BEC5';
