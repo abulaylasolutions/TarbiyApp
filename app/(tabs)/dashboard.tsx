@@ -496,7 +496,7 @@ export default function DashboardScreen() {
     setRamadanLoading(true);
     setRamadanLogs({});
     try {
-      const base = getBaseUrl();
+      const base = getApiUrl();
       const res = await fetch(new URL(`/api/children/${childId}/ramadan/${ramadanYear}`, base).toString(), { credentials: 'include' });
       if (res.ok) {
         const logs = await res.json();

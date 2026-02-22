@@ -1,0 +1,37 @@
+L'app Flutter "TarbiyApp" è già creata con Dashboard, sezione "Salah e digiuno odierni" (toggle "Digiuno oggi Sì/No"), sezione "Ramadan" con tabella 30 giorni (quadrati verde/rosso/grigio).
+
+ORA FIXA DEFINITIVAMENTE IL PROBLEMA: la tabella Ramadan non mantiene i giorni digiunati precedenti come verdi dopo riavvio o refresh. Deve essere il valore booleano SALVATO IN FIRESTORE (children/ramadanDigests/{year}/{day}/fasted) a DECIDERE IL COLORE VERDE, NON SOLO il toggle attuale.
+
+Correggi così, con priorità assoluta:
+
+1. La tabella Ramadan deve LEGGERE SEMPRE da Firestore:
+   - Usa StreamBuilder su children/ramadanDigests/{currentRamadanYear} (map o subcollection)
+   - Per ogni giorno 1–30: prendi valore fasted: bool da Firestore
+   - Se fasted == true → quadrato VERDE SEMAFORICO #4CAF50
+   - Se fasted == false e giorno passato → ROSSO SEMAFORICO #F44336
+   - Se giorno attuale o futuro e fasted == false → GRIGIO SEMAFORICO #B0BEC5
+   - NON usare solo il toggle "Digiuno oggi Sì" per giorni passati: il toggle aggiorna SOLO il giorno attuale
+
+2. Quando l'utente clicca "Sì" nel toggle "Digiuno oggi Sì":
+   - Salva fasted: true per il giorno attuale in Firestore
+   - Aggiorna quadrato giorno attuale → verde
+   - NON toccare giorni passati o futuri
+
+3. Quando l'utente clicca su un quadrato qualsiasi nella tabella (passato, attuale, futuro):
+   - Toggle fasted bool in Firestore per quel giorno
+   - Se giorno attuale: aggiorna anche toggle "Digiuno oggi Sì" in sync
+   - Refresh tabella in realtime (StreamBuilder live)
+
+4. Al riavvio app o rebuild Dashboard:
+   - StreamBuilder deve caricare tutti i 30 valori fasted da Firestore
+   - Forza refresh iniziale in initState: setState(() {}) o listen su snapshot
+
+Mantieni:
+- No "Parziale" se Ramadan attivo
+- Colori forti: verde #4CAF50, rosso #F44336, grigio #B0BEC5
+- Freccette anno solo attuali/futuri
+- Responsive, animazioni fade
+
+Usa debugPrint("Ramadan day $day loaded from Firestore: fasted $fasted") per verificare che i dati passati siano caricati correttamente.
+
+Modifica dashboard_screen.dart (StreamBuilder Ramadan con lettura persistente da Firestore, logica colori basata su fasted bool salvato, toggle sincronizzato solo per giorno attuale). Inizia subito con queste correzioni precise e NON INVERTIRE la direzione del flusso: Firestore → UI, non UI → Firestore per giorni passati!
