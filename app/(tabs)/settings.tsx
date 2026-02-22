@@ -878,7 +878,7 @@ const styles = StyleSheet.create({
   pairedCard: { borderRadius: 16, overflow: 'hidden' },
   pairedGradient: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
   pairedAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.6)', alignItems: 'center', justifyContent: 'center' },
-  pairedAvatarText: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: Colors.textPrimary },
+  pairedAvatarText: { fontFamily: 'Nunito_700Bold', fontSize: 18, color: '#FFFFFF' },
   pairedInfo: { flex: 1 },
   pairedName: { fontFamily: 'Nunito_700Bold', fontSize: 16, color: Colors.textPrimary },
   pairedGender: { fontFamily: 'Nunito_400Regular', fontSize: 13, color: Colors.textSecondary },
