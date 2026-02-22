@@ -7,7 +7,6 @@ import {
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 import { useQueryClient } from '@tanstack/react-query';
@@ -353,6 +352,11 @@ export default function DashboardScreen() {
   const [ramadanYear, setRamadanYear] = useState(() => String(currentHijriYear));
   const [ramadanLogs, setRamadanLogs] = useState<Record<string, boolean>>({});
   const [ramadanLoading, setRamadanLoading] = useState(true);
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [pickerMonth, setPickerMonth] = useState(() => new Date().getMonth());
+  const [pickerDay, setPickerDay] = useState(() => new Date().getDate());
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -772,6 +776,32 @@ export default function DashboardScreen() {
     dateScrollRef.current?.scrollToIndex({ index: todayIndex, animated: true, viewPosition: 0.5 });
   };
 
+  const openDatePicker = () => {
+    setPickerYear(currentDate.getFullYear());
+    setPickerMonth(currentDate.getMonth());
+    setPickerDay(currentDate.getDate());
+    setShowDatePicker(true);
+  };
+
+  const confirmDatePicker = () => {
+    const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
+    const safeDay = Math.min(pickerDay, daysInMonth);
+    const chosen = new Date(pickerYear, pickerMonth, safeDay);
+    setCurrentDate(chosen);
+    setShowDatePicker(false);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const today = new Date();
+    const diffDays = Math.round((chosen.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const scrollIndex = 30 + diffDays;
+    if (scrollIndex >= 0 && scrollIndex < 61) {
+      setTimeout(() => {
+        dateScrollRef.current?.scrollToIndex({ index: scrollIndex, animated: true, viewPosition: 0.5 });
+      }, 100);
+    }
+  };
+
+  const GREGORIAN_MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+
   const toggleSubject = (key: string) => {
     setExpandedSubjects(prev =>
       prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
@@ -1067,9 +1097,14 @@ export default function DashboardScreen() {
               <Text style={[s.calSwitchLabel, { color: colors.textMuted }]}>{useHijri ? t('hijriOn') : t('hijriOff')}</Text>
             </View>
             {dateStr !== todayStr && (
-              <Pressable onPress={goToToday} style={[s.todayBtn, { backgroundColor: cardColor }]}>
-                <Text style={s.todayBtnText}>{t('today')}</Text>
-              </Pressable>
+              <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                <Pressable onPress={goToToday} style={[s.todayBtn, { backgroundColor: cardColor }]}>
+                  <Text style={s.todayBtnText}>{t('today')}</Text>
+                </Pressable>
+                <Pressable onPress={openDatePicker} style={[s.todayBtn, { backgroundColor: colors.cardBackground, borderWidth: 1, borderColor: cardColor }]}>
+                  <Ionicons name="calendar-outline" size={14} color={cardColor} />
+                </Pressable>
+              </View>
             )}
           </View>
           <FlatList
@@ -1698,6 +1733,55 @@ export default function DashboardScreen() {
           </Animated.View>
         </View>
       </ScrollView>
+
+      <Modal visible={showDatePicker} animationType="fade" transparent onRequestClose={() => setShowDatePicker(false)}>
+        <Pressable style={[s.prophetOverlay, { backgroundColor: colors.modalOverlay }]} onPress={() => setShowDatePicker(false)}>
+          <Pressable style={[s.prophetCard, { backgroundColor: colors.modalBackground, minWidth: 300 }]} onPress={() => {}}>
+            <Text style={[s.prophetName, { color: colors.textPrimary, marginBottom: 16, textAlign: 'center' }]}>{t('selectDate')}</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 20 }}>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[s.prayerLabel, { color: colors.textMuted, marginBottom: 6 }]}>{lang === 'it' ? 'Giorno' : lang === 'ar' ? 'يوم' : 'Day'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Pressable onPress={() => setPickerDay(d => Math.max(1, d - 1))} style={[s.todayBtn, { backgroundColor: colors.creamBeige, paddingHorizontal: 8 }]}>
+                    <Ionicons name="remove" size={16} color={colors.textPrimary} />
+                  </Pressable>
+                  <Text style={[s.headerName, { color: colors.textPrimary, minWidth: 30, textAlign: 'center' }]}>{pickerDay}</Text>
+                  <Pressable onPress={() => { const max = new Date(pickerYear, pickerMonth + 1, 0).getDate(); setPickerDay(d => Math.min(max, d + 1)); }} style={[s.todayBtn, { backgroundColor: colors.creamBeige, paddingHorizontal: 8 }]}>
+                    <Ionicons name="add" size={16} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[s.prayerLabel, { color: colors.textMuted, marginBottom: 6 }]}>{lang === 'it' ? 'Mese' : lang === 'ar' ? 'شهر' : 'Month'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Pressable onPress={() => setPickerMonth(m => m <= 0 ? 11 : m - 1)} style={[s.todayBtn, { backgroundColor: colors.creamBeige, paddingHorizontal: 8 }]}>
+                    <Ionicons name="remove" size={16} color={colors.textPrimary} />
+                  </Pressable>
+                  <Text style={[s.headerName, { color: colors.textPrimary, minWidth: 40, textAlign: 'center', fontSize: 14 }]}>{GREGORIAN_MONTHS[pickerMonth]}</Text>
+                  <Pressable onPress={() => setPickerMonth(m => m >= 11 ? 0 : m + 1)} style={[s.todayBtn, { backgroundColor: colors.creamBeige, paddingHorizontal: 8 }]}>
+                    <Ionicons name="add" size={16} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
+              </View>
+              <View style={{ alignItems: 'center' }}>
+                <Text style={[s.prayerLabel, { color: colors.textMuted, marginBottom: 6 }]}>{lang === 'it' ? 'Anno' : lang === 'ar' ? 'سنة' : 'Year'}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <Pressable onPress={() => setPickerYear(y => y - 1)} style={[s.todayBtn, { backgroundColor: colors.creamBeige, paddingHorizontal: 8 }]}>
+                    <Ionicons name="remove" size={16} color={colors.textPrimary} />
+                  </Pressable>
+                  <Text style={[s.headerName, { color: colors.textPrimary, minWidth: 48, textAlign: 'center', fontSize: 14 }]}>{pickerYear}</Text>
+                  <Pressable onPress={() => setPickerYear(y => y + 1)} style={[s.todayBtn, { backgroundColor: colors.creamBeige, paddingHorizontal: 8 }]}>
+                    <Ionicons name="add" size={16} color={colors.textPrimary} />
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+            <Pressable onPress={confirmDatePicker} style={[s.prophetCloseBtn, { backgroundColor: cardColor }]}>
+              <Text style={[s.prophetCloseBtnText, { color: '#000' }]}>{t('confirm')}</Text>
+            </Pressable>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal visible={!!prophetModal} animationType="fade" transparent onRequestClose={() => setProphetModal(null)}>
         <Pressable style={[s.prophetOverlay, { backgroundColor: colors.modalOverlay }]} onPress={() => setProphetModal(null)}>
