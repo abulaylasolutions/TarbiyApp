@@ -24,7 +24,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest } from '@/lib/query-client';
 import Colors from '@/constants/colors';
-import { useTheme, getDarkVariant } from '@/lib/theme-context';
+import { useTheme, getGenderColor } from '@/lib/theme-context';
 import PremiumOverlay from '@/components/PremiumOverlay';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -155,8 +155,7 @@ interface ChildTagProps {
 
 function ChildTag({ child, isSelected, onToggle }: ChildTagProps) {
   const { colors, isDark } = useTheme();
-  const rawTagColor = child.cardColor || colors.mintGreen;
-  const tagColor = isDark ? getDarkVariant(rawTagColor) : rawTagColor;
+  const tagColor = getGenderColor(child.gender, isDark);
   return (
     <Pressable
       onPress={() => onToggle(child.id)}

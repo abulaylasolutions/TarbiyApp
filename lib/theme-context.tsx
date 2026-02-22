@@ -110,6 +110,17 @@ function hslToHex(h: number, s: number, l: number): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
+export const GENDER_COLORS = {
+  female: { light: '#FFC1CC', dark: '#D81B60' },
+  male: { light: '#C7CEEA', dark: '#1976D2' },
+};
+
+export function getGenderColor(gender: string | undefined | null, isDark: boolean): string {
+  const isFemale = gender === 'femmina' || gender === 'female';
+  if (isFemale) return isDark ? GENDER_COLORS.female.dark : GENDER_COLORS.female.light;
+  return isDark ? GENDER_COLORS.male.dark : GENDER_COLORS.male.light;
+}
+
 export function getDarkVariant(lightHex: string): string {
   const { h, s, l } = hexToHsl(lightHex);
   const newS = Math.min(1, s * 1.3);

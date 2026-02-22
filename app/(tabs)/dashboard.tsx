@@ -16,16 +16,13 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest, getApiUrl } from '@/lib/query-client';
 import Colors from '@/constants/colors';
-import { useTheme, getDarkVariant, getTextOnColor } from '@/lib/theme-context';
+import { useTheme, getGenderColor, getTextOnColor } from '@/lib/theme-context';
 import { useRouter } from 'expo-router';
 import { getAvatarSource } from '@/lib/avatar-map';
 import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, type AqidahLeafItem, type AqidahPillar, type AqidahLevel } from '@/lib/aqidah-data';
 import PremiumOverlay from '@/components/PremiumOverlay';
 import { gregorianToHijri, getHijriMonthName, getCurrentHijriYear } from '@/lib/hijri';
 
-const PASTEL_COLORS = [
-  '#FF9999', '#FFCC99', '#FFFF99', '#99FF99', '#99FFFF', '#9999FF', '#CC99FF',
-];
 
 const TIME_SLOTS: string[] = [];
 for (let h = 0; h < 24; h++) {
@@ -276,8 +273,7 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.selectorRow}>
       {childList.map((child, index) => {
         const isSelected = child.id === selectedChildId;
-        const rawColor = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
-        const color = isDark ? getDarkVariant(rawColor) : rawColor;
+        const color = getGenderColor(child.gender, isDark);
         return (
           <Pressable key={`${child.id}-${child.avatarAsset || 'none'}`} onPress={() => selectChild(child.id)} style={s.selectorItem}>
             <View style={[s.selectorCircle, { backgroundColor: colors.creamBeige }, isSelected && { borderColor: color, borderWidth: 3 }]}>
@@ -315,8 +311,7 @@ export default function DashboardScreen() {
 
   const selectedChild = children.find(c => c.id === selectedChildId);
   const selectedIndex = children.findIndex(c => c.id === selectedChildId);
-  const rawCardColor = selectedChild?.cardColor || PASTEL_COLORS[Math.max(0, selectedIndex) % PASTEL_COLORS.length];
-  const cardColor = isDark ? getDarkVariant(rawCardColor) : rawCardColor;
+  const cardColor = getGenderColor(selectedChild?.gender, isDark);
 
   const salahEnabled = selectedChild?.salahEnabled !== false;
   const fastingEnabled = selectedChild?.fastingEnabled !== false;

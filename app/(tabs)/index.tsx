@@ -20,15 +20,12 @@ import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
-import { useTheme, getDarkVariant } from '@/lib/theme-context';
+import { useTheme, getGenderColor, getTextOnColor } from '@/lib/theme-context';
 import { useI18n } from '@/lib/i18n';
 import PremiumOverlay from '@/components/PremiumOverlay';
 import { apiRequest } from '@/lib/query-client';
 import { BOY_AVATARS, GIRL_AVATARS, getAvatarSource } from '@/lib/avatar-map';
 
-const PASTEL_COLORS = [
-  '#FF9999', '#FFCC99', '#FFFF99', '#99FF99', '#99FFFF', '#9999FF', '#CC99FF',
-];
 
 interface ChildCardProps {
   child: Child;
@@ -48,8 +45,7 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
   const { colors, isDark } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
-  const rawCardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
-  const cardBg = isDark ? getDarkVariant(rawCardBg) : rawCardBg;
+  const cardBg = getGenderColor(child.gender, isDark);
   const cardBgLight = cardBg + '40';
   const isFemale = child.gender === 'femmina';
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';
@@ -200,7 +196,6 @@ interface ChildFormData {
   birthYear: string;
   gender: string;
   selectedCogenitori: string[];
-  cardColor: string;
   avatarAsset: string;
 }
 
@@ -211,7 +206,6 @@ const EMPTY_FORM: ChildFormData = {
   birthYear: '',
   gender: '',
   selectedCogenitori: [],
-  cardColor: PASTEL_COLORS[0],
   avatarAsset: '',
 };
 
@@ -266,7 +260,6 @@ export default function HomeScreen() {
       birthYear: String(birth.getFullYear()),
       gender: child.gender || '',
       selectedCogenitori: selectedCogs,
-      cardColor: child.cardColor || PASTEL_COLORS[0],
       avatarAsset: child.avatarAsset || '',
     });
     setErrorMsg('');
@@ -356,7 +349,6 @@ export default function HomeScreen() {
         name: form.name.trim(),
         birthDate,
         gender: form.gender,
-        cardColor: form.cardColor,
         avatarAsset: form.avatarAsset || undefined,
         cogenitori: JSON.stringify(cogArray),
       });
@@ -377,7 +369,6 @@ export default function HomeScreen() {
         birthDate,
         gender: form.gender,
         coParentName,
-        cardColor: form.cardColor,
         selectedCogenitori: form.selectedCogenitori,
         avatarAsset: form.avatarAsset || undefined,
       });
@@ -598,28 +589,6 @@ export default function HomeScreen() {
                   </Text>
                 </View>
               )}
-
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('cardColor')}</Text>
-              <View style={styles.colorRow}>
-                {PASTEL_COLORS.map(color => (
-                  <Pressable
-                    key={color}
-                    onPress={() => {
-                      setForm(p => ({ ...p, cardColor: color }));
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }}
-                    style={[
-                      styles.colorSwatch,
-                      { backgroundColor: color },
-                      form.cardColor === color && styles.colorSwatchSelected,
-                    ]}
-                  >
-                    {form.cardColor === color && (
-                      <Ionicons name="checkmark" size={18} color="rgba(0,0,0,0.45)" />
-                    )}
-                  </Pressable>
-                ))}
-              </View>
 
               {(form.gender === 'maschio' || form.gender === 'femmina') && (
                 <>
@@ -934,12 +903,6 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%', height: '100%', borderRadius: 38,
   },
-  colorRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12, justifyContent: 'center' },
-  colorSwatch: {
-    width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2.5, borderColor: 'transparent',
-  },
-  colorSwatchSelected: { borderWidth: 3, borderColor: '#A8E6CF', transform: [{ scale: 1.1 }] },
   modalActions: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   modalCancelBtn: { paddingVertical: 12, paddingHorizontal: 20 },
   modalCancelText: { fontFamily: 'Nunito_600SemiBold', fontSize: 16, color: Colors.textSecondary },
