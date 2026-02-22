@@ -352,7 +352,7 @@ export default function DashboardScreen() {
   const currentHijriYear = getCurrentHijriYear();
   const [ramadanYear, setRamadanYear] = useState(() => String(currentHijriYear));
   const [ramadanLogs, setRamadanLogs] = useState<Record<string, boolean>>({});
-  const [ramadanLoading, setRamadanLoading] = useState(false);
+  const [ramadanLoading, setRamadanLoading] = useState(true);
 
   const [showAddTask, setShowAddTask] = useState(false);
   const [newTaskName, setNewTaskName] = useState('');
@@ -489,8 +489,12 @@ export default function DashboardScreen() {
   useEffect(() => { fetchDashboardData(); }, [fetchDashboardData]);
 
   const fetchRamadanLogs = useCallback(async () => {
-    if (!childId || !trackRamadan) return;
+    if (!childId || !trackRamadan) {
+      setRamadanLoading(false);
+      return;
+    }
     setRamadanLoading(true);
+    setRamadanLogs({});
     try {
       const base = getBaseUrl();
       const res = await fetch(new URL(`/api/children/${childId}/ramadan/${ramadanYear}`, base).toString(), { credentials: 'include' });
@@ -1284,11 +1288,11 @@ export default function DashboardScreen() {
                       bgColor = '#B0BEC5' + '18';
                       borderColor = '#B0BEC5';
                       textColor = '#78909C';
-                    } else if (isPastDay && hasLog && !fasted) {
+                    } else if (isPastDay && !ramadanLoading && !fasted) {
                       bgColor = '#F44336' + '18';
                       borderColor = '#F44336';
                       textColor = '#C62828';
-                    } else if (isFutureDay || (isPastDay && !hasLog)) {
+                    } else if (isFutureDay || (isPastDay && ramadanLoading)) {
                       bgColor = '#B0BEC5' + '10';
                       borderColor = '#B0BEC5' + '40';
                       textColor = '#B0BEC5';
