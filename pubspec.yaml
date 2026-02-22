@@ -22,7 +22,6 @@ dependencies:
   url_launcher: ^6.3.0          # Per Instagram e Segnala problema
   shared_preferences: ^2.3.0    # Per salvare dark mode, lingua, ecc.
   path_provider: ^2.1.0         # Per file locali se serve
-  hijri: ^0.5.0                 # Per date islamiche (Ramadan)
   in_app_purchase: ^3.2.0       # Per i piani Premium
 
 flutter:
