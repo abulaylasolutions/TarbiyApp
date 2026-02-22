@@ -45,7 +45,7 @@ function ClassicTabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.mintGreen,
+        tabBarActiveTintColor: '#A8E6CF',
         tabBarInactiveTintColor: colors.textSecondary,
         tabBarLabelStyle: {
           fontFamily: "Nunito_600SemiBold",
