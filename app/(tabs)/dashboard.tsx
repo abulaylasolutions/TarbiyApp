@@ -991,11 +991,7 @@ export default function DashboardScreen() {
         <View style={{ paddingTop: topPadding + 8 }} />
 
         <Animated.View entering={FadeIn.duration(300)} style={s.headerCard} {...swipePanResponder.panHandlers}>
-          <LinearGradient
-            colors={[cardColor, cardColor + '60']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={s.headerGradient}
-          >
+          <View style={[s.headerGradient, { backgroundColor: cardColor }]}>
             <View style={s.headerRow}>
               {children.length > 1 && (
                 <Pressable
@@ -1044,7 +1040,7 @@ export default function DashboardScreen() {
                 </Pressable>
               )}
             </View>
-          </LinearGradient>
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(100).duration(300)} style={s.dateBarWrap}>
