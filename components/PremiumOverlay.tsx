@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { useI18n } from '@/lib/i18n';
-import Colors from '@/constants/colors';
+import { useTheme } from '@/lib/theme-context';
 
 interface PremiumOverlayProps {
   message: string;
@@ -14,22 +14,23 @@ interface PremiumOverlayProps {
 
 export default function PremiumOverlay({ message, onDiscover, icon = 'lock-closed' }: PremiumOverlayProps) {
   const { t } = useI18n();
+  const { colors, isDark } = useTheme();
 
   return (
-    <Animated.View entering={FadeIn.duration(300)} style={styles.overlay}>
-      <View style={styles.card}>
-        <View style={styles.iconCircle}>
-          <Ionicons name={icon as any} size={28} color={Colors.mintGreenDark} />
+    <Animated.View entering={FadeIn.duration(300)} style={[styles.overlay, { backgroundColor: isDark ? 'rgba(15, 17, 21, 0.92)' : 'rgba(255, 248, 240, 0.92)' }]}>
+      <View style={[styles.card, { backgroundColor: colors.cardBackground }]}>
+        <View style={[styles.iconCircle, { backgroundColor: isDark ? colors.creamBeige : colors.mintGreenLight }]}>
+          <Ionicons name={icon as any} size={28} color={isDark ? colors.textSecondary : colors.mintGreenDark} />
         </View>
-        <Text style={styles.message}>{message}</Text>
+        <Text style={[styles.message, { color: colors.textPrimary }]}>{message}</Text>
         <Pressable
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             onDiscover();
           }}
-          style={({ pressed }) => [styles.btn, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
+          style={({ pressed }) => [styles.btn, { backgroundColor: isDark ? '#4B5563' : colors.mintGreen }, pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] }]}
         >
-          <Ionicons name="star" size={16} color={Colors.white} />
+          <Ionicons name="star" size={16} color="#FFFFFF" />
           <Text style={styles.btnText}>{t('discoverPremium')}</Text>
         </Pressable>
       </View>
@@ -40,14 +41,12 @@ export default function PremiumOverlay({ message, onDiscover, icon = 'lock-close
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 248, 240, 0.92)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 100,
     padding: 32,
   },
   card: {
-    backgroundColor: Colors.cardBackground,
     borderRadius: 24,
     padding: 28,
     alignItems: 'center',
@@ -63,7 +62,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.mintGreenLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
@@ -71,7 +69,6 @@ const styles = StyleSheet.create({
   message: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 15,
-    color: Colors.textPrimary,
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 20,
@@ -80,7 +77,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: Colors.mintGreen,
     borderRadius: 16,
     paddingHorizontal: 24,
     paddingVertical: 12,
@@ -88,6 +84,6 @@ const styles = StyleSheet.create({
   btnText: {
     fontFamily: 'Nunito_700Bold',
     fontSize: 15,
-    color: Colors.white,
+    color: '#FFFFFF',
   },
 });
