@@ -1281,11 +1281,11 @@ export default function DashboardScreen() {
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <Pressable
                     onPress={() => {
-                      if (Number(ramadanYear) > currentHijriYear - 5) setRamadanYear(String(Number(ramadanYear) - 1));
+                      if (Number(ramadanYear) > currentHijriYear) setRamadanYear(String(Number(ramadanYear) - 1));
                     }}
                     hitSlop={12}
-                    style={{ opacity: Number(ramadanYear) > currentHijriYear - 5 ? 1 : 0.25 }}
-                    disabled={Number(ramadanYear) <= currentHijriYear - 5}
+                    style={{ opacity: Number(ramadanYear) > currentHijriYear ? 1 : 0.25 }}
+                    disabled={Number(ramadanYear) <= currentHijriYear}
                   >
                     <Ionicons name="chevron-back" size={20} color={colors.textMuted} />
                   </Pressable>
