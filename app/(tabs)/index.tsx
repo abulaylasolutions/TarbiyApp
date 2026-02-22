@@ -20,7 +20,7 @@ import { router } from 'expo-router';
 import { useApp, Child, CogenitoreInfo } from '@/lib/app-context';
 import { useAuth } from '@/lib/auth-context';
 import Colors from '@/constants/colors';
-import { useTheme } from '@/lib/theme-context';
+import { useTheme, getDarkVariant } from '@/lib/theme-context';
 import { useI18n } from '@/lib/i18n';
 import PremiumOverlay from '@/components/PremiumOverlay';
 import { apiRequest } from '@/lib/query-client';
@@ -48,7 +48,8 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
   const { colors, isDark } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
   const age = getAge(child.birthDate, t);
-  const cardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
+  const rawCardBg = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
+  const cardBg = isDark ? getDarkVariant(rawCardBg) : rawCardBg;
   const cardBgLight = cardBg + '40';
   const isFemale = child.gender === 'femmina';
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';

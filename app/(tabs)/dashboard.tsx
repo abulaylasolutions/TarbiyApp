@@ -16,7 +16,7 @@ import { useAuth } from '@/lib/auth-context';
 import { useI18n } from '@/lib/i18n';
 import { apiRequest, getApiUrl } from '@/lib/query-client';
 import Colors from '@/constants/colors';
-import { useTheme } from '@/lib/theme-context';
+import { useTheme, getDarkVariant, getTextOnColor } from '@/lib/theme-context';
 import { useRouter } from 'expo-router';
 import { getAvatarSource } from '@/lib/avatar-map';
 import { AQIDAH_LEVELS, getAllAqidahLeafItems, getAqidahTotalCount, getLabel, type AqidahLeafItem, type AqidahPillar, type AqidahLevel } from '@/lib/aqidah-data';
@@ -270,13 +270,14 @@ function ChildSelector({ children: childList, selectedChildId, selectChild }: {
   selectedChildId: string | null;
   selectChild: (id: string) => void;
 }) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   if (childList.length <= 1) return null;
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.selectorRow}>
       {childList.map((child, index) => {
         const isSelected = child.id === selectedChildId;
-        const color = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
+        const rawColor = child.cardColor || PASTEL_COLORS[index % PASTEL_COLORS.length];
+        const color = isDark ? getDarkVariant(rawColor) : rawColor;
         return (
           <Pressable key={`${child.id}-${child.avatarAsset || 'none'}`} onPress={() => selectChild(child.id)} style={s.selectorItem}>
             <View style={[s.selectorCircle, { backgroundColor: colors.creamBeige }, isSelected && { borderColor: color, borderWidth: 3 }]}>
@@ -314,7 +315,8 @@ export default function DashboardScreen() {
 
   const selectedChild = children.find(c => c.id === selectedChildId);
   const selectedIndex = children.findIndex(c => c.id === selectedChildId);
-  const cardColor = selectedChild?.cardColor || PASTEL_COLORS[Math.max(0, selectedIndex) % PASTEL_COLORS.length];
+  const rawCardColor = selectedChild?.cardColor || PASTEL_COLORS[Math.max(0, selectedIndex) % PASTEL_COLORS.length];
+  const cardColor = isDark ? getDarkVariant(rawCardColor) : rawCardColor;
 
   const salahEnabled = selectedChild?.salahEnabled !== false;
   const fastingEnabled = selectedChild?.fastingEnabled !== false;
