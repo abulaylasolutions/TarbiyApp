@@ -787,6 +787,7 @@ export default function DashboardScreen() {
     const daysInMonth = new Date(pickerYear, pickerMonth + 1, 0).getDate();
     const safeDay = Math.min(pickerDay, daysInMonth);
     const chosen = new Date(pickerYear, pickerMonth, safeDay);
+    console.log(`Vai a data selezionata: ${formatDate(chosen)}`);
     setCurrentDate(chosen);
     setShowDatePicker(false);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -1096,16 +1097,16 @@ export default function DashboardScreen() {
               </Pressable>
               <Text style={[s.calSwitchLabel, { color: colors.textMuted }]}>{useHijri ? t('hijriOn') : t('hijriOff')}</Text>
             </View>
-            {dateStr !== todayStr && (
-              <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+              <Pressable onPress={openDatePicker} style={[s.todayBtn, { backgroundColor: colors.cardBackground, borderWidth: 1, borderColor: isDark ? '#8E8E93' : '#A8E6CF' }]}>
+                <Ionicons name="calendar-outline" size={14} color={isDark ? '#8E8E93' : '#A8E6CF'} />
+              </Pressable>
+              {dateStr !== todayStr && (
                 <Pressable onPress={goToToday} style={[s.todayBtn, { backgroundColor: cardColor }]}>
                   <Text style={s.todayBtnText}>{t('today')}</Text>
                 </Pressable>
-                <Pressable onPress={openDatePicker} style={[s.todayBtn, { backgroundColor: colors.cardBackground, borderWidth: 1, borderColor: cardColor }]}>
-                  <Ionicons name="calendar-outline" size={14} color={cardColor} />
-                </Pressable>
-              </View>
-            )}
+              )}
+            </View>
           </View>
           <FlatList
             ref={dateScrollRef}
