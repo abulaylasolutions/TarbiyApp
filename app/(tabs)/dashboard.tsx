@@ -409,12 +409,14 @@ export default function DashboardScreen() {
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';
 
   let coParentName: string | null = null;
+  let coParentGender: string | null = null;
   if (selectedChild?.cogenitori) {
     try {
       const cogIds: string[] = JSON.parse(selectedChild.cogenitori);
       const otherCog = cogIds.filter(id => id !== user?.id).map(id => cogenitori.find(c => c.id === id)).filter(Boolean);
       if (otherCog.length > 0) {
         coParentName = otherCog[0]!.name || otherCog[0]!.email;
+        coParentGender = otherCog[0]!.gender || null;
       }
     } catch {}
   }
@@ -1054,7 +1056,7 @@ export default function DashboardScreen() {
                 <Text style={[s.headerAge, { color: Colors.white }]}>{getAge(selectedChild.birthDate, t)}</Text>
                 {coParentName && (
                   <Text style={[s.headerCoParent, { color: Colors.white }]}>
-                    {isFemale ? t('daughterOf') : t('sonOf')}{' '}
+                    {(coParentGender === 'femmina' || coParentGender === 'female') ? t('mom') : t('dad')}:{' '}
                     <Text style={{ color: Colors.white, fontFamily: 'Nunito_700Bold' }}>{coParentName}</Text>
                   </Text>
                 )}

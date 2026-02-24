@@ -50,24 +50,22 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
   const isFemale = child.gender === 'femmina';
   const nameColor = isFemale ? '#FF6B6B' : '#4A90E2';
 
-  let coParentNames: string[] = [];
+  let coParentEntries: { name: string; gender: string | null }[] = [];
   if (child.cogenitori) {
     try {
       const cogIds: string[] = JSON.parse(child.cogenitori);
-      coParentNames = cogIds
+      coParentEntries = cogIds
         .filter(id => id !== currentUserId)
         .map(id => {
           const cog = cogenitori.find(c => c.id === id);
-          return cog?.name || null;
+          return cog ? { name: cog.name || cog.email, gender: cog.gender || null } : null;
         })
-        .filter(Boolean) as string[];
+        .filter(Boolean) as { name: string; gender: string | null }[];
     } catch {}
   }
-  if (coParentNames.length === 0 && child.coParentName) {
-    coParentNames = [child.coParentName];
+  if (coParentEntries.length === 0 && child.coParentName) {
+    coParentEntries = [{ name: child.coParentName, gender: null }];
   }
-
-  const genderPrefix = isFemale ? t('daughterOf') : t('sonOf');
 
   return (
     <ReAnimated.View entering={FadeInDown.delay(index * 80).duration(400)}>
@@ -103,12 +101,16 @@ function ChildCard({ child, index, totalCount, cogenitori, currentUserId, onDele
           <View style={styles.childInfo}>
             <Text style={[styles.childName, { color: nameColor }]}>{child.name}</Text>
             <Text style={[styles.childAge, { color: '#121212' }]}>{age}</Text>
-            {coParentNames.length > 0 && child.gender ? (
+            {coParentEntries.length > 0 ? (
               <Text style={styles.coParentLine}>
-                <Text style={[styles.coParentPrefix, { color: '#121212' }]}>{genderPrefix} </Text>
-                <Text style={[styles.coParentNameText, { color: '#121212' }]}>
-                  {coParentNames.join(', ')}
-                </Text>
+                {coParentEntries.map((entry, i) => {
+                  const label = (entry.gender === 'femmina' || entry.gender === 'female') ? t('mom') : t('dad');
+                  return (
+                    <Text key={i} style={[styles.coParentPrefix, { color: '#121212' }]}>
+                      {i > 0 ? '  ' : ''}{label}: <Text style={[styles.coParentNameText, { color: '#121212' }]}>{entry.name}</Text>
+                    </Text>
+                  );
+                })}
               </Text>
             ) : null}
           </View>
@@ -555,7 +557,16 @@ export default function HomeScreen() {
                 </Pressable>
               </View>
 
-              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>{t('coParent')}</Text>
+              <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                {(() => {
+                  const userGender = user?.gender?.toLowerCase();
+                  const isFemaleUser = userGender === 'femmina' || userGender === 'female';
+                  const isMaleUser = userGender === 'maschio' || userGender === 'male';
+                  const label = isFemaleUser ? t('father') : isMaleUser ? t('mother') : t('coParent');
+                  console.log(`Cogenitore label: ${label} per utente sesso ${user?.gender}`);
+                  return label;
+                })()}
+              </Text>
               {cogenitori.length > 0 ? (
                 <View style={styles.cogSelectorWrap}>
                   {cogenitori.map(cog => {
