@@ -721,7 +721,7 @@ export default function SettingsScreen() {
                 <View style={styles.pricingCardRow}>
                   <View style={styles.pricingCardInfo}>
                     <Text style={styles.pricingPeriod}>{t('monthly')}</Text>
-                    <Text style={[styles.pricingPrice, { color: colors.textPrimary }]}>€2.99<Text style={[styles.pricingDetail, { color: colors.textSecondary }]}> /{t('month')}</Text></Text>
+                    <Text style={[styles.pricingPrice, { color: '#000000' }]}>€2.99<Text style={[styles.pricingDetail, { color: '#333333' }]}> /{t('month')}</Text></Text>
                   </View>
                   <View style={styles.pricingBuyBtn}>
                     <Text style={styles.pricingBuyText}>{t('buy')}</Text>
@@ -746,7 +746,7 @@ export default function SettingsScreen() {
                         <Text style={styles.bestValueText}>{t('save17')}</Text>
                       </View>
                     </View>
-                    <Text style={styles.pricingPrice}>€24.99<Text style={styles.pricingDetail}> /{t('year')}</Text></Text>
+                    <Text style={[styles.pricingPrice, { color: '#000000' }]}>€24.99<Text style={[styles.pricingDetail, { color: '#333333' }]}> /{t('year')}</Text></Text>
                   </View>
                   <View style={[styles.pricingBuyBtn, { backgroundColor: Colors.goldAccent }]}>
                     <Text style={styles.pricingBuyText}>{t('buy')}</Text>
@@ -771,7 +771,7 @@ export default function SettingsScreen() {
                         <Ionicons name="infinite" size={14} color={Colors.white} />
                       </View>
                     </View>
-                    <Text style={styles.pricingPrice}>€49.99<Text style={styles.pricingDetail}> {t('oneTime')}</Text></Text>
+                    <Text style={[styles.pricingPrice, { color: '#000000' }]}>€49.99<Text style={[styles.pricingDetail, { color: '#333333' }]}> {t('oneTime')}</Text></Text>
                   </View>
                   <View style={[styles.pricingBuyBtn, { backgroundColor: '#9C27B0' }]}>
                     <Text style={styles.pricingBuyText}>{t('buy')}</Text>
