@@ -1468,9 +1468,9 @@ export default function DashboardScreen() {
                               <Pressable
                                 key={letter}
                                 onPress={() => toggleArabicLetter(letter)}
-                                style={[s.arabicLetterChip, { backgroundColor: colors.creamBeige }, isSelected && { backgroundColor: cardColor }]}
+                                style={[s.arabicLetterChip, { backgroundColor: colors.creamBeige }, isSelected && { backgroundColor: cardColor + '22', borderWidth: 2, borderColor: cardColor }]}
                               >
-                                <Text style={[s.arabicLetterText, { color: colors.textPrimary }, isSelected && { color: Colors.white }]}>{letter}</Text>
+                                <Text style={[s.arabicLetterText, isSelected ? { color: '#000000', fontFamily: 'Nunito_800ExtraBold' } : { color: colors.textMuted }]}>{letter}</Text>
                               </Pressable>
                             );
                           })}
@@ -1721,29 +1721,6 @@ export default function DashboardScreen() {
             </View>
           </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(600).duration(300)}>
-            <Text style={[s.sectionTitle, { color: colors.textPrimary }]}>{t('recentActivityLog')}</Text>
-            {educationFeed.length > 0 ? (
-              <View style={[s.card, { backgroundColor: colors.cardBackground }]}>
-                {educationFeed.map((item, i) => (
-                  <View key={`feed-${i}`} style={[s.activityRow, i > 0 && [s.taskRowBorder, { borderTopColor: colors.border }]]}>
-                    <Ionicons name={item.icon as any} size={18} color={item.iconColor} />
-                    <View style={s.activityInfo}>
-                      <Text style={[s.activityText, { color: colors.textPrimary }]}>{item.text}</Text>
-                      {item.dateTime ? (
-                        <Text style={[s.activityMeta, { color: colors.textMuted }]}>{item.dateTime}</Text>
-                      ) : null}
-                    </View>
-                  </View>
-                ))}
-              </View>
-            ) : (
-              <View style={[s.emptyCard, { backgroundColor: colors.cardBackground }]}>
-                <Ionicons name="time-outline" size={32} color={colors.textMuted} />
-                <Text style={[s.emptyCardText, { color: colors.textMuted }]}>{t('noActivity')}</Text>
-              </View>
-            )}
-          </Animated.View>
         </View>
       </ScrollView>
 

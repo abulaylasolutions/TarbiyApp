@@ -65,6 +65,7 @@ import {
   updateUserHijriCalendar,
   getRamadanLogs,
   upsertRamadanLog,
+  updateUserPassword,
 } from "./storage";
 import { registerSchema, loginSchema, profileSchema } from "@shared/schema";
 
@@ -288,6 +289,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const user = await updateUserHijriCalendar(req.session.userId!, !!preferredHijriCalendar);
       const { password: _, ...safeUser } = user;
       return res.json(safeUser);
+    } catch (error) {
+      return res.status(500).json({ message: "Errore del server" });
+    }
+  });
+
+  app.put("/api/auth/change-password", requireAuth as any, async (req: Request, res: Response) => {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      if (!currentPassword || !newPassword || newPassword.length < 6) {
+        return res.status(400).json({ message: "Password non valida (minimo 6 caratteri)" });
+      }
+      const user = await getUserById(req.session.userId!);
+      if (!user) return res.status(404).json({ message: "Utente non trovato" });
+      const valid = await bcrypt.compare(currentPassword, user.password);
+      if (!valid) return res.status(401).json({ message: "Password attuale non corretta" });
+      const hashed = await bcrypt.hash(newPassword, 10);
+      await updateUserPassword(req.session.userId!, hashed);
+      return res.json({ message: "Password aggiornata con successo" });
     } catch (error) {
       return res.status(500).json({ message: "Errore del server" });
     }

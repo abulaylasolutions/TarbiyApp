@@ -60,6 +60,10 @@ export async function getUserById(id: string): Promise<User | undefined> {
   return result[0];
 }
 
+export async function updateUserPassword(id: string, hashedPassword: string): Promise<void> {
+  await db.update(users).set({ password: hashedPassword }).where(eq(users.id, id));
+}
+
 export async function getUserByInviteCode(code: string): Promise<User | undefined> {
   const result = await db
     .select()

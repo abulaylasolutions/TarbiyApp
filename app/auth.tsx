@@ -13,7 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -29,7 +29,7 @@ export default function AuthScreen() {
   const insets = useSafeAreaInsets();
   const { login, register } = useAuth();
   const { t, lang, setLang } = useI18n();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -74,13 +74,6 @@ export default function AuthScreen() {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.replace('/');
     }
-  };
-
-  const handleSocialLogin = (provider: string) => {
-    Alert.alert(
-      `${provider} Login`,
-      `${provider} ${t('authSocialNotAvailable')}`,
-    );
   };
 
   const cycleLang = () => {
@@ -220,28 +213,14 @@ export default function AuthScreen() {
               </LinearGradient>
             </Pressable>
 
-            <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-              <Text style={[styles.dividerText, { color: colors.textMuted }]}>{t('authOr')}</Text>
-              <View style={[styles.dividerLine, { backgroundColor: colors.border }]} />
-            </View>
-
-            <View style={styles.socialRow}>
+            {isLogin && (
               <Pressable
-                onPress={() => handleSocialLogin('Google')}
-                style={({ pressed }) => [styles.socialBtn, { backgroundColor: colors.inputBackground }, pressed && { opacity: 0.8 }]}
+                onPress={() => Alert.alert(t('forgotPassword'), t('forgotPasswordMsg'))}
+                style={styles.forgotPasswordBtn}
               >
-                <FontAwesome name="google" size={20} color="#DB4437" />
-                <Text style={[styles.socialBtnText, { color: colors.textPrimary }]}>Google</Text>
+                <Text style={[styles.forgotPasswordText, { color: colors.mintGreenDark }]}>{t('forgotPassword')}</Text>
               </Pressable>
-              <Pressable
-                onPress={() => handleSocialLogin('Facebook')}
-                style={({ pressed }) => [styles.socialBtn, { backgroundColor: colors.inputBackground }, pressed && { opacity: 0.8 }]}
-              >
-                <FontAwesome name="facebook" size={20} color="#4267B2" />
-                <Text style={[styles.socialBtnText, { color: colors.textPrimary }]}>Facebook</Text>
-              </Pressable>
-            </View>
+            )}
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(300).duration(500)}>
@@ -418,40 +397,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: Colors.white,
   },
-  dividerRow: {
-    flexDirection: 'row',
+  forgotPasswordBtn: {
     alignItems: 'center',
-    marginBottom: 20,
+    paddingVertical: 8,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: Colors.creamBeige,
-  },
-  dividerText: {
-    fontFamily: 'Nunito_400Regular',
-    fontSize: 13,
-    color: Colors.textMuted,
-    paddingHorizontal: 16,
-  },
-  socialRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  socialBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    backgroundColor: Colors.creamBeige,
-    borderRadius: 16,
-    paddingVertical: 14,
-  },
-  socialBtnText: {
+  forgotPasswordText: {
     fontFamily: 'Nunito_600SemiBold',
     fontSize: 14,
-    color: Colors.textPrimary,
+    color: Colors.mintGreenDark,
   },
   footerText: {
     fontFamily: 'Nunito_400Regular',

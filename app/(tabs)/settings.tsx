@@ -65,7 +65,7 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
   const { user, refreshUser } = useAuth();
   const { cogenitori, refreshCogenitori } = useApp();
   const { t } = useI18n();
-  const { colors, isDark } = useTheme();
+  const { colors } = useTheme();
   const isPremium = user?.isPremium;
   const [inviteCodeInput, setInviteCodeInput] = useState('');
   const [pairing, setPairing] = useState(false);
@@ -130,7 +130,7 @@ function CogenitoriSection({ onOpenPremium }: { onOpenPremium?: () => void }) {
   return (
     <View style={[styles.cogenitoreCard, { backgroundColor: colors.cardBackground }]}>
       <View style={styles.cogenitoreHeader}>
-        <Ionicons name="people" size={20} color={isDark ? '#64B5F6' : Colors.skyBlueDark} />
+        <Ionicons name="people" size={20} color={Colors.skyBlueDark} />
         <Text style={[styles.cogenitoreTitle, { color: colors.textPrimary }]}>{t('coParents')}</Text>
       </View>
 
@@ -284,9 +284,9 @@ function PendingApprovalsSection() {
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const { user, logout, updatePremium, refreshUser, updateProfile } = useAuth();
-  const { children } = useApp();
+  const { children, refreshChildren, refreshNotes, refreshCogenitori, refreshPending } = useApp();
   const { lang, setLang, t, isRTL } = useI18n();
-  const { isDark, toggleDark, colors } = useTheme();
+  const { colors } = useTheme();
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showLangModal, setShowLangModal] = useState(false);
@@ -297,6 +297,13 @@ export default function SettingsScreen() {
   const [editGender, setEditGender] = useState('');
   const [editError, setEditError] = useState('');
   const [editSaving, setEditSaving] = useState(false);
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [changePasswordError, setChangePasswordError] = useState('');
+  const [changePasswordSaving, setChangePasswordSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const topPadding = Platform.OS === 'web' ? 67 : insets.top;
 
@@ -349,6 +356,38 @@ export default function SettingsScreen() {
       setEditError(result.message || 'Errore');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     }
+  };
+
+  const handleChangePassword = async () => {
+    setChangePasswordError('');
+    if (!currentPassword.trim() || !newPassword.trim()) {
+      setChangePasswordError(t('authEmailPasswordRequired'));
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      setChangePasswordError(t('authPasswordMismatch'));
+      return;
+    }
+    if (newPassword.length < 6) {
+      setChangePasswordError(t('authPasswordMinLength'));
+      return;
+    }
+    setChangePasswordSaving(true);
+    try {
+      const res = await apiRequest('PUT', '/api/auth/change-password', { currentPassword, newPassword });
+      const data = await res.json();
+      if (res.ok) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        setShowChangePasswordModal(false);
+        Alert.alert(t('passwordChanged'), '');
+      } else {
+        setChangePasswordError(data.message || t('wrongPassword'));
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+    } catch {
+      setChangePasswordError(t('authGenericError'));
+    }
+    setChangePasswordSaving(false);
   };
 
   const handleLogout = () => {
@@ -450,7 +489,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="language"
             iconColor={Colors.skyBlueDark}
-            iconBg={isDark ? '#1A3A5C' : Colors.skyBlueLight}
+            iconBg={Colors.skyBlueLight}
             label={t('language')}
             value={getLanguageLabel(lang)}
             onPress={() => setShowLangModal(true)}
@@ -485,29 +524,35 @@ export default function SettingsScreen() {
               </Pressable>
             </View>
           </View>
-          <View style={[styles.settingsRow, { borderBottomWidth: 1, borderBottomColor: colors.border }]}>
-            <View style={[styles.settingsIcon, { backgroundColor: isDark ? '#2A2A4A' : '#E8EAF6' }]}>
-              <Ionicons name="moon" size={18} color={isDark ? '#BB86FC' : '#5C6BC0'} />
-            </View>
-            <Text style={[styles.settingsLabel, { color: colors.textPrimary }]}>{t('darkMode')}</Text>
-            <View style={styles.settingsRight}>
-              <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  toggleDark();
-                }}
-                style={[
-                  { width: 48, height: 28, borderRadius: 14, justifyContent: 'center', paddingHorizontal: 3, backgroundColor: isDark ? '#BB86FC' : colors.textMuted + '40' },
-                ]}
-              >
-                <View style={{
-                  width: 22, height: 22, borderRadius: 11, backgroundColor: colors.white,
-                  alignSelf: isDark ? 'flex-end' : 'flex-start',
-                  shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
-                }} />
-              </Pressable>
-            </View>
-          </View>
+          <SettingsRow
+            icon="lock-closed"
+            iconColor={colors.mintGreenDark}
+            iconBg={colors.mintGreenLight}
+            label={t('changePassword')}
+            onPress={() => {
+              setCurrentPassword('');
+              setNewPassword('');
+              setConfirmNewPassword('');
+              setChangePasswordError('');
+              setShowChangePasswordModal(true);
+            }}
+          />
+          <SettingsRow
+            icon="refresh"
+            iconColor={Colors.skyBlueDark}
+            iconBg={Colors.skyBlueLight}
+            label={t('syncData')}
+            onPress={async () => {
+              setSyncing(true);
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              try {
+                await Promise.all([refreshUser(), refreshChildren(), refreshNotes(), refreshCogenitori(), refreshPending()]);
+                Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+                Alert.alert(t('syncSuccess'), '');
+              } catch {}
+              setSyncing(false);
+            }}
+          />
           <SettingsRow
             icon="star"
             iconColor={colors.mintGreenDark}
@@ -531,7 +576,7 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="information-circle"
             iconColor={Colors.skyBlueDark}
-            iconBg={isDark ? '#1A3A5C' : Colors.skyBlueLight}
+            iconBg={Colors.skyBlueLight}
             label={t('version')}
             value="1.0.0"
             isLast
@@ -570,6 +615,79 @@ export default function SettingsScreen() {
 
         <View style={{ height: Platform.OS === 'web' ? 34 : 100 }} />
       </ScrollView>
+
+      <Modal visible={showChangePasswordModal} animationType="slide" transparent>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          <View style={[styles.modalOverlay, { backgroundColor: colors.modalOverlay }]}>
+            <Pressable style={styles.modalDismiss} onPress={() => setShowChangePasswordModal(false)} />
+            <Animated.View
+              entering={FadeIn.duration(200)}
+              exiting={FadeOut.duration(150)}
+              style={[styles.editModalContent, { paddingBottom: insets.bottom + 16, backgroundColor: colors.modalBackground }]}
+            >
+              <ScrollView showsVerticalScrollIndicator={false} bounces={false} keyboardShouldPersistTaps="handled">
+                <View style={[styles.modalHandle, { backgroundColor: colors.textMuted }]} />
+                <Text style={[styles.editModalTitle, { color: colors.textPrimary }]}>{t('changePassword')}</Text>
+
+                {changePasswordError ? (
+                  <View style={styles.errorBox}>
+                    <Ionicons name="alert-circle" size={14} color={Colors.danger} />
+                    <Text style={styles.errorBoxText}>{changePasswordError}</Text>
+                  </View>
+                ) : null}
+
+                <Text style={[styles.editInputLabel, { color: colors.textSecondary }]}>{t('currentPassword')}</Text>
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  placeholder={t('currentPassword')}
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                />
+
+                <Text style={[styles.editInputLabel, { color: colors.textSecondary }]}>{t('newPassword')}</Text>
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder={t('newPassword')}
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                />
+
+                <Text style={[styles.editInputLabel, { color: colors.textSecondary }]}>{t('confirmNewPassword')}</Text>
+                <TextInput
+                  style={[styles.editInput, { backgroundColor: colors.inputBackground, color: colors.textPrimary }]}
+                  value={confirmNewPassword}
+                  onChangeText={setConfirmNewPassword}
+                  placeholder={t('confirmNewPassword')}
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                />
+
+                <Pressable
+                  onPress={handleChangePassword}
+                  disabled={changePasswordSaving}
+                  style={[styles.editSaveBtn, { opacity: changePasswordSaving ? 0.6 : 1, marginTop: 16 }]}
+                >
+                  {changePasswordSaving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.editSaveText}>{t('save')}</Text>
+                  )}
+                </Pressable>
+                <Pressable
+                  onPress={() => setShowChangePasswordModal(false)}
+                  style={{ alignItems: 'center', paddingVertical: 14, marginTop: 4 }}
+                >
+                  <Text style={{ fontFamily: 'Nunito_600SemiBold', fontSize: 15, color: colors.textMuted }}>{t('cancel')}</Text>
+                </Pressable>
+              </ScrollView>
+            </Animated.View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
 
       <Modal visible={showEditModal} animationType="slide" transparent>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>

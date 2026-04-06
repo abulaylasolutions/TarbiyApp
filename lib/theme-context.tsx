@@ -1,8 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, ReactNode, useCallback } from 'react';
-import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const DARK_MODE_KEY = '@tarbiyapp_dark_mode';
+import React, { createContext, useContext, useMemo, ReactNode, useCallback } from 'react';
 
 export const LightColors = {
   background: '#F8FEFA',
@@ -150,33 +146,12 @@ const ThemeContext = createContext<ThemeContextValue>({
 });
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [isDark, setIsDark] = useState(false);
-  const [loaded, setLoaded] = useState(false);
+  const isDark = false;
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const val = await AsyncStorage.getItem(DARK_MODE_KEY);
-        if (val === 'true') setIsDark(true);
-      } catch {}
-      setLoaded(true);
-    })();
-  }, []);
+  const toggleDark = useCallback(() => {}, []);
+  const setDark = useCallback((_v: boolean) => {}, []);
 
-  const toggleDark = useCallback(() => {
-    setIsDark(prev => {
-      const next = !prev;
-      AsyncStorage.setItem(DARK_MODE_KEY, String(next)).catch(() => {});
-      return next;
-    });
-  }, []);
-
-  const setDark = useCallback((v: boolean) => {
-    setIsDark(v);
-    AsyncStorage.setItem(DARK_MODE_KEY, String(v)).catch(() => {});
-  }, []);
-
-  const colors = useMemo(() => isDark ? DarkColors : LightColors, [isDark]);
+  const colors = useMemo(() => LightColors, []);
 
   const value = useMemo(() => ({ isDark, toggleDark, setDark, colors }), [isDark, toggleDark, setDark, colors]);
 
